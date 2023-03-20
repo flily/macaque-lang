@@ -71,9 +71,6 @@ Statements
 ### Import statement
 
 
-Improvements from Monkey
--------------------------
-
 Packages
 ---------
 
