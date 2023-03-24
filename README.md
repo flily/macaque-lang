@@ -21,6 +21,7 @@ Macaque makes some improvements from Monkey:
   - Remove built-in functions, but introduct standard library instead.
   - Support regular format `[a-zA-Z_][a-zA-Z0-9_]*` for identifiers.
   - Implement more readable error and warning messages.
+  - Support `else if` statement.
 
 
 Missing features in Monkey, but not decided to add in Macaque yet:
