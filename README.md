@@ -53,6 +53,10 @@ Missing features in Monkey, but not decided to add in Macaque yet:
       * Use string like `"INT"`, `"STRING"` to represent type, like lua.
       * Use type variable like `Int` or `std.Int` to represent type, like Java.
   - `return` statement can return multiple values.
+  - Detect variable redeclaration.
+    + May be not a bug. Perhaps the author use let statement to modify variable.
+      * But, the code `let a = 1; let a = a + 1;` may crush in compiler but not in interpreter.
+    + Fix it and make variable immutable.
   - Make variable can be modified after declaration.
     + Use `var` keyword to declare variable and `let` keyword to declare immutable variable, like
       rust. The keyword `mut` used in rust is not elegant.
