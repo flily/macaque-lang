@@ -52,3 +52,10 @@ Missing features in Monkey, but not decided to add in Macaque yet:
       * Use type type like `int`, `string` to represent type.
       * Use string like `"INT"`, `"STRING"` to represent type, like lua.
       * Use type variable like `Int` or `std.Int` to represent type, like Java.
+  - `return` statement can return multiple values.
+  - Make variable can be modified after declaration.
+    + Use `var` keyword to declare variable and `let` keyword to declare immutable variable, like
+      rust. The keyword `mut` used in rust is not elegant.
+    + Make all variables immutable, like erlang.
+      * Some mechanism like pattern matching may be required.
+

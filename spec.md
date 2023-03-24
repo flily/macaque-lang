@@ -22,6 +22,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 
 The syntax is specified using BNF defined in [RFC 5234](https://www.rfc-editor.org/rfc/rfc5234).
+But special, all characters are case-sensitive.
 
 
 Source code encoding
@@ -83,10 +84,24 @@ Complete syntax of Macaque
 ```abnf
 program = *statement
 statement = let-stmt
-          / assignment
           / block
           / return-stmt
-          / import-stmt
           / expression-stmt
+          / import-stmt
           / empty-stmt
+
+let-stmt = "let" identifier-list "=" expression ";"
+
+identifier-list = identifier *( "," identifier )
+
+identifier = ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" )
+
+ALPHA = %x41-5A / %x61-7A  
+        ; A-Z / a-z
+        ; predefined name in RFC 5234
+
+DIGIT = %x30-39
+        ; 0-9
+        ; predefined name in RFC 5234
+
 ```
