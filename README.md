@@ -62,4 +62,8 @@ Missing features in Monkey, but not decided to add in Macaque yet:
       rust. The keyword `mut` used in rust is not elegant.
     + Make all variables immutable, like erlang.
       * Some mechanism like pattern matching may be required.
-
+  - Add variable parameter list.
+    + Use `...` to represent variable parameter list, like lua.
+    + Use `*` to represent variable parameter list, like python.
+  - Add debuggging support.
+    + Support step trace debugging and breakpoint.
