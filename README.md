@@ -67,3 +67,9 @@ Missing features in Monkey, but not decided to add in Macaque yet:
     + Use `*` to represent variable parameter list, like python.
   - Add debuggging support.
     + Support step trace debugging and breakpoint.
+  - Array and hash modification.
+    + In offical implement, monkey-lang can ONLY modify array, append element to the end, via
+      builtin function `push`. And there is no way to modify hash.
+    + Write more external builtin functions to modify array and hash, but it is not elegant.
+    + Write native monkey-lang code to modify, which in the way like erlang, build a new hash or
+      array in functional programming way.
