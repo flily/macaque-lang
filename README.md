@@ -76,3 +76,6 @@ Missing features in Monkey, but not decided to add in Macaque yet:
     + Write more external builtin functions to modify array and hash, but it is not elegant.
     + Write native monkey-lang code to modify, which in the way like erlang, build a new hash or
       array in functional programming way.
+  - Strings are raw strings, binary data. Do not support unicodes.
+    + An unicode support library may be introduced.
+    + Unicode string can be processed as array of integers.
