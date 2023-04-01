@@ -84,17 +84,78 @@ Complete syntax of Macaque
 ```abnf
 program = *statement
 statement = let-stmt
-          / block
           / return-stmt
+          / import-stmt       ; not determined yet
+          / if-stmt
+          / block-stmt
           / expression-stmt
-          / import-stmt
-          / empty-stmt
 
-let-stmt = "let" identifier-list "=" expression ";"
+let-stmt = "let" identifier-list "=" expression-list ";"
 
-identifier-list = identifier *( "," identifier )
+return-stmt = "return" [expression-list] ";"
 
-identifier = ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" )
+import-stmt = "import" string-literal ";"  ; not determined yet
+
+expression-stmt = expression-list ";"
+
+expression-list = expression *( "," expression ) [","]
+
+expression = literals
+           / identifier
+           / prefix-expression
+           / infix-expression
+           / index-expression
+           / call-expression
+
+literals = null-literal
+         / boolean-literal
+         / integer-literal
+         / float-literal
+         / string-literal
+         / array-literal
+         / hash-literal
+         / function-literal
+
+null-literal = "null"
+
+boolean-literal = "true" / "false"
+
+integer-literal = ( ["-"] 1* (DIGIT / "_") ) / ( "0x" 1*( HEXDIG / "_" ) )
+
+float-literal = 1*( DIGIT / "_" ) "." 1*( DIGIT / "_" )
+
+DQUOTE = %x22
+        ; " (Double Quote)
+        ; predefined name in RFC 5234
+
+string-literal = DQUOTE *string-chars DQUOTE
+
+string-chars = %x20-21 / %x23-5B / %x5D-10FFFF
+               ; any Unicode character except double quote (") and backslash (\)
+             / escape-sequence
+
+escape-sequence = "\" ( DQUOTE / "\" / "n" / "r" / "t" / "x" *2HEXDIG )
+
+array-literal = "[" expression-list "]"
+
+hash-literal = "{" hash-pair *( "," hash-pair ) [","] "}"
+
+hash-pair = expression ":" expression
+
+function-literal = "fn" "(" [identifier-list] ")" block-stmt
+
+identifier-list = identifier *( "," identifier ) [","]
+
+identifier = [identifier-prefix] ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" ) [identifier-suffix]
+
+identifier-prefix = "@" / "$"
+
+identifier-suffix = "!" / "?"
+
+index-expression = ( expression "[" expression "]" )
+                 / ( expression "." identifier )
+
+call-expression = expression [ ":" identifier ] "(" [expression-list] ")"
 
 ALPHA = %x41-5A / %x61-7A  
         ; A-Z / a-z
