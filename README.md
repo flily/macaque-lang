@@ -35,7 +35,10 @@ Missing features in Monkey, but not decided to add in Macaque yet:
       local.
   - Add support for object-like use of hash, with following features:
     + Reference item key with identifier, like `hash.key`;
-    + Call function item directly with key reference, like `hash.key()` or `hask:key()` like lua.
+    + Call function item directly with key reference, use `hash:key()` like lua.
+  - Make all types object.
+    + Use `:function()` to make class-call, like lua.
+    + `int` is object, has native methods and can be called on literals, `5:times()` like ruby.
   - Error handling mechanism.
     + Use `try`, `catch`, `finally` and `throw` like Java.
     + Use `ON ERROR` trap like BASIC.
