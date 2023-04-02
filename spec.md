@@ -31,6 +31,18 @@ Source code encoding
 Lexical elements
 -----------------
 
+### Keywords
+
+Macauqe has 9 keywords:
+  - `let`: declare a symbol to represent a value.
+  - `fn`: start a function, or a lambda, literal.
+  - `return`: return a value from a function.
+  - `if` and `else`: basic control flow.
+  - `import`: import a module from a file.
+  - `null`: a special value that represents nothing.
+  - `true` and `false`: boolean values literals.
+
+ 
 Types
 ------
 
@@ -148,14 +160,37 @@ identifier-list = identifier *( "," identifier ) [","]
 
 identifier = [identifier-prefix] ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" ) [identifier-suffix]
 
-identifier-prefix = "@" / "$"
+identifier-prefix = "@" / "$"  ; not implemented for now
 
-identifier-suffix = "!" / "?"
+identifier-suffix = "!" / "?"  ; not implemented for now
 
 index-expression = ( expression "[" expression "]" )
                  / ( expression "." identifier )
 
 call-expression = expression [ ":" identifier ] "(" [expression-list] ")"
+
+prefix-expression = prefix-operator expression
+
+prefix-operator = "!" / "-"    ; supported in official Monkey implementation
+                / "~"          ; add to support bitwise NOT.
+
+infix-expression = expression infix-operator expression
+
+infix-operator = "+" / "-" / "*" / "/" / "==" / "!" / "<" / ">"
+                        ; supported in official Monkey implementation
+               / "%"    ; modulo
+               / "<="   ; less than or equal to
+               / ">="   ; greater than or equal to
+               / "&&"   ; logical AND
+               / "||"   ; logical OR
+               / "&"    ; bitwise AND
+               / "|"    ; bitwise OR
+               / "^"    ; bitwise XOR
+
+if-stmt = "if" "(" expression ")" block-stmt [ "else" ( block-stmt / if-stmt ) ]
+          ; support 'else if' statement
+
+block-stmt = "{" *statement "}"
 
 ALPHA = %x41-5A / %x61-7A  
         ; A-Z / a-z

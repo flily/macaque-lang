@@ -17,11 +17,17 @@ Macaque makes some improvements from Monkey:
   - Add `null` type and keyword.
   - Add `float` type for calculation.
   - Add `import` statement, to write more complex program with multiple modules files.
-    - Use `return` statement in out most scope to export module, just like lua.
+    + Use `return` statement in out most scope to export module, just like lua.
   - Remove built-in functions, but introduct standard library instead.
   - Support regular format `[a-zA-Z_][a-zA-Z0-9_]*` for identifiers.
   - Implement more readable error and warning messages.
   - Support `else if` statement.
+  - Fully support of c-style operators.
+    + add `%` for modulo.
+    + add `>=` and `<=` for comparison.
+    + add `&&` and `||` for logical AND and OR.
+    + use `!` for logical NOT and `~` for bitwise NOT.
+    + add `&`, `|` and `^` for bitwise AND, OR and XOR.
 
 
 Missing features in Monkey, but not decided to add in Macaque yet:
