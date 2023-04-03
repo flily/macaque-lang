@@ -28,6 +28,7 @@ Macaque makes some improvements from Monkey:
     + add `&&` and `||` for logical AND and OR.
     + use `!` for logical NOT and `~` for bitwise NOT.
     + add `&`, `|` and `^` for bitwise AND, OR and XOR.
+  - Add one-line comments, leading with `//`.
 
 
 Missing features in Monkey, but not decided to add in Macaque yet:
