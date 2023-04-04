@@ -10,7 +10,7 @@ const (
 	EOF
 	Comment
 
-	literal_begin
+	literalBegin
 	Identifier
 	Null
 	False
@@ -18,7 +18,7 @@ const (
 	Integer
 	Float
 	String
-	literal_end
+	literalEnd
 
 	keyword_begin
 	Let
@@ -29,7 +29,7 @@ const (
 	Import
 	keyword_end
 
-	operator_begin
+	operatorBegin
 	Bang     // !
 	Plus     // +
 	Minus    // -
@@ -48,9 +48,9 @@ const (
 	BITOR    // |
 	BITXOR   // ^
 	BITNOT   // ~
-	operator_end
+	operatorEnd
 
-	punctuation_begin
+	punctuationBegin
 	Assign       // =
 	Comma        // ,
 	Period       // .
@@ -63,7 +63,7 @@ const (
 	LBracket     // [
 	RBracket     // ]
 	CommentStart // //
-	punctuation_end
+	punctuationEnd
 
 	SLet          = "let"
 	SFn           = "fn"
@@ -154,13 +154,14 @@ var displayName = [...]string{
 	CommentStart: "//",
 }
 
+// String returns a string representation of the token.
 func (t Token) String() string {
 	if t < 0 || t >= Token(len(displayName)) {
 		return "ILLEGAL"
 	}
 
 	s := displayName[t]
-	if t > operator_begin {
+	if t > operatorBegin {
 		return fmt.Sprintf("<%s>", s)
 	}
 
@@ -168,7 +169,7 @@ func (t Token) String() string {
 }
 
 func (t Token) IsLiteral() bool {
-	return t > literal_begin && t < literal_end
+	return t > literalBegin && t < literalEnd
 }
 
 func (t Token) IsKeyword() bool {
@@ -176,9 +177,9 @@ func (t Token) IsKeyword() bool {
 }
 
 func (t Token) IsOperator() bool {
-	return t > operator_begin && t < operator_end
+	return t > operatorBegin && t < operatorEnd
 }
 
 func (t Token) IsPunctuation() bool {
-	return t > punctuation_begin && t < punctuation_end
+	return t > punctuationBegin && t < punctuationEnd
 }
