@@ -13,6 +13,13 @@ Specification of the Macaque programming language is in the [spec.md](spec.md) f
 Improvements from Monkey
 -------------------------
 
+Principles to design:
+  - It must be familiar to original Monkey language.
+  - Only add necessary keywords.
+  - Main purpose is to be a lightweight scripting language.
+  - Try to add some modern features without too big changes.
+  - Bad design in original Monkey language SHOULD be kept if it is well defined.
+
 Macaque makes some improvements from Monkey:
   - Add `null` type and keyword.
   - Add `float` type for calculation.
@@ -29,6 +36,7 @@ Macaque makes some improvements from Monkey:
     + use `!` for logical NOT and `~` for bitwise NOT.
     + add `&`, `|` and `^` for bitwise AND, OR and XOR.
   - Add one-line comments, leading with `//`.
+  - Recursive call in closure by call `fn(a, b, c)` without function body.
 
 
 Missing features in Monkey, but not decided to add in Macaque yet:
