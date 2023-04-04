@@ -1,6 +1,15 @@
 macaque-lang
 =============
 
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/flily/macaque-lang)
+![GitHub top language](https://img.shields.io/github/languages/top/flily/macaque-lang)
+
+[![CI](https://github.com/flily/macaque-lang/actions/workflows/ci.yaml/badge.svg)](https://github.com/flily/macaque-lang/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/flily/macaque-lang/branch/main/graph/badge.svg?token=DzOEyayucW)](https://codecov.io/gh/flily/macaque-lang)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/87a4caf4cbfd403fb143db2c501dba90)](https://app.codacy.com/gh/flily/macaque-lang/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Go Report Card](https://goreportcard.com/badge/github.com/flily/macaque-lang)](https://goreportcard.com/report/github.com/flily/macaque-lang)
+
+
 A dialect of monkey language, with brand new implement from the book and feature improvements.
 
 

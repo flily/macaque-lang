@@ -97,6 +97,7 @@ make them easier to understand, I choose C-style operators and punctuators.
   - `~`, `&`, `|`, `^`: bitwise NOT, AND, OR and XOR.
   - `%`: modulus.
   - `<=`, `>=`: less than or equal to, greater than or equal to.
+  - '.': access member of a hash.
 
 ### Keyword literals
 
