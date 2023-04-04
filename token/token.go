@@ -20,14 +20,14 @@ const (
 	String
 	literalEnd
 
-	keyword_begin
+	keywordBegin
 	Let
 	Fn
 	Return
 	If
 	Else
 	Import
-	keyword_end
+	keywordEnd
 
 	operatorBegin
 	Bang     // !
@@ -173,7 +173,7 @@ func (t Token) IsLiteral() bool {
 }
 
 func (t Token) IsKeyword() bool {
-	return t > keyword_begin && t < keyword_end
+	return t > keywordBegin && t < keywordEnd
 }
 
 func (t Token) IsOperator() bool {
