@@ -93,9 +93,9 @@ func (s *RecursiveScanner) currentChar() byte {
 	return s.source[s.index]
 }
 
-func (s *RecursiveScanner) peekChar() byte {
-	return s.source[s.index+1]
-}
+// func (s *RecursiveScanner) peekChar() byte {
+// 	return s.source[s.index+1]
+// }
 
 func (s *RecursiveScanner) shift_one() int {
 	if s.EOF() {
