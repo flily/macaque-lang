@@ -1,5 +1,7 @@
 package token
 
+import "fmt"
+
 type FileInfo struct {
 	Filename string
 	Lines    []*LineInfo
@@ -28,7 +30,8 @@ func NewFileInfo(filename string) *FileInfo {
 	return info
 }
 
-func (f *FileInfo) NewLine(content string, lineno int) *LineInfo {
+func (f *FileInfo) NewLine(content string) *LineInfo {
+	lineno := len(f.Lines) + 1
 	info := &LineInfo{
 		Content: content,
 		Line:    lineno,
@@ -39,9 +42,9 @@ func (f *FileInfo) NewLine(content string, lineno int) *LineInfo {
 	return info
 }
 
-func (l *LineInfo) NewToken(column int, length int, content string) *TokenInfo {
+func (l *LineInfo) NewToken(start int, length int, content string) *TokenInfo {
 	info := &TokenInfo{
-		Column:  column,
+		Column:  start,
 		Length:  length,
 		Content: content,
 		Line:    l,
@@ -49,4 +52,10 @@ func (l *LineInfo) NewToken(column int, length int, content string) *TokenInfo {
 
 	l.Tokens = append(l.Tokens, info)
 	return info
+}
+
+func (t *TokenInfo) String() string {
+	return fmt.Sprintf("Token{%s, %s:%d:%d}",
+		t.Content, t.Line.File.Filename, t.Line.Line, t.Column,
+	)
 }
