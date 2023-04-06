@@ -69,7 +69,7 @@ Macauqe has 9 keywords:
   - `null`: a special value that represents nothing.
   - `true` and `false`: boolean values literals.
 
-### Operators and punctuators
+### Operators and punctuation
 
 #### In original Monkey language
 Unary operators:
@@ -80,7 +80,7 @@ Binary operators:
   - `+`, `-`, `*`, `/`: arithmetic operators.
   - `==`, `!=`, `<`, `>`: comparison operators.
 
-Other punctuators:
+Other punctuation:
   - `(`, `)`: parentheses, use for function calls and grouping.
   - `{`, `}`: curly braces, use for blocks and hash literals.
   - `[`, `]`: square brackets, use for indexing and array literals.
@@ -91,8 +91,8 @@ Other punctuators:
   - `:`: delimiter for key-value pairs in hash literals.
  
 #### New in Macaque language
-Following operators and punctuators are new introduced in Macaque language, to
-make them easier to understand, I choose C-style operators and punctuators.
+Following operators and punctuation are new introduced in Macaque language, to
+make them easier to understand, I choose C-style operators and punctuation.
   - `&&`, `||`: logical AND and OR.
   - `~`, `&`, `|`, `^`: bitwise NOT, AND, OR and XOR.
   - `%`: modulus.
