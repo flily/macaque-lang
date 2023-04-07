@@ -83,7 +83,7 @@ func (s *RecursiveScanner) makeCurrentPosition(content string) *token.TokenInfo 
 }
 
 func (s *RecursiveScanner) Scan() (*LexicalElement, error) {
-	return s.scan_state_init()
+	return s.scanStateInit()
 }
 
 func (s *RecursiveScanner) EOF() bool {
@@ -129,7 +129,7 @@ func (s *RecursiveScanner) shift(length ...int) int {
 	return l
 }
 
-func (s *RecursiveScanner) skip_whitespace() {
+func (s *RecursiveScanner) skipWhitespace() {
 	length := len(s.source)
 	for s.index < length {
 		switch s.source[s.index] {
@@ -156,32 +156,32 @@ func (s *RecursiveScanner) peek(content string) bool {
 	return true
 }
 
-func (s *RecursiveScanner) scan_state_init() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 	var elem *LexicalElement
 	var err error
 
-	s.skip_whitespace()
+	s.skipWhitespace()
 	c := s.currentChar()
 	switch {
 	case IsDigit(c):
-		elem, err = s.scan_element_number()
+		elem, err = s.scanElementNumber()
 
 	case IsUpper(c) || IsLower(c) || c == '_':
-		elem, err = s.scan_element_identifier_or_keyword()
+		elem, err = s.scanElementIdentifierOrKeyword()
 	}
 
 	return elem, err
 }
 
-func (s *RecursiveScanner) scan_element_number() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementNumber() (*LexicalElement, error) {
 	if s.peek("0x") {
-		return s.scan_element_hexdecimal()
+		return s.scanElementHexdecimal()
 	}
 
-	return s.scan_element_decimal()
+	return s.scanElementDecimal()
 }
 
-func (s *RecursiveScanner) scan_element_hexdecimal() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementHexdecimal() (*LexicalElement, error) {
 	start := s.index
 	// ensure the first two characters are "0x"
 	s.shift(2)
@@ -205,7 +205,7 @@ func (s *RecursiveScanner) scan_element_hexdecimal() (*LexicalElement, error) {
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scan_element_decimal() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementDecimal() (*LexicalElement, error) {
 	start := s.index
 	for !s.EOF() {
 		c := s.currentChar()
@@ -214,7 +214,7 @@ func (s *RecursiveScanner) scan_element_decimal() (*LexicalElement, error) {
 		} else {
 			if c == '.' {
 				s.shift()
-				return s.scan_element_float(start)
+				return s.scanElementFloat(start)
 			}
 
 			break
@@ -230,7 +230,7 @@ func (s *RecursiveScanner) scan_element_decimal() (*LexicalElement, error) {
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scan_element_float(start int) (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementFloat(start int) (*LexicalElement, error) {
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsDigit(c) || c == '_' {
@@ -249,7 +249,7 @@ func (s *RecursiveScanner) scan_element_float(start int) (*LexicalElement, error
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scan_element_identifier_or_keyword() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, error) {
 	start := s.index
 	for !s.EOF() {
 		c := s.currentChar()
