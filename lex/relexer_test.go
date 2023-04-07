@@ -1,6 +1,7 @@
 package lex
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/flily/macaque-lang/token"
@@ -115,4 +116,48 @@ func TestScannerAppend(t *testing.T) {
 	}
 
 	checkTokenScan(t, lex, expected)
+}
+
+func TestScanStrings(t *testing.T) {
+	code := ` "foobar"
+		"foo\nbar\""
+		"c+\x2b"`
+
+	expected := []expectedTokenInfo{
+		{token.String, "\"foobar\"", 1, 2},
+		{token.String, "\"foo\\nbar\\\"\"", 2, 3},
+		{token.String, "\"c+\\x2b\"", 3, 3},
+	}
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	checkTokenScan(t, lex, expected)
+}
+
+func TestScanStringErrorOnInvalidHexdecimalEscape(t *testing.T) {
+	code := `"foo\x2"`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem, err := lex.Scan()
+	if err == nil {
+		t.Fatal("Scan() should fail")
+	}
+
+	expected := strings.Join([]string{
+		`"foo\x2"`,
+		`      ^^`,
+		`      invalid escape sequence: \x2"`,
+		`  at testcase:1:7`,
+	}, "\n")
+
+	if err.Error() != expected {
+		t.Errorf("got wrong error message, got:\n%v", err)
+	}
+
+	if elem != nil {
+		t.Errorf("Scan() should return nil, got: %v", elem)
+	}
 }

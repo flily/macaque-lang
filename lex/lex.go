@@ -6,10 +6,7 @@ import (
 )
 
 var (
-	ErrScannerHasContentAlready = errors.NewError(errors.LexicalError, "scanner has content already")
-	InvalidLexicalElement       = &LexicalElement{
-		Token: token.Illegal,
-	}
+	ErrScannerHasContentAlready = errors.NewError(errors.ErrScannerError, "scanner has content already")
 )
 
 type LexicalElement struct {

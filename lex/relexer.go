@@ -1,6 +1,7 @@
 package lex
 
 import (
+	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -90,13 +91,26 @@ func (s *RecursiveScanner) EOF() bool {
 	return s.index >= len(s.source)
 }
 
+func (s *RecursiveScanner) makeCurrentCodeContext(length int) *errors.CodeContext {
+	line := s.FileInfo.Lines[s.line-1]
+	ctx := &errors.CodeContext{
+		Filename:  s.FileInfo.Filename,
+		Line:      line.Content,
+		NumLine:   s.line,
+		NumColumn: s.column,
+		Length:    length,
+	}
+
+	return ctx
+}
+
 func (s *RecursiveScanner) currentChar() byte {
 	return s.source[s.index]
 }
 
-// func (s *RecursiveScanner) peekChar() byte {
-// 	return s.source[s.index+1]
-// }
+func (s *RecursiveScanner) peekChar(offset int) byte {
+	return s.source[s.index+offset]
+}
 
 func (s *RecursiveScanner) shift_one() int {
 	if s.EOF() {
@@ -168,6 +182,11 @@ func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 
 	case IsUpper(c) || IsLower(c) || c == '_':
 		elem, err = s.scanElementIdentifierOrKeyword()
+
+	case IsPunct(c) && c != '"':
+
+	case c == '"':
+		elem, err = s.scanStateString()
 	}
 
 	return elem, err
@@ -265,6 +284,52 @@ func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, er
 
 	elem := &LexicalElement{
 		Token:    tokenType,
+		Content:  content,
+		Position: s.makeCurrentPosition(content),
+	}
+
+	return elem, nil
+}
+
+func (s *RecursiveScanner) scanStateString() (*LexicalElement, error) {
+	start := s.index
+	s.shift() // include the first '"'
+
+StringLoop:
+	for !s.EOF() {
+		c := s.currentChar()
+		s.shift()
+		switch c {
+		case '"':
+			break StringLoop
+
+		case '\\':
+			n := s.currentChar()
+			switch n {
+			case '\\', 'n', 'r', 't', '"':
+				s.shift()
+
+			case 'x':
+				s.shift()
+				n1 := s.currentChar()
+				n2 := s.peekChar(1)
+				if IsHexDigit(n1) && IsHexDigit(n2) {
+					s.shift(2)
+				} else {
+					ctx := s.makeCurrentCodeContext(2)
+					return nil, ctx.NewSyntaxError("invalid escape sequence: \\x%c%c", n1, n2)
+				}
+
+			default:
+				ctx := s.makeCurrentCodeContext(2)
+				return nil, ctx.NewSyntaxError("invalid escape sequence: \\%c", n)
+			}
+		}
+	}
+
+	content := s.ReadContentSlice(start)
+	elem := &LexicalElement{
+		Token:    token.String,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
 	}

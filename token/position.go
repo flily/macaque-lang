@@ -1,6 +1,10 @@
 package token
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/flily/macaque-lang/errors"
+)
 
 type FileInfo struct {
 	Filename string
@@ -79,4 +83,15 @@ func (t *TokenInfo) String() string {
 	return fmt.Sprintf("Token{%s, %s:%d:%d}",
 		t.Content, t.Line.File.Filename, line, column,
 	)
+}
+
+func (t *TokenInfo) MakeContext() *errors.CodeContext {
+	ctx := &errors.CodeContext{
+		Filename:  t.Line.File.Filename,
+		NumLine:   t.GetLineNumber(),
+		NumColumn: t.GetColumnNumber(),
+		Line:      t.Line.Content,
+	}
+
+	return ctx
 }
