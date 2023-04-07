@@ -54,8 +54,29 @@ func (l *LineInfo) NewToken(start int, length int, content string) *TokenInfo {
 	return info
 }
 
+// GetLineNumber returns the line number of the token in source file.
+// Line number starts from 1.
+func (t *TokenInfo) GetLineNumber() int {
+	return t.Line.Line
+}
+
+// GetColumnNumber returns the column number of the token in source file.
+// Column number starts from 1.
+func (t *TokenInfo) GetColumnNumber() int {
+	return t.Column
+}
+
+// GetPosition returns the line number and column number of the token in source file.
+func (t *TokenInfo) GetPosition() (int, int) {
+	line := t.GetLineNumber()
+	column := t.GetColumnNumber()
+
+	return line, column
+}
+
 func (t *TokenInfo) String() string {
+	line, column := t.GetPosition()
 	return fmt.Sprintf("Token{%s, %s:%d:%d}",
-		t.Content, t.Line.File.Filename, t.Line.Line, t.Column,
+		t.Content, t.Line.File.Filename, line, column,
 	)
 }

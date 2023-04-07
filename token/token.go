@@ -183,3 +183,25 @@ func (t Token) IsOperator() bool {
 func (t Token) IsPunctuation() bool {
 	return t > punctuationBegin && t < punctuationEnd
 }
+
+var keywordMap = map[string]Token{
+	SLet:    Let,
+	SFn:     Fn,
+	SReturn: Return,
+	SIf:     If,
+	SElse:   Else,
+	SImport: Import,
+	SNull:   Null,
+	SFalse:  False,
+	STrue:   True,
+}
+
+// CheckKeywordToken returns keyword token when the given string is keyword,
+// otherwise returns Identifier.
+func CheckKeywordToken(s string) Token {
+	if v, ok := keywordMap[s]; ok {
+		return v
+	}
+
+	return Identifier
+}

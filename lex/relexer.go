@@ -72,6 +72,7 @@ func (s *RecursiveScanner) Append(data []byte) {
 	}
 
 	s.source = append(s.source, data...)
+	s.source = append(s.source, '\n')
 }
 
 func (s *RecursiveScanner) makeCurrentPosition(content string) *token.TokenInfo {
@@ -162,8 +163,11 @@ func (s *RecursiveScanner) scan_state_init() (*LexicalElement, error) {
 	s.skip_whitespace()
 	c := s.currentChar()
 	switch {
-	case c >= '0' && c <= '9':
+	case IsDigit(c):
 		elem, err = s.scan_element_number()
+
+	case IsUpper(c) || IsLower(c) || c == '_':
+		elem, err = s.scan_element_identifier_or_keyword()
 	}
 
 	return elem, err
@@ -242,5 +246,28 @@ func (s *RecursiveScanner) scan_element_float(start int) (*LexicalElement, error
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
 	}
+	return elem, nil
+}
+
+func (s *RecursiveScanner) scan_element_identifier_or_keyword() (*LexicalElement, error) {
+	start := s.index
+	for !s.EOF() {
+		c := s.currentChar()
+		if IsUpper(c) || IsLower(c) || IsDigit(c) || c == '_' {
+			s.shift()
+		} else {
+			break
+		}
+	}
+
+	content := s.ReadContentSlice(start)
+	tokenType := token.CheckKeywordToken(content)
+
+	elem := &LexicalElement{
+		Token:    tokenType,
+		Content:  content,
+		Position: s.makeCurrentPosition(content),
+	}
+
 	return elem, nil
 }

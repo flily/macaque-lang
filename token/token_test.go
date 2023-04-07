@@ -69,3 +69,28 @@ func TestTokenType(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckKeywordToken(t *testing.T) {
+	tests := []struct {
+		token    string
+		expected Token
+	}{
+		{SLet, Let},
+		{SReturn, Return},
+		{SFn, Fn},
+		{SIf, If},
+		{SElse, Else},
+		{SImport, Import},
+		{SNull, Null},
+		{SFalse, False},
+		{STrue, True},
+		{"foobar", Identifier},
+	}
+
+	for _, c := range tests {
+		token := CheckKeywordToken(c.token)
+		if token != c.expected {
+			t.Errorf("wrong token of %s, expected %s, got %s", c.token, c.expected, token)
+		}
+	}
+}
