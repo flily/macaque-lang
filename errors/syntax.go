@@ -20,15 +20,17 @@ func (c *CodeContext) NewSyntaxError(format string, args ...interface{}) *Syntax
 }
 
 type SyntaxError struct {
-	Base    *BaseError
-	Message string
+	BaseError
 	Context *CodeContext
 }
 
 func NewSyntaxError(context *CodeContext, format string, args ...interface{}) *SyntaxError {
 	e := &SyntaxError{
-		Base:    ErrSyntaxError,
-		Message: fmt.Sprintf(format, args...),
+		BaseError: BaseError{
+			Kind:    ErrCodeSyntaxError,
+			Message: fmt.Sprintf(format, args...),
+			Base:    ErrSyntaxError,
+		},
 		Context: context,
 	}
 
