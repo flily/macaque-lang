@@ -94,3 +94,43 @@ func TestCheckKeywordToken(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckOperatorToken(t *testing.T) {
+	tests := []struct {
+		token    string
+		expected Token
+	}{
+		{"+", Plus},
+		{"-", Minus},
+		{"*", Asterisk},
+		{"/", Slash},
+		{"!", Bang},
+		{"==", EQ},
+		{"!=", NE},
+		{"<", LT},
+		{"<=", LE},
+		{">", GT},
+		{">=", GE},
+		{"&&", AND},
+		{"||", OR},
+		{"=", Assign},
+		{".", Period},
+		{",", Comma},
+		{":", Colon},
+		{";", Semicolon},
+		{"(", LParen},
+		{")", RParen},
+		{"{", LBrace},
+		{"}", RBrace},
+		{"[", LBracket},
+		{"]", RBracket},
+		{"foobar", Illegal},
+	}
+
+	for _, c := range tests {
+		token := CheckOperatorToken(c.token)
+		if token != c.expected {
+			t.Errorf("wrong token of %s, expected %s, got %s", c.token, c.expected, token)
+		}
+	}
+}

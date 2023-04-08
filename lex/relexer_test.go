@@ -161,3 +161,24 @@ func TestScanStringErrorOnInvalidHexdecimalEscape(t *testing.T) {
 		t.Errorf("Scan() should return nil, got: %v", elem)
 	}
 }
+
+func TestScanPunctuations(t *testing.T) {
+	code := `(){}[];,.`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	expected := []expectedTokenInfo{
+		{token.LParen, "(", 1, 1},
+		{token.RParen, ")", 1, 2},
+		{token.LBrace, "{", 1, 3},
+		{token.RBrace, "}", 1, 4},
+		{token.LBracket, "[", 1, 5},
+		{token.RBracket, "]", 1, 6},
+		{token.Semicolon, ";", 1, 7},
+		{token.Comma, ",", 1, 8},
+		{token.Period, ".", 1, 9},
+	}
+
+	checkTokenScan(t, lex, expected)
+}

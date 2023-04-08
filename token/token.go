@@ -205,3 +205,46 @@ func CheckKeywordToken(s string) Token {
 
 	return Identifier
 }
+
+var operatorMap = map[string]Token{
+	SBang:         Bang,
+	SPlus:         Plus,
+	SMinus:        Minus,
+	SAsterisk:     Asterisk,
+	SSlash:        Slash,
+	SEQ:           EQ,
+	SNE:           NE,
+	SLT:           LT,
+	SGT:           GT,
+	SModulo:       Modulo,
+	SLE:           LE,
+	SGE:           GE,
+	SAND:          AND,
+	SOR:           OR,
+	SBITAND:       BITAND,
+	SBITOR:        BITOR,
+	SBITXOR:       BITXOR,
+	SBITNOT:       BITNOT,
+	SAssign:       Assign,
+	SComma:        Comma,
+	SPeriod:       Period,
+	SColon:        Colon,
+	SSemicolon:    Semicolon,
+	SLParen:       LParen,
+	SRParen:       RParen,
+	SLBrace:       LBrace,
+	SRBrace:       RBrace,
+	SLBracket:     LBracket,
+	SRBracket:     RBracket,
+	SCommentStart: CommentStart,
+}
+
+// CheckOperatorToken returns operator token when the given string is operator,
+// otherwise returns Illegal.
+func CheckOperatorToken(s string) Token {
+	if v, ok := operatorMap[s]; ok {
+		return v
+	}
+
+	return Illegal
+}

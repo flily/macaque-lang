@@ -184,6 +184,7 @@ func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 		elem, err = s.scanElementIdentifierOrKeyword()
 
 	case IsPunct(c) && c != '"':
+		elem, err = s.scanStatePunctuation()
 
 	case c == '"':
 		elem, err = s.scanStateString()
@@ -335,4 +336,64 @@ StringLoop:
 	}
 
 	return elem, nil
+}
+
+func (s *RecursiveScanner) makeForwardLexicalElement(length int) *LexicalElement {
+	start := s.index
+	s.shift(length)
+	content := s.ReadContentSlice(start)
+	elem := &LexicalElement{
+		Token:    token.CheckOperatorToken(content),
+		Content:  content,
+		Position: s.makeCurrentPosition(content),
+	}
+
+	return elem
+}
+
+func (s *RecursiveScanner) tryScanPunctuations(ps ...string) *LexicalElement {
+	for _, p := range ps {
+		if s.peek(p) {
+			return s.makeForwardLexicalElement(len(p))
+		}
+	}
+
+	return nil
+}
+
+var multiBytesPunctutations = []string{
+	token.SEQ, token.SAssign,
+	token.SNE, token.SBang,
+	token.SGE, token.SGT,
+	token.SLE, token.SLT,
+}
+
+func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {
+	var elem *LexicalElement
+	var err error
+
+	if s.peek("//") {
+		s.skipStateComment()
+	}
+
+	c := s.currentChar()
+	elem = s.tryScanPunctuations(multiBytesPunctutations...)
+	if elem != nil {
+		return elem, nil
+	}
+
+	tokenType := token.CheckOperatorToken(string(c))
+	if tokenType != token.Illegal {
+		elem = s.makeForwardLexicalElement(1)
+
+	} else {
+		ctx := s.makeCurrentCodeContext(1)
+		err = ctx.NewSyntaxError("unknown operator '%c'", c)
+	}
+
+	return elem, err
+}
+
+func (s *RecursiveScanner) skipStateComment() {
+
 }
