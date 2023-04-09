@@ -1,8 +1,10 @@
 package lex
 
 import (
-	"strings"
 	"testing"
+
+	"io"
+	"strings"
 
 	"github.com/flily/macaque-lang/token"
 )
@@ -83,6 +85,32 @@ func TestScanNumber(t *testing.T) {
 	}
 
 	checkTokenScan(t, lex, expected)
+}
+
+func TestReadEOF(t *testing.T) {
+	code := `42
+		3.1415926
+		0xdeadbeef  `
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	expected := []expectedTokenInfo{
+		{token.Integer, "42", 1, 1},
+		{token.Float, "3.1415926", 2, 3},
+		{token.Integer, "0xdeadbeef", 3, 3},
+	}
+
+	checkTokenScan(t, lex, expected)
+
+	elem, err := lex.Scan()
+	if elem != nil {
+		t.Errorf("Scan() after EOF should return nil, got: %v", elem)
+	}
+
+	if err != io.EOF {
+		t.Errorf("Scan() after EOF should return io.EOF, got: %v", err)
+	}
 }
 
 func TestScanIdentifierAndKeyworkd(t *testing.T) {

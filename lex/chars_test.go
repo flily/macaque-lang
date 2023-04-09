@@ -1,6 +1,8 @@
 package lex
 
-import "testing"
+import (
+	"testing"
+)
 
 func inBytesSet(c byte, set []byte) bool {
 	for _, v := range set {

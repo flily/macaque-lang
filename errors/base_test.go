@@ -1,8 +1,9 @@
 package errors
 
 import (
-	"io"
 	"testing"
+
+	"io"
 )
 
 func TestBaseErrorMessage(t *testing.T) {

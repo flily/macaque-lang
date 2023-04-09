@@ -19,6 +19,13 @@ func (c *CodeContext) NewSyntaxError(format string, args ...interface{}) *Syntax
 	return NewSyntaxError(c, format, args...)
 }
 
+func (c *CodeContext) MakeHighlight() string {
+	leadingSpaces := strings.Repeat(" ", c.NumColumn-1)
+	highlight := strings.Repeat("^", c.Length)
+
+	return leadingSpaces + highlight
+}
+
 type SyntaxError struct {
 	BaseError
 	Context *CodeContext
@@ -39,10 +46,10 @@ func NewSyntaxError(context *CodeContext, format string, args ...interface{}) *S
 
 func (e *SyntaxError) Error() string {
 	leadingSpaces := strings.Repeat(" ", e.Context.NumColumn-1)
-	highlight := strings.Repeat("^", e.Context.Length)
+	highlight := e.Context.MakeHighlight()
 	lines := []string{
 		e.Context.Line,
-		leadingSpaces + highlight,
+		highlight,
 		leadingSpaces + e.Message,
 		fmt.Sprintf("  at %s:%d:%d", e.Context.Filename, e.Context.NumLine, e.Context.NumColumn),
 	}

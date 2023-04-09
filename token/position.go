@@ -91,6 +91,7 @@ func (t *TokenInfo) MakeContext() *errors.CodeContext {
 		NumLine:   t.GetLineNumber(),
 		NumColumn: t.GetColumnNumber(),
 		Line:      t.Line.Content,
+		Length:    t.Length,
 	}
 
 	return ctx

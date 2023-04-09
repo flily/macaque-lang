@@ -125,6 +125,7 @@ var displayName = [...]string{
 	Import:       "IMPORT",
 	Bang:         "!",
 	Plus:         "+",
+	Minus:        "-",
 	Asterisk:     "*",
 	Slash:        "/",
 	EQ:           "==",

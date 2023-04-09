@@ -1,6 +1,8 @@
 package lex
 
 import (
+	"io"
+
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/token"
 )
@@ -175,6 +177,10 @@ func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 	var err error
 
 	s.skipWhitespace()
+	if s.EOF() {
+		return nil, io.EOF
+	}
+
 	c := s.currentChar()
 	switch {
 	case IsDigit(c):
@@ -341,9 +347,11 @@ StringLoop:
 func (s *RecursiveScanner) makeForwardLexicalElement(length int) *LexicalElement {
 	start := s.index
 	s.shift(length)
+
 	content := s.ReadContentSlice(start)
+	tokenType := token.CheckOperatorToken(content)
 	elem := &LexicalElement{
-		Token:    token.CheckOperatorToken(content),
+		Token:    tokenType,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
 	}

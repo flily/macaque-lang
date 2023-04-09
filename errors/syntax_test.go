@@ -1,8 +1,9 @@
 package errors
 
 import (
-	"strings"
 	"testing"
+
+	"strings"
 )
 
 func TestSyntaxErrorMessage(t *testing.T) {
