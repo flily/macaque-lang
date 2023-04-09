@@ -89,6 +89,10 @@ func (s *RecursiveScanner) Scan() (*LexicalElement, error) {
 	return s.scanStateInit()
 }
 
+func (s *RecursiveScanner) charsLeft() int {
+	return len(s.source) - s.index
+}
+
 func (s *RecursiveScanner) EOF() bool {
 	return s.index >= len(s.source)
 }
@@ -114,10 +118,9 @@ func (s *RecursiveScanner) peekChar(offset int) byte {
 	return s.source[s.index+offset]
 }
 
-func (s *RecursiveScanner) shift_one() int {
-	if s.EOF() {
-		return 0
-	}
+func (s *RecursiveScanner) shift_one() {
+	// Check EOF every time before calling shift() and shift_one()
+	// unnecessary to check EOF here
 
 	c := s.currentChar()
 	s.index++
@@ -126,35 +129,32 @@ func (s *RecursiveScanner) shift_one() int {
 		s.line++
 		s.column = 1
 	}
-
-	return 1
 }
 
-func (s *RecursiveScanner) shift(length ...int) int {
-	if len(length) <= 0 {
-		return s.shift_one()
+func (s *RecursiveScanner) shift(length int) {
+	// length is checked before calling shift()
+	i := 0
+	for i = 0; i < length; i++ {
+		s.shift_one()
 	}
-
-	l := length[0]
-	for i := 0; i < l; i++ {
-		if ok := s.shift_one(); ok <= 0 {
-			break
-		}
-	}
-
-	return l
 }
 
-func (s *RecursiveScanner) skipWhitespace() {
-	length := len(s.source)
-	for s.index < length {
+func (s *RecursiveScanner) skipWhitespace() int {
+	i := 0
+
+SkipWhitespace:
+	for !s.EOF() {
 		switch s.source[s.index] {
 		case ' ', '\t', '\r', '\n':
-			s.shift()
+			s.shift(1)
+			i += 1
+
 		default:
-			return
+			break SkipWhitespace
 		}
 	}
+
+	return i
 }
 
 func (s *RecursiveScanner) peek(content string) bool {
@@ -215,7 +215,8 @@ func (s *RecursiveScanner) scanElementHexdecimal() (*LexicalElement, error) {
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsHexDigit(c) || c == '_' {
-			s.shift()
+			s.shift(1)
+
 		} else {
 			break
 		}
@@ -236,10 +237,11 @@ func (s *RecursiveScanner) scanElementDecimal() (*LexicalElement, error) {
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsDigit(c) || c == '_' {
-			s.shift()
+			s.shift(1)
+
 		} else {
 			if c == '.' {
-				s.shift()
+				s.shift(1)
 				return s.scanElementFloat(start)
 			}
 
@@ -260,7 +262,8 @@ func (s *RecursiveScanner) scanElementFloat(start int) (*LexicalElement, error) 
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsDigit(c) || c == '_' {
-			s.shift()
+			s.shift(1)
+
 		} else {
 			break
 		}
@@ -280,7 +283,8 @@ func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, er
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsUpper(c) || IsLower(c) || IsDigit(c) || c == '_' {
-			s.shift()
+			s.shift(1)
+
 		} else {
 			break
 		}
@@ -300,28 +304,40 @@ func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, er
 
 func (s *RecursiveScanner) scanStateString() (*LexicalElement, error) {
 	start := s.index
-	s.shift() // include the first '"'
+	s.shift(1) // include the first '"'
 
 StringLoop:
 	for !s.EOF() {
 		c := s.currentChar()
-		s.shift()
+		s.shift(1)
+
 		switch c {
 		case '"':
 			break StringLoop
 
 		case '\\':
+			if s.EOF() {
+				ctx := s.makeCurrentCodeContext(1)
+				return nil, ctx.NewSyntaxError("unexpected EOF")
+			}
+
 			n := s.currentChar()
 			switch n {
 			case '\\', 'n', 'r', 't', '"':
-				s.shift()
+				s.shift(1)
 
 			case 'x':
-				s.shift()
+				s.shift(1)
+				if charsLeft := s.charsLeft(); charsLeft < 2 {
+					ctx := s.makeCurrentCodeContext(charsLeft + 1)
+					return nil, ctx.NewSyntaxError("insufficient characters for escape sequence")
+				}
+
 				n1 := s.currentChar()
 				n2 := s.peekChar(1)
 				if IsHexDigit(n1) && IsHexDigit(n2) {
 					s.shift(2)
+
 				} else {
 					ctx := s.makeCurrentCodeContext(2)
 					return nil, ctx.NewSyntaxError("invalid escape sequence: \\x%c%c", n1, n2)
@@ -412,7 +428,7 @@ func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
 			break
 		}
 
-		s.shift()
+		s.shift(1)
 	}
 
 	content := s.ReadContentSlice(start)

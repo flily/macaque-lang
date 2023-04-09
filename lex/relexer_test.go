@@ -113,6 +113,32 @@ func TestReadEOF(t *testing.T) {
 	}
 }
 
+func TestReadTokenAtTheEnd(t *testing.T) {
+	code := `42
+		3.1415926
+		0xdeadbeef`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	expected := []expectedTokenInfo{
+		{token.Integer, "42", 1, 1},
+		{token.Float, "3.1415926", 2, 3},
+		{token.Integer, "0xdeadbeef", 3, 3},
+	}
+
+	checkTokenScan(t, lex, expected)
+
+	elem, err := lex.Scan()
+	if elem != nil {
+		t.Errorf("Scan() after EOF should return nil, got: %v", elem)
+	}
+
+	if err != io.EOF {
+		t.Errorf("Scan() after EOF should return io.EOF, got: %v", err)
+	}
+}
+
 func TestScanIdentifierAndKeyworkd(t *testing.T) {
 	code := `foobar
 		if foo else bar return
@@ -210,6 +236,60 @@ func TestScanStringErrorOnInvalidEscape(t *testing.T) {
 		`     ^`,
 		`     invalid escape sequence: \z`,
 		`  at testcase:1:6`,
+	}, "\n")
+
+	if err.Error() != expected {
+		t.Errorf("got wrong error message, got:\n%v", err)
+	}
+}
+
+func TestStringEscapeAtTheEnd1(t *testing.T) {
+	code := `"the quick brown fox\`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem, err := lex.Scan()
+	if elem != nil {
+		t.Fatalf("Scan() should return nil, got: %v", elem)
+	}
+
+	if err == nil {
+		t.Fatal("Scan() should fail")
+	}
+
+	expected := strings.Join([]string{
+		`"the quick brown fox\`,
+		`                     ^`,
+		`                     unexpected EOF`,
+		`  at testcase:1:22`,
+	}, "\n")
+
+	if err.Error() != expected {
+		t.Errorf("got wrong error message, got:\n%v", err)
+	}
+}
+
+func TestStringEscapeAtTheEnd2(t *testing.T) {
+	code := `"the quick brown fox\x2`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem, err := lex.Scan()
+	if elem != nil {
+		t.Fatalf("Scan() should return nil, got: %v", elem)
+	}
+
+	if err == nil {
+		t.Fatal("Scan() should fail")
+	}
+
+	expected := strings.Join([]string{
+		`"the quick brown fox\x2`,
+		`                      ^^`,
+		`                      insufficient characters for escape sequence`,
+		`  at testcase:1:23`,
 	}, "\n")
 
 	if err.Error() != expected {
