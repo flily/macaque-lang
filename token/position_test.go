@@ -51,4 +51,25 @@ func TestInfo(t *testing.T) {
 	if t1.String() != "Token{the, sample.txt:1:1}" {
 		t.Errorf("t1.String() is %s, expected %s", t1.String(), "Token{the, sample.txt:1:1}")
 	}
+
+	ctx1 := t1.MakeContext()
+	if ctx1.Filename != "sample.txt" {
+		t.Errorf("ctx1.Filename is %s, expected %s", ctx1.Filename, "sample.txt")
+	}
+
+	if ctx1.Line != "the quick brown fox" {
+		t.Errorf("ctx1.Line is %s, expected %s", ctx1.Line, "the quick brown fox")
+	}
+
+	if ctx1.NumLine != 1 {
+		t.Errorf("ctx1.NumLine is %d, expected %d", ctx1.NumLine, 1)
+	}
+
+	if ctx1.NumColumn != 1 {
+		t.Errorf("ctx1.NumColumn is %d, expected %d", ctx1.NumColumn, 1)
+	}
+
+	if ctx1.Length != 3 {
+		t.Errorf("ctx1.Length is %d, expected %d", ctx1.Length, 3)
+	}
 }
