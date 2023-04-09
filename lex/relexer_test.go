@@ -142,6 +142,10 @@ func TestScanStringErrorOnInvalidHexdecimalEscape(t *testing.T) {
 	_ = lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
+	if elem != nil {
+		t.Fatalf("Scan() should return nil, got: %v", elem)
+	}
+
 	if err == nil {
 		t.Fatal("Scan() should fail")
 	}
@@ -156,14 +160,38 @@ func TestScanStringErrorOnInvalidHexdecimalEscape(t *testing.T) {
 	if err.Error() != expected {
 		t.Errorf("got wrong error message, got:\n%v", err)
 	}
+}
 
+func TestScanStringErrorOnInvalidEscape(t *testing.T) {
+	code := `"foo\z"`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem, err := lex.Scan()
 	if elem != nil {
-		t.Errorf("Scan() should return nil, got: %v", elem)
+		t.Fatalf("Scan() should return nil, got: %v", elem)
+	}
+
+	if err == nil {
+		t.Fatal("Scan() should fail")
+	}
+
+	expected := strings.Join([]string{
+		`"foo\z"`,
+		`     ^`,
+		`     invalid escape sequence: \z`,
+		`  at testcase:1:6`,
+	}, "\n")
+
+	if err.Error() != expected {
+		t.Errorf("got wrong error message, got:\n%v", err)
 	}
 }
 
 func TestScanPunctuations(t *testing.T) {
-	code := `(){}[];,.`
+	code := `(){}[];,.
+	=== !=== <= >=`
 
 	lex := NewRecursiveScanner("testcase")
 	_ = lex.SetContent([]byte(code))
@@ -178,7 +206,45 @@ func TestScanPunctuations(t *testing.T) {
 		{token.Semicolon, ";", 1, 7},
 		{token.Comma, ",", 1, 8},
 		{token.Period, ".", 1, 9},
+		{token.EQ, "==", 2, 2},
+		{token.Assign, "=", 2, 4},
+		{token.NE, "!=", 2, 6},
+		{token.EQ, "==", 2, 8},
+		{token.LE, "<=", 2, 11},
+		{token.GE, ">=", 2, 14},
 	}
 
 	checkTokenScan(t, lex, expected)
+}
+
+func TestScanPunctuationError(t *testing.T) {
+	code := ` =#`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem1, err := lex.Scan()
+	if elem1 == nil || err != nil {
+		t.Fatalf("Scan() failed: elem=%v err=%v", elem1, err)
+	}
+
+	elem2, err := lex.Scan()
+	if elem2 != nil {
+		t.Fatalf("unexpected elem2: %v", elem2)
+	}
+
+	if err == nil {
+		t.Fatal("Scan() should fail")
+	}
+
+	expected := strings.Join([]string{
+		` =#`,
+		`  ^`,
+		`  unknown operator '#'`,
+		`  at testcase:1:3`,
+	}, "\n")
+
+	if err.Error() != expected {
+		t.Errorf("got wrong error message, got:\n%v", err)
+	}
 }

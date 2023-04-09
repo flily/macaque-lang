@@ -322,7 +322,7 @@ StringLoop:
 				}
 
 			default:
-				ctx := s.makeCurrentCodeContext(2)
+				ctx := s.makeCurrentCodeContext(1)
 				return nil, ctx.NewSyntaxError("invalid escape sequence: \\%c", n)
 			}
 		}
