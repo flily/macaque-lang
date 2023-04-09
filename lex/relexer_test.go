@@ -191,7 +191,8 @@ func TestScanStringErrorOnInvalidEscape(t *testing.T) {
 
 func TestScanPunctuations(t *testing.T) {
 	code := `(){}[];,.
-	=== !=== <= >=`
+	=== !=== <= >=
+	/-*+`
 
 	lex := NewRecursiveScanner("testcase")
 	_ = lex.SetContent([]byte(code))
@@ -212,6 +213,10 @@ func TestScanPunctuations(t *testing.T) {
 		{token.EQ, "==", 2, 8},
 		{token.LE, "<=", 2, 11},
 		{token.GE, ">=", 2, 14},
+		{token.Slash, "/", 3, 2},
+		{token.Minus, "-", 3, 3},
+		{token.Asterisk, "*", 3, 4},
+		{token.Plus, "+", 3, 5},
 	}
 
 	checkTokenScan(t, lex, expected)
