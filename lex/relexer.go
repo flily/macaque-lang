@@ -373,7 +373,7 @@ func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {
 	var err error
 
 	if s.peek("//") {
-		s.skipStateComment()
+		return s.scanStateComment()
 	}
 
 	c := s.currentChar()
@@ -394,6 +394,25 @@ func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {
 	return elem, err
 }
 
-func (s *RecursiveScanner) skipStateComment() {
+func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
+	start := s.index
+	s.shift(2) // shift the first '//'
 
+	for !s.EOF() {
+		c := s.currentChar()
+		if c == '\n' {
+			break
+		}
+
+		s.shift()
+	}
+
+	content := s.ReadContentSlice(start)
+	elem := &LexicalElement{
+		Token:    token.Comment,
+		Content:  content,
+		Position: s.makeCurrentPosition(content),
+	}
+
+	return elem, nil
 }

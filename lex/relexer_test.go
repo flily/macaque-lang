@@ -248,3 +248,19 @@ func TestScanPunctuationError(t *testing.T) {
 		t.Errorf("got wrong error message, got:\n%v", err)
 	}
 }
+
+func TestScanComment(t *testing.T) {
+	code := `foorbar // a comment
+	+`
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	expected := []expectedTokenInfo{
+		{token.Identifier, "foorbar", 1, 1},
+		{token.Comment, "// a comment", 1, 9},
+		{token.Plus, "+", 2, 2},
+	}
+
+	checkTokenScan(t, lex, expected)
+}
