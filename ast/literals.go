@@ -160,3 +160,30 @@ func (h *HashLiteral) CanonicalCode() string {
 
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", \n"))
 }
+
+type FunctionLiteral struct {
+	Arguments *IdentifierList
+	Body      *BlockStatement
+}
+
+func (f *FunctionLiteral) expressionNode() {}
+
+func (f *FunctionLiteral) Children() []Node {
+	nodes := make([]Node, f.Arguments.Length()+1)
+
+	for i, arg := range f.Arguments.Identifiers {
+		nodes[i] = arg
+	}
+
+	nodes[f.Arguments.Length()] = f.Body
+	return nodes
+}
+
+func (f *FunctionLiteral) CanonicalCode() string {
+	result := fmt.Sprintf("fn(%s) %s",
+		f.Arguments.CanonicalCode(),
+		f.Body.CanonicalCode(),
+	)
+
+	return result
+}

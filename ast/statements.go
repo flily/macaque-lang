@@ -109,11 +109,14 @@ func (s *BlockStatement) Children() []Node {
 }
 
 func (s *BlockStatement) CanonicalCode() string {
-	result := make([]string, len(s.Statements))
+	length := len(s.Statements)
+	result := make([]string, length+2)
 
+	result[0] = "{"
 	for i, stmt := range s.Statements {
-		result[i] = stmt.CanonicalCode()
+		result[i+1] = stmt.CanonicalCode()
 	}
+	result[length-1] = "}"
 
 	return strings.Join(result, "\n")
 }
