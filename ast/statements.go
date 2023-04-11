@@ -90,6 +90,19 @@ func (s *IfStatement) Children() []Node {
 	return nodes
 }
 
+func (s *IfStatement) CanonicalCode() string {
+	result := fmt.Sprintf("if ( %s ) %s",
+		s.Condition.CanonicalCode(),
+		s.Consequence.CanonicalCode(),
+	)
+
+	if s.Alternative != nil {
+		result += fmt.Sprintf(" else %s", s.Alternative.CanonicalCode())
+	}
+
+	return result
+}
+
 func (s *IfStatement) blockStatementNode() {}
 
 type BlockStatement struct {
