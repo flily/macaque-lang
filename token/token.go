@@ -169,6 +169,15 @@ func (t Token) String() string {
 	return s
 }
 
+func (t Token) CodeName() string {
+	if t < 0 || t >= Token(len(displayName)) {
+		return "ILLEGAL"
+	}
+
+	s := displayName[t]
+	return s
+}
+
 func (t Token) IsLiteral() bool {
 	return t > literalBegin && t < literalEnd
 }

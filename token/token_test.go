@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestTokenStrig(t *testing.T) {
+func TestTokenString(t *testing.T) {
 	tests := []struct {
 		token    Token
 		expected string
@@ -25,6 +25,33 @@ func TestTokenStrig(t *testing.T) {
 
 	for _, c := range tests {
 		s := c.token.String()
+		if s != c.expected {
+			t.Errorf("wrong token.String() of %d, expected %s, got %s", c.token, c.expected, s)
+		}
+	}
+}
+
+func TestTokenCodeName(t *testing.T) {
+	tests := []struct {
+		token    Token
+		expected string
+	}{
+		{Illegal, "ILLEGAL"},
+		{EOF, "EOF"},
+		{Identifier, "IDENTIFIER"},
+		{Integer, "INTEGER"},
+		{Let, "LET"},
+		{Return, "RETURN"},
+		{Plus, "+"},
+		{LT, "<"},
+		{AND, "&&"},
+		{Assign, "="},
+		{Semicolon, ";"},
+		{-1, "ILLEGAL"},
+	}
+
+	for _, c := range tests {
+		s := c.token.CodeName()
 		if s != c.expected {
 			t.Errorf("wrong token.String() of %d, expected %s, got %s", c.token, c.expected, s)
 		}
