@@ -205,7 +205,7 @@ return-stmt = "return" [expression-list] ";"
 
 import-stmt = "import" string-literal ";"  ; not determined yet
 
-expression-stmt = expression ";"
+expression-stmt = expression-list ";"
 
 expression-list = expression *( "," expression ) [","]
 

@@ -11,24 +11,66 @@ type ExpressionList struct {
 	Expressions []Expression
 }
 
-func (e *ExpressionList) expressionNode() {}
+func (l *ExpressionList) expressionNode() {}
 
-func (e *ExpressionList) Children() []Node {
-	nodes := make([]Node, len(e.Expressions))
-	for i, exp := range e.Expressions {
-		nodes[i] = exp
+func (l *ExpressionList) Children() []Node {
+	nodes := make([]Node, len(l.Expressions))
+	for i, expr := range l.Expressions {
+		nodes[i] = expr
 	}
 
 	return nodes
 }
 
-func (e *ExpressionList) CanonicalCode() string {
-	elems := make([]string, len(e.Expressions))
-	for i, exp := range e.Expressions {
-		elems[i] = exp.CanonicalCode()
+func (l *ExpressionList) CanonicalCode() string {
+	elems := make([]string, len(l.Expressions))
+	for i, expr := range l.Expressions {
+		elems[i] = expr.CanonicalCode()
 	}
 
 	return strings.Join(elems, ", ")
+}
+
+func (l *ExpressionList) Length() int {
+	if l != nil {
+		return len(l.Expressions)
+	}
+
+	return 0
+}
+
+type IdentifierList struct {
+	Identifiers []*Identifier
+}
+
+func (l *IdentifierList) expressionNode() {}
+
+func (l *IdentifierList) Children() []Node {
+	nodes := make([]Node, len(l.Identifiers))
+
+	for i, id := range l.Identifiers {
+		nodes[i] = id
+	}
+
+	return nodes
+}
+
+func (l *IdentifierList) CanonicalCode() string {
+	elems := make([]string, len(l.Identifiers))
+
+	for i, id := range l.Identifiers {
+		elems[i] = id.CanonicalCode()
+	}
+
+	return strings.Join(elems, ", ")
+}
+
+func (l *IdentifierList) Length() int {
+	if l != nil {
+		return len(l.Identifiers)
+	}
+
+	return 0
 }
 
 type PrefixExpression struct {
@@ -96,47 +138,40 @@ type CallExpression struct {
 	Callable Expression
 	Colon    token.Token
 	Member   *Identifier
-	Args     []Expression
+	Args     *ExpressionList
 }
 
 func (e *CallExpression) expressionNode() {}
 
 func (e *CallExpression) Children() []Node {
-	hasMember := 1
+	elementCount := 2
 	if e.Member != nil {
-		hasMember = 2
+		elementCount = 3
 	}
 
-	nodes := make([]Node, len(e.Args)+hasMember)
+	nodes := make([]Node, elementCount)
 	nodes[0] = e.Callable
 	if e.Member != nil {
 		nodes[1] = e.Member
 	}
 
-	for i, arg := range e.Args {
-		nodes[i+hasMember] = arg
-	}
-
+	nodes[elementCount-1] = e.Args
 	return nodes
 }
 
 func (e *CallExpression) CanonicalCode() string {
-	args := make([]string, len(e.Args))
-	for i, arg := range e.Args {
-		args[i] = arg.CanonicalCode()
-	}
-
 	var result string
+
 	if e.Member != nil {
 		result = fmt.Sprintf("%s:%s(%s)",
 			e.Callable.CanonicalCode(),
 			e.Member.CanonicalCode(),
-			strings.Join(args, ", "),
+			e.Args.CanonicalCode(),
 		)
 	} else {
 		result = fmt.Sprintf("%s(%s)",
 			e.Callable.CanonicalCode(),
-			strings.Join(args, ", "),
+			e.Args.CanonicalCode(),
 		)
 	}
 
