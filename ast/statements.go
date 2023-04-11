@@ -47,6 +47,17 @@ func (s *LetStatement) CanonicalCode() string {
 	return result
 }
 
+func (s *LetStatement) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *LetStatement:
+		result = s.Identifiers.EqualTo(n.Identifiers) &&
+			s.Expressions.EqualTo(n.Expressions)
+	}
+
+	return result
+}
+
 func (s *LetStatement) lineStatementNode() {}
 
 type ReturnStatement struct {
@@ -67,6 +78,16 @@ func (s *ReturnStatement) Children() []Node {
 
 func (s *ReturnStatement) CanonicalCode() string {
 	result := fmt.Sprintf("return %s;", s.Expressions.CanonicalCode())
+	return result
+}
+
+func (s *ReturnStatement) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *ReturnStatement:
+		result = s.Expressions.EqualTo(n.Expressions)
+	}
+
 	return result
 }
 
@@ -103,6 +124,18 @@ func (s *IfStatement) CanonicalCode() string {
 	return result
 }
 
+func (s *IfStatement) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *IfStatement:
+		result = s.Condition.EqualTo(n.Condition) &&
+			s.Consequence.EqualTo(n.Consequence) &&
+			s.Alternative.EqualTo(n.Alternative)
+	}
+
+	return result
+}
+
 func (s *IfStatement) blockStatementNode() {}
 
 type BlockStatement struct {
@@ -134,6 +167,19 @@ func (s *BlockStatement) CanonicalCode() string {
 	return strings.Join(result, "\n")
 }
 
+func (s *BlockStatement) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *BlockStatement:
+		result = len(s.Statements) == len(n.Statements)
+		for i, stmt := range s.Statements {
+			result = result && stmt.EqualTo(n.Statements[i])
+		}
+	}
+
+	return result
+}
+
 func (s *BlockStatement) blockStatementNode() {}
 
 type ExpressionStatement struct {
@@ -148,6 +194,16 @@ func (s *ExpressionStatement) Children() []Node {
 
 func (s *ExpressionStatement) CanonicalCode() string {
 	return s.Expressions.CanonicalCode()
+}
+
+func (s *ExpressionStatement) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *ExpressionStatement:
+		result = s.Expressions.EqualTo(n.Expressions)
+	}
+
+	return result
 }
 
 func (s *ExpressionStatement) lineStatementNode() {}

@@ -22,6 +22,16 @@ func (i *Identifier) CanonicalCode() string {
 	return i.Value
 }
 
+func (i *Identifier) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *Identifier:
+		result = n.Value == i.Value
+	}
+
+	return result
+}
+
 type IntegerLiteral struct {
 	Value    int64
 	Content  string
@@ -36,6 +46,16 @@ func (i *IntegerLiteral) Children() []Node {
 
 func (i *IntegerLiteral) CanonicalCode() string {
 	return fmt.Sprintf("%d", i.Value)
+}
+
+func (i *IntegerLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *IntegerLiteral:
+		result = n.Content == i.Content
+	}
+
+	return result
 }
 
 type FloatLiteral struct {
@@ -54,6 +74,16 @@ func (f *FloatLiteral) CanonicalCode() string {
 	return fmt.Sprintf("%f", f.Value)
 }
 
+func (f *FloatLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *FloatLiteral:
+		result = n.Content == f.Content
+	}
+
+	return result
+}
+
 type StringLiteral struct {
 	Value    string
 	Content  string
@@ -68,6 +98,16 @@ func (s *StringLiteral) Children() []Node {
 
 func (s *StringLiteral) CanonicalCode() string {
 	return s.Content
+}
+
+func (s *StringLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *FloatLiteral:
+		result = n.Content == s.Content
+	}
+
+	return result
 }
 
 type BooleanLiteral struct {
@@ -89,6 +129,16 @@ func (b *BooleanLiteral) CanonicalCode() string {
 	return token.SFalse
 }
 
+func (b *BooleanLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *BooleanLiteral:
+		result = n.Value == b.Value
+	}
+
+	return result
+}
+
 type NullLiteral struct {
 	Position token.TokenInfo
 }
@@ -101,6 +151,16 @@ func (n *NullLiteral) Children() []Node {
 
 func (n *NullLiteral) CanonicalCode() string {
 	return token.SNull
+}
+
+func (n *NullLiteral) EqualTo(node Node) bool {
+	result := false
+	switch node.(type) {
+	case *NullLiteral:
+		result = true
+	}
+
+	return result
 }
 
 type ArrayLiteral struct {
@@ -129,13 +189,43 @@ func (a *ArrayLiteral) CanonicalCode() string {
 	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
 }
 
+func (a *ArrayLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *ArrayLiteral:
+		if len(n.Elements) == len(a.Elements) {
+			result = true
+			for i, e := range a.Elements {
+				if !e.EqualTo(n.Elements[i]) {
+					result = false
+					break
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 type HashItem struct {
 	Key   Expression
 	Value Expression
 }
 
+func (h *HashItem) EqualTo(item *HashItem) bool {
+	if ok := h.Key.EqualTo(item.Key); !ok {
+		return false
+	}
+
+	if ok := h.Value.EqualTo(item.Value); !ok {
+		return false
+	}
+
+	return true
+}
+
 type HashLiteral struct {
-	Pairs    []HashItem
+	Pairs    []*HashItem
 	Position token.TokenInfo
 }
 
@@ -161,6 +251,24 @@ func (h *HashLiteral) CanonicalCode() string {
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", \n"))
 }
 
+func (h *HashLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *HashLiteral:
+		if len(n.Pairs) == len(h.Pairs) {
+			result = true
+			for i, p := range h.Pairs {
+				if !p.EqualTo(n.Pairs[i]) {
+					result = false
+					break
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 type FunctionLiteral struct {
 	Arguments *IdentifierList
 	Body      *BlockStatement
@@ -184,6 +292,24 @@ func (f *FunctionLiteral) CanonicalCode() string {
 		f.Arguments.CanonicalCode(),
 		f.Body.CanonicalCode(),
 	)
+
+	return result
+}
+
+func (f *FunctionLiteral) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *FunctionLiteral:
+		if ok := f.Arguments.EqualTo(n.Arguments); !ok {
+			break
+		}
+
+		if ok := f.Body.EqualTo(n.Body); !ok {
+			break
+		}
+
+		result = true
+	}
 
 	return result
 }

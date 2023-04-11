@@ -31,6 +31,24 @@ func (l *ExpressionList) CanonicalCode() string {
 	return strings.Join(elems, ", ")
 }
 
+func (l *ExpressionList) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *ExpressionList:
+		if len(n.Expressions) == len(l.Expressions) {
+			result = true
+			for i, expr := range l.Expressions {
+				if !expr.EqualTo(n.Expressions[i]) {
+					result = false
+					break
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 func (l *ExpressionList) Length() int {
 	if l != nil {
 		return len(l.Expressions)
@@ -65,6 +83,24 @@ func (l *IdentifierList) CanonicalCode() string {
 	return strings.Join(elems, ", ")
 }
 
+func (l *IdentifierList) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *IdentifierList:
+		if len(n.Identifiers) == len(l.Identifiers) {
+			result = true
+			for i, id := range l.Identifiers {
+				if !id.EqualTo(n.Identifiers[i]) {
+					result = false
+					break
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 func (l *IdentifierList) Length() int {
 	if l != nil {
 		return len(l.Identifiers)
@@ -92,6 +128,18 @@ func (e *PrefixExpression) CanonicalCode() string {
 	return s
 }
 
+func (e *PrefixExpression) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *PrefixExpression:
+		if e.PrefixOperator == n.PrefixOperator {
+			result = e.Operand.EqualTo(n.Operand)
+		}
+	}
+
+	return result
+}
+
 type InfixExpression struct {
 	LeftOperand  Expression
 	Operator     token.Token
@@ -113,6 +161,19 @@ func (e *InfixExpression) CanonicalCode() string {
 	return s
 }
 
+func (e *InfixExpression) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *InfixExpression:
+		if e.Operator == n.Operator {
+			result = e.LeftOperand.EqualTo(n.LeftOperand) &&
+				e.RightOperand.EqualTo(n.RightOperand)
+		}
+	}
+
+	return result
+}
+
 type IndexExpression struct {
 	Base     Expression
 	Operator token.Token
@@ -132,6 +193,17 @@ func (e *IndexExpression) CanonicalCode() string {
 		e.Index.CanonicalCode())
 
 	return s
+}
+
+func (e *IndexExpression) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *IndexExpression:
+		result = e.Base.EqualTo(n.Base) &&
+			e.Index.EqualTo(n.Index)
+	}
+
+	return result
 }
 
 type CallExpression struct {
@@ -173,6 +245,20 @@ func (e *CallExpression) CanonicalCode() string {
 			e.Callable.CanonicalCode(),
 			e.Args.CanonicalCode(),
 		)
+	}
+
+	return result
+}
+
+func (e *CallExpression) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *CallExpression:
+		result = e.Callable.EqualTo(n.Callable) &&
+			e.Args.EqualTo(n.Args)
+		if e.Member != nil {
+			result = result && e.Member.EqualTo(n.Member)
+		}
 	}
 
 	return result
