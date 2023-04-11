@@ -2,7 +2,7 @@ package ast
 
 type Node interface {
 	Children() []Node
-	FormalCode() string
+	CanonicalCode() string
 }
 
 type Statement interface {
