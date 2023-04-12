@@ -215,6 +215,7 @@ expression = literals
            / infix-expression
            / index-expression
            / call-expression
+           / group-expression
 
 literals = null-literal
          / boolean-literal
@@ -287,6 +288,8 @@ infix-operator = "+" / "-" / "*" / "/" / "==" / "!=" / "<" / ">"
                / "&"    ; bitwise AND
                / "|"    ; bitwise OR
                / "^"    ; bitwise XOR
+
+group-expression = "(" expression ")"
 
 if-stmt = "if" "(" expression ")" block-stmt [ "else" ( block-stmt / if-stmt ) ]
           ; support 'else if' statement
