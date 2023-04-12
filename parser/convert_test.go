@@ -117,3 +117,24 @@ func TestConvertFloat(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{`hello, world`, ""},
+		{`"hello world"`, "hello world"},
+		{`"hello \"world\""`, `hello "world"`},
+		{`"hello \n world"`, "hello \n world"},
+		{`"hello \r\n\t\\\"\x42`, "hello \r\n\t\\\"\x42"},
+	}
+
+	for _, test := range tests {
+		got := ConvertString(test.input)
+		if got != test.expected {
+			t.Errorf("ConvertString(%s) = %s, expected=%s",
+				test.input, got, test.expected)
+		}
+	}
+}

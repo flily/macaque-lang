@@ -36,11 +36,11 @@ var hexCharValues = [...]int64{
 	'F': 15, 'f': 15,
 }
 
-func ConvertHexdecimalInteger(content string) int64 {
+func convertHexdecimalInteger(content string) int64 {
 	var value int64
 	i := 0
 
-	for i = 2; i < len(content); i++ {
+	for i = 0; i < len(content); i++ {
 		c := content[i]
 		if c != '_' {
 			value = (value << 4) | hexCharValues[c]
@@ -48,6 +48,10 @@ func ConvertHexdecimalInteger(content string) int64 {
 	}
 
 	return value
+}
+
+func ConvertHexdecimalInteger(content string) int64 {
+	return convertHexdecimalInteger(content[2:])
 }
 
 func ConvertFloat(content string) float64 {
@@ -64,8 +68,60 @@ func ConvertFloat(content string) float64 {
 	return result
 }
 
-func ConvertString(content string) string {
-	buffer := make([]byte, 0, len(content))
+func convertDoubleQuoteString(content string) string {
+	length := len(content) // In golang spec, len() returns the number of bytes.
+	buffer := make([]byte, length)
 
-	return string(buffer)
+	i := 1 // index of content, skip the first quote
+	j := 0 // index of buffer
+	finished := false
+
+	for i < length && !finished {
+		c := content[i]
+		i++
+
+		switch c {
+		case '"':
+			finished = true
+
+		case '\\':
+			e := content[i]
+			i++
+			switch e {
+			case 'n':
+				buffer[j] = '\n'
+			case 'r':
+				buffer[j] = '\r'
+			case 't':
+				buffer[j] = '\t'
+			case '\\':
+				buffer[j] = '\\'
+			case '"':
+				buffer[j] = '"'
+			case 'x':
+				code := content[i : i+2]
+				buffer[j] = byte(convertHexdecimalInteger(code))
+				i += 2
+			}
+			j++
+
+		default:
+			buffer[j] = c
+			j++
+		}
+	}
+
+	return string(buffer[:j])
+}
+
+func ConvertString(content string) string {
+	var result string
+	quote := content[0]
+
+	switch quote {
+	case '"':
+		result = convertDoubleQuoteString(content)
+	}
+
+	return result
 }
