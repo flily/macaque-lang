@@ -1,8 +1,6 @@
 package lex
 
 import (
-	"io"
-
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/token"
 )
@@ -41,7 +39,7 @@ func (s *RecursiveScanner) splitToLines(data []byte) []string {
 		}
 	}
 
-	if start < len(data)-1 {
+	if start < len(data) {
 		line := string(data[start:])
 		lines = append(lines, line)
 	}
@@ -68,7 +66,7 @@ func (s *RecursiveScanner) ReadContentSlice(start int) string {
 }
 
 func (s *RecursiveScanner) Append(data []byte) {
-
+	// FIXME: lines count is wrong
 	lines := s.splitToLines(data)
 	for _, line := range lines {
 		s.FileInfo.NewLine(line)
@@ -83,6 +81,13 @@ func (s *RecursiveScanner) makeCurrentPosition(content string) *token.TokenInfo 
 	column := s.column - length
 
 	return s.FileInfo.Lines[s.line-1].NewToken(column, length, content)
+}
+
+func (s *RecursiveScanner) makeEOFPosition() *token.TokenInfo {
+	length := 1
+	column := s.column
+
+	return s.FileInfo.Lines[s.line-1].NewToken(column, length, "")
 }
 
 func (s *RecursiveScanner) Scan() (*LexicalElement, error) {
@@ -178,7 +183,7 @@ func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 
 	s.skipWhitespace()
 	if s.EOF() {
-		return nil, io.EOF
+		return s.ScanEOF(), nil
 	}
 
 	c := s.currentChar()
@@ -439,4 +444,13 @@ func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
 	}
 
 	return elem, nil
+}
+
+func (s *RecursiveScanner) ScanEOF() *LexicalElement {
+	elem := &LexicalElement{
+		Token:    token.EOF,
+		Position: s.makeEOFPosition(),
+	}
+
+	return elem
 }

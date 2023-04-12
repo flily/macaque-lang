@@ -3,7 +3,6 @@ package lex
 import (
 	"testing"
 
-	"io"
 	"strings"
 
 	"github.com/flily/macaque-lang/token"
@@ -104,12 +103,13 @@ func TestReadEOF(t *testing.T) {
 	checkTokenScan(t, lex, expected)
 
 	elem, err := lex.Scan()
-	if elem != nil {
-		t.Errorf("Scan() after EOF should return nil, got: %v", elem)
+	if elem == nil || elem.Token != token.EOF {
+		t.Errorf("Scan() after EOF should return non-nil EOF element, got: %+v",
+			elem)
 	}
 
-	if err != io.EOF {
-		t.Errorf("Scan() after EOF should return io.EOF, got: %v", err)
+	if err != nil {
+		t.Errorf("Scan() after EOF should return nil, got: %v", err)
 	}
 }
 
@@ -125,18 +125,10 @@ func TestReadTokenAtTheEnd(t *testing.T) {
 		{token.Integer, "42", 1, 1},
 		{token.Float, "3.1415926", 2, 3},
 		{token.Integer, "0xdeadbeef", 3, 3},
+		{token.EOF, "", 3, 13},
 	}
 
 	checkTokenScan(t, lex, expected)
-
-	elem, err := lex.Scan()
-	if elem != nil {
-		t.Errorf("Scan() after EOF should return nil, got: %v", elem)
-	}
-
-	if err != io.EOF {
-		t.Errorf("Scan() after EOF should return io.EOF, got: %v", err)
-	}
 }
 
 func TestScanIdentifierAndKeyworkd(t *testing.T) {
@@ -154,6 +146,7 @@ func TestScanIdentifierAndKeyworkd(t *testing.T) {
 		{token.Else, "else", 2, 10},
 		{token.Identifier, "bar", 2, 15},
 		{token.Return, "return", 2, 19},
+		{token.EOF, "", 3, 2},
 	}
 
 	checkTokenScan(t, lex, expected)
@@ -181,6 +174,7 @@ func TestScanStrings(t *testing.T) {
 		{token.String, "\"foobar\"", 1, 2},
 		{token.String, "\"foo\\nbar\\\"\"", 2, 3},
 		{token.String, "\"c+\\x2b\"", 3, 3},
+		{token.EOF, "", 3, 11},
 	}
 
 	lex := NewRecursiveScanner("testcase")
@@ -325,6 +319,7 @@ func TestScanPunctuations(t *testing.T) {
 		{token.Minus, "-", 3, 3},
 		{token.Asterisk, "*", 3, 4},
 		{token.Plus, "+", 3, 5},
+		{token.EOF, "", 3, 6},
 	}
 
 	checkTokenScan(t, lex, expected)
@@ -376,4 +371,39 @@ func TestScanComment(t *testing.T) {
 	}
 
 	checkTokenScan(t, lex, expected)
+}
+
+func TestEOFHighlight(t *testing.T) {
+	code := strings.Join([]string{
+		`foo`,
+		`  bar`,
+	}, "\n")
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	elem, err := lex.Scan()
+	if elem == nil || err != nil {
+		t.Fatalf("Scan() failed: elem=%v err=%v", elem, err)
+	}
+
+	elem, err = lex.Scan()
+	if elem == nil || err != nil {
+		t.Fatalf("Scan() failed: elem=%v err=%v", elem, err)
+	}
+
+	elem, err = lex.Scan()
+	if elem == nil || err != nil {
+		t.Fatalf("Scan() should return a EOF element, but gotelem=%v err=%v", elem, err)
+	}
+
+	highlight := elem.Position.MakeContext().MakeLineHighlight()
+	expected := strings.Join([]string{
+		`  bar`,
+		`     ^`,
+	}, "\n")
+	if highlight != expected {
+		t.Errorf("got wrong highlight, got:\n%s\nexpected:\n%s",
+			highlight, expected)
+	}
 }

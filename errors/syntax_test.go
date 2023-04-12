@@ -6,6 +6,24 @@ import (
 	"strings"
 )
 
+func TestCodeContextLineHighlight(t *testing.T) {
+	ctx := &CodeContext{
+		Line:      "the quick brown fox jumps over the lazy dog",
+		NumColumn: 21,
+		Length:    5,
+	}
+
+	expected := []string{
+		`the quick brown fox jumps over the lazy dog`,
+		`                    ^^^^^`,
+	}
+
+	if ctx.MakeLineHighlight() != strings.Join(expected, "\n") {
+		t.Errorf("expected line highlight got:\n%s", ctx.MakeLineHighlight())
+	}
+
+}
+
 func TestSyntaxErrorMessage(t *testing.T) {
 	ctx := &CodeContext{
 		Filename:  "test",

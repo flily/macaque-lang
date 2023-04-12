@@ -26,6 +26,11 @@ func (c *CodeContext) MakeHighlight() string {
 	return leadingSpaces + highlight
 }
 
+func (c *CodeContext) MakeLineHighlight() string {
+	highlight := c.MakeHighlight()
+	return c.Line + "\n" + highlight
+}
+
 type SyntaxError struct {
 	BaseError
 	Context *CodeContext
