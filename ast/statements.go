@@ -5,22 +5,13 @@ import (
 	"strings"
 )
 
-type LineStatementNode interface {
-	Statement
-	lineStatementNode()
-}
-
-type BlockStatementNode interface {
-	Statement
-	blockStatementNode()
-}
-
 type LetStatement struct {
 	Identifiers *IdentifierList
 	Expressions *ExpressionList
 }
 
-func (s *LetStatement) statementNode() {}
+func (s *LetStatement) statementNode()     {}
+func (s *LetStatement) lineStatementNode() {}
 
 func (s *LetStatement) Children() []Node {
 	idLength := s.Identifiers.Length()
@@ -58,13 +49,12 @@ func (s *LetStatement) EqualTo(node Node) bool {
 	return result
 }
 
-func (s *LetStatement) lineStatementNode() {}
-
 type ReturnStatement struct {
 	Expressions *ExpressionList
 }
 
-func (s *ReturnStatement) statementNode() {}
+func (s *ReturnStatement) statementNode()     {}
+func (s *ReturnStatement) lineStatementNode() {}
 
 func (s *ReturnStatement) Children() []Node {
 	nodes := make([]Node, s.Expressions.Length())
@@ -91,15 +81,14 @@ func (s *ReturnStatement) EqualTo(node Node) bool {
 	return result
 }
 
-func (s *ReturnStatement) lineStatementNode() {}
-
 type IfStatement struct {
 	Condition   Expression
 	Consequence *BlockStatement
 	Alternative BlockStatementNode
 }
 
-func (s *IfStatement) statementNode() {}
+func (s *IfStatement) statementNode()      {}
+func (s *IfStatement) blockStatementNode() {}
 
 func (s *IfStatement) Children() []Node {
 	nodes := []Node{
@@ -136,13 +125,12 @@ func (s *IfStatement) EqualTo(node Node) bool {
 	return result
 }
 
-func (s *IfStatement) blockStatementNode() {}
-
 type BlockStatement struct {
 	Statements []Statement
 }
 
-func (s *BlockStatement) statementNode() {}
+func (s *BlockStatement) statementNode()      {}
+func (s *BlockStatement) blockStatementNode() {}
 
 func (s *BlockStatement) Children() []Node {
 	nodes := make([]Node, len(s.Statements))
@@ -180,13 +168,12 @@ func (s *BlockStatement) EqualTo(node Node) bool {
 	return result
 }
 
-func (s *BlockStatement) blockStatementNode() {}
-
 type ExpressionStatement struct {
 	Expressions *ExpressionList
 }
 
-func (s *ExpressionStatement) statementNode() {}
+func (s *ExpressionStatement) statementNode()     {}
+func (s *ExpressionStatement) lineStatementNode() {}
 
 func (s *ExpressionStatement) Children() []Node {
 	return s.Expressions.Children()
@@ -206,13 +193,12 @@ func (s *ExpressionStatement) EqualTo(node Node) bool {
 	return result
 }
 
-func (s *ExpressionStatement) lineStatementNode() {}
-
 // ImportStatement is not determined yet.
 type ImportStatement struct {
 }
 
-func (s *ImportStatement) statementNode() {}
+func (s *ImportStatement) statementNode()     {}
+func (s *ImportStatement) lineStatementNode() {}
 
 func (s *ImportStatement) Children() []Node {
 	return nil
@@ -231,5 +217,3 @@ func (s *ImportStatement) EqualTo(node Node) bool {
 
 	return result
 }
-
-func (s *ImportStatement) lineStatementNode() {}

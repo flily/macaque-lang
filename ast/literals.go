@@ -13,6 +13,7 @@ type Identifier struct {
 }
 
 func (i *Identifier) expressionNode() {}
+func (i *Identifier) literalValue()   {}
 
 func (i *Identifier) Children() []Node {
 	return nil
@@ -39,6 +40,7 @@ type IntegerLiteral struct {
 }
 
 func (i *IntegerLiteral) expressionNode() {}
+func (i *IntegerLiteral) literalValue()   {}
 
 func (i *IntegerLiteral) Children() []Node {
 	return nil
@@ -65,6 +67,7 @@ type FloatLiteral struct {
 }
 
 func (f *FloatLiteral) expressionNode() {}
+func (f *FloatLiteral) literalValue()   {}
 
 func (f *FloatLiteral) Children() []Node {
 	return nil
@@ -91,6 +94,7 @@ type StringLiteral struct {
 }
 
 func (s *StringLiteral) expressionNode() {}
+func (s *StringLiteral) literalValue()   {}
 
 func (s *StringLiteral) Children() []Node {
 	return nil
@@ -116,6 +120,7 @@ type BooleanLiteral struct {
 }
 
 func (b *BooleanLiteral) expressionNode() {}
+func (b *BooleanLiteral) literalValue()   {}
 
 func (b *BooleanLiteral) Children() []Node {
 	return nil
@@ -144,6 +149,7 @@ type NullLiteral struct {
 }
 
 func (n *NullLiteral) expressionNode() {}
+func (n *NullLiteral) literalValue()   {}
 
 func (n *NullLiteral) Children() []Node {
 	return nil
@@ -169,6 +175,7 @@ type ArrayLiteral struct {
 }
 
 func (a *ArrayLiteral) expressionNode() {}
+func (a *ArrayLiteral) literalValue()   {}
 
 func (a *ArrayLiteral) Children() []Node {
 	var nodes []Node
@@ -230,6 +237,7 @@ type HashLiteral struct {
 }
 
 func (h *HashLiteral) expressionNode() {}
+func (h *HashLiteral) literalValue()   {}
 
 func (h *HashLiteral) Children() []Node {
 	nodes := make([]Node, len(h.Pairs)*2)

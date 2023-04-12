@@ -15,3 +15,18 @@ type Expression interface {
 	Node
 	expressionNode()
 }
+
+type LiteralValue interface {
+	Expression
+	literalValue()
+}
+
+type LineStatementNode interface {
+	Statement
+	lineStatementNode()
+}
+
+type BlockStatementNode interface {
+	Statement
+	blockStatementNode()
+}
