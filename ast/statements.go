@@ -221,3 +221,15 @@ func (s *ImportStatement) Children() []Node {
 func (s *ImportStatement) CanonicalCode() string {
 	return "import;"
 }
+
+func (s *ImportStatement) EqualTo(node Node) bool {
+	result := false
+	switch node.(type) {
+	case *ImportStatement:
+		result = true
+	}
+
+	return result
+}
+
+func (s *ImportStatement) lineStatementNode() {}
