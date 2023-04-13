@@ -57,6 +57,10 @@ func (l *ExpressionList) Length() int {
 	return 0
 }
 
+func (l *ExpressionList) AddExpression(expr Expression) {
+	l.Expressions = append(l.Expressions, expr)
+}
+
 type IdentifierList struct {
 	Identifiers []*Identifier
 }
@@ -107,6 +111,10 @@ func (l *IdentifierList) Length() int {
 	}
 
 	return 0
+}
+
+func (l *IdentifierList) AddIdentifier(id *Identifier) {
+	l.Identifiers = append(l.Identifiers, id)
 }
 
 type PrefixExpression struct {

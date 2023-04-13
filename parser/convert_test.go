@@ -99,6 +99,28 @@ func BenchmarkConvertHexdecimalInteger(b *testing.B) {
 	})
 }
 
+func TestConvertInteger(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"42", 42},
+		{"299792458", 299792458},
+		{"299_792_458", 299792458},
+		{"0x42", 66},
+		{"0xdeadbeef", 3735928559},
+		{"0xdead_beef", 3735928559},
+	}
+
+	for _, test := range tests {
+		got := ConvertInteger(test.input)
+		if got != test.expected {
+			t.Errorf("ConvertInteger(%s) = %d, expected=%d",
+				test.input, got, test.expected)
+		}
+	}
+}
+
 func TestConvertFloat(t *testing.T) {
 	tests := []struct {
 		input    string

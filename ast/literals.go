@@ -9,7 +9,16 @@ import (
 
 type Identifier struct {
 	Value    string
-	Position token.TokenInfo
+	Position *token.TokenInfo
+}
+
+func NewIdentifier(value string, position *token.TokenInfo) *Identifier {
+	i := &Identifier{
+		Value:    value,
+		Position: position,
+	}
+
+	return i
 }
 
 func (i *Identifier) expressionNode() {}
@@ -36,7 +45,7 @@ func (i *Identifier) EqualTo(node Node) bool {
 type IntegerLiteral struct {
 	Value    int64
 	Content  string
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (i *IntegerLiteral) expressionNode() {}
@@ -63,7 +72,7 @@ func (i *IntegerLiteral) EqualTo(node Node) bool {
 type FloatLiteral struct {
 	Value    float64
 	Content  string
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (f *FloatLiteral) expressionNode() {}
@@ -90,7 +99,7 @@ func (f *FloatLiteral) EqualTo(node Node) bool {
 type StringLiteral struct {
 	Value    string
 	Content  string
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (s *StringLiteral) expressionNode() {}
@@ -116,7 +125,7 @@ func (s *StringLiteral) EqualTo(node Node) bool {
 
 type BooleanLiteral struct {
 	Value    bool
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (b *BooleanLiteral) expressionNode() {}
@@ -145,7 +154,7 @@ func (b *BooleanLiteral) EqualTo(node Node) bool {
 }
 
 type NullLiteral struct {
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (n *NullLiteral) expressionNode() {}
@@ -171,7 +180,7 @@ func (n *NullLiteral) EqualTo(node Node) bool {
 
 type ArrayLiteral struct {
 	Elements []Expression
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (a *ArrayLiteral) expressionNode() {}
@@ -233,7 +242,7 @@ func (h *HashItem) EqualTo(item *HashItem) bool {
 
 type HashLiteral struct {
 	Pairs    []*HashItem
-	Position token.TokenInfo
+	Position *token.TokenInfo
 }
 
 func (h *HashLiteral) expressionNode() {}

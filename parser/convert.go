@@ -54,6 +54,14 @@ func ConvertHexdecimalInteger(content string) int64 {
 	return convertHexdecimalInteger(content[2:])
 }
 
+func ConvertInteger(content string) int64 {
+	if len(content) > 2 && content[:2] == "0x" {
+		return ConvertHexdecimalInteger(content)
+	}
+
+	return ConvertDecimalInteger(content)
+}
+
 func ConvertFloat(content string) float64 {
 	buffer := make([]byte, 0, len(content))
 	for i := range content {
