@@ -90,10 +90,6 @@ func TestTokenType(t *testing.T) {
 		if got := c.token.IsOperator(); got != c.isOperator {
 			t.Errorf("%s.IsOperator() is %t, expected %t", c.token, got, c.isOperator)
 		}
-
-		if got := c.token.IsPunctuation(); got != c.isPunctuation {
-			t.Errorf("%s.IsPunctuation() is %t, expected %t", c.token, got, c.isPunctuation)
-		}
 	}
 }
 

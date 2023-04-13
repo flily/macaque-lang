@@ -180,7 +180,7 @@ func (s *ExpressionStatement) Children() []Node {
 }
 
 func (s *ExpressionStatement) CanonicalCode() string {
-	return s.Expressions.CanonicalCode()
+	return fmt.Sprintf("%s;", s.Expressions.CanonicalCode())
 }
 
 func (s *ExpressionStatement) EqualTo(node Node) bool {

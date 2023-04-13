@@ -129,7 +129,7 @@ func (e *PrefixExpression) Children() []Node {
 }
 
 func (e *PrefixExpression) CanonicalCode() string {
-	s := fmt.Sprintf("%s %s",
+	s := fmt.Sprintf("(%s %s)",
 		e.PrefixOperator.CodeName(),
 		e.Operand.CanonicalCode())
 
@@ -161,7 +161,7 @@ func (e *InfixExpression) Children() []Node {
 }
 
 func (e *InfixExpression) CanonicalCode() string {
-	s := fmt.Sprintf("%s %s %s",
+	s := fmt.Sprintf("(%s %s %s)",
 		e.LeftOperand.CanonicalCode(),
 		e.Operator.CodeName(),
 		e.RightOperand.CanonicalCode())
@@ -267,30 +267,6 @@ func (e *CallExpression) EqualTo(node Node) bool {
 		if e.Member != nil {
 			result = result && e.Member.EqualTo(n.Member)
 		}
-	}
-
-	return result
-}
-
-type GroupExpression struct {
-	Expression Expression
-}
-
-func (e *GroupExpression) expressionNode() {}
-
-func (e *GroupExpression) Children() []Node {
-	return []Node{e.Expression}
-}
-
-func (e *GroupExpression) CanonicalCode() string {
-	return fmt.Sprintf("(%s)", e.Expression.CanonicalCode())
-}
-
-func (e *GroupExpression) EqualTo(node Node) bool {
-	result := false
-	switch n := node.(type) {
-	case *GroupExpression:
-		result = e.Expression.EqualTo(n.Expression)
 	}
 
 	return result

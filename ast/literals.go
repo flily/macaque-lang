@@ -116,7 +116,7 @@ func (s *StringLiteral) CanonicalCode() string {
 func (s *StringLiteral) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
-	case *FloatLiteral:
+	case *StringLiteral:
 		result = n.Content == s.Content
 	}
 

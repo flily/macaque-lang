@@ -37,7 +37,9 @@ var precedenceMap = map[token.Token]int{
 	token.BITXOR:   PrecedenceBitwise,
 	token.BITNOT:   PrecedenceBitwise,
 	token.LParen:   PrecedenceCall,
+	token.Colon:    PrecedenceCall,
 	token.LBracket: PrecedenceIndex,
+	token.Period:   PrecedenceIndex,
 }
 
 func GetPrecedence(token token.Token) int {

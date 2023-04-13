@@ -41,7 +41,8 @@ func NewFloat(token *lex.LexicalElement) *ast.FloatLiteral {
 
 func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
 	literal := &ast.StringLiteral{
-		Value:    content,
+		Value:    ConvertString(content),
+		Content:  content,
 		Position: position,
 	}
 
@@ -49,8 +50,7 @@ func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
 }
 
 func NewString(token *lex.LexicalElement) *ast.StringLiteral {
-	content := ConvertString(token.Content)
-	return makeString(content, token.Position)
+	return makeString(token.Content, token.Position)
 }
 
 func makeNull(position *token.TokenInfo) *ast.NullLiteral {

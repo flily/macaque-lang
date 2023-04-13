@@ -48,7 +48,6 @@ const (
 	BITOR    // |
 	BITXOR   // ^
 	BITNOT   // ~
-	operatorEnd
 
 	punctuationBegin
 	Assign       // =
@@ -64,6 +63,7 @@ const (
 	RBracket     // ]
 	CommentStart // //
 	punctuationEnd
+	operatorEnd
 
 	SLet          = "let"
 	SFn           = "fn"
@@ -188,10 +188,6 @@ func (t Token) IsKeyword() bool {
 
 func (t Token) IsOperator() bool {
 	return t > operatorBegin && t < operatorEnd
-}
-
-func (t Token) IsPunctuation() bool {
-	return t > punctuationBegin && t < punctuationEnd
 }
 
 var keywordMap = map[string]Token{
