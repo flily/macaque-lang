@@ -196,7 +196,7 @@ func (e *IndexExpression) Children() []Node {
 }
 
 func (e *IndexExpression) CanonicalCode() string {
-	s := fmt.Sprintf("%s[%s]",
+	s := fmt.Sprintf("(%s[%s])",
 		e.Base.CanonicalCode(),
 		e.Index.CanonicalCode())
 

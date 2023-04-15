@@ -7,20 +7,23 @@ import (
 const (
 	_ int = iota
 	PrecedenceLowest
-	PrecedenceLogical               // && ||
+	PrecedenceLogicalOR             // ||
+	PrecedenceLogicalAND            // &&
 	PrecedenceComparisonEqual       // == !=
-	PrecedenceComparisonLessGreater // > or <
+	PrecedenceComparisonLessGreater // > < >= <=
 	PrecedenceSum                   // + -
 	PrecedenceProduct               // * / %
-	PrecedenceBitwise               // & | ^ ~
-	PrecedencePrefix                // -X or !X
+	PrecedenceBitwiseOR             // |
+	PrecedenceBitwiseXOR            // ^
+	PrecedenceBitwiseAND            // &
+	PrecedencePrefix                // -X or !X or ~X
 	PrecedenceCall                  // myFunction(X)
 	PrecedenceIndex                 // array[index]
 )
 
 var precedenceMap = map[token.Token]int{
-	token.AND:      PrecedenceLogical,
-	token.OR:       PrecedenceLogical,
+	token.AND:      PrecedenceLogicalAND,
+	token.OR:       PrecedenceLogicalOR,
 	token.EQ:       PrecedenceComparisonEqual,
 	token.NE:       PrecedenceComparisonEqual,
 	token.LT:       PrecedenceComparisonLessGreater,
@@ -32,10 +35,10 @@ var precedenceMap = map[token.Token]int{
 	token.Asterisk: PrecedenceProduct,
 	token.Slash:    PrecedenceProduct,
 	token.Modulo:   PrecedenceProduct,
-	token.BITAND:   PrecedenceBitwise,
-	token.BITOR:    PrecedenceBitwise,
-	token.BITXOR:   PrecedenceBitwise,
-	token.BITNOT:   PrecedenceBitwise,
+	token.BITAND:   PrecedenceBitwiseAND,
+	token.BITOR:    PrecedenceBitwiseOR,
+	token.BITXOR:   PrecedenceBitwiseXOR,
+	token.BITNOT:   PrecedencePrefix,
 	token.LParen:   PrecedenceCall,
 	token.Colon:    PrecedenceCall,
 	token.LBracket: PrecedenceIndex,
@@ -48,4 +51,8 @@ func GetPrecedence(token token.Token) int {
 	}
 
 	return 0
+}
+
+func IsInfixOperator(t token.Token) bool {
+	return token.Plus <= t && t <= token.BITOR
 }

@@ -165,7 +165,7 @@ func TestExpressionParsing(t *testing.T) {
 			makeProgram(
 				makeExpressionStatement(
 					makeInfixExpression("+",
-						makeInfixExpression("*",
+						makeInfixExpression("+",
 							makeInteger("1", nil),
 							makeInteger("2", nil),
 						),
@@ -305,26 +305,34 @@ func TestOperatorPrecedence(t *testing.T) {
 		},
 		{
 			"a + add(b, c) + std[sum](c, d)",
-			"((a + add(b, c)) + std[sum](c, d));",
+			"((a + add(b, c)) + (std[sum])(c, d));",
 		},
 		{
 			"a + add(b, c) + std.sum(c, d)",
-			"((a + add(b, c)) + std[sum](c, d));",
+			"((a + add(b, c)) + (std[sum])(c, d));",
 		},
-		// {
-		// 	"a * [1, 2, 3, 4][b * c] * d",
-		// 	"((a * ([1, 2, 3, 4][(b * c)])) * d)",
-		// },
-		// {
-		// 	"add(a * b[2], b[1], 2 * [1, 2][1])",
-		// 	"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
-		// },
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d);",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])));",
+		},
+		{
+			"a + b:c(d + e) * f",
+			"(a + (b:c((d + e)) * f));",
+		},
+		{
+			"a * b:c(d + e) + f",
+			"((a * b:c((d + e))) + f);",
+		},
 	}
 
 	for _, tt := range tests {
 		program, err := testLLParseCode(tt.input)
 		if err != nil {
-			t.Fatalf("Parse code error:\n%s", err)
+			t.Errorf("Parse code error:\n%s", err)
 		}
 
 		if program.CanonicalCode() != tt.expected {
