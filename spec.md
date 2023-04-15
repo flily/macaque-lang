@@ -196,7 +196,6 @@ statement = let-stmt
           / return-stmt
           / import-stmt       ; not determined yet
           / if-stmt
-          / block-stmt
           / expression-stmt
 
 let-stmt = "let" identifier-list "=" expression-list ";"
