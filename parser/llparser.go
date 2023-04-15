@@ -157,6 +157,8 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 	return program, nil
 }
 
+// Parse statements
+
 // let-stmt
 // => "let" identifier-list "=" expression-list ";"
 func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
@@ -205,29 +207,7 @@ func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) 
 	return stmt, nil
 }
 
-func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
-	var err error
-	list := &ast.IdentifierList{}
-
-	for {
-		id, err := p.parseIdentifier()
-		if err != nil {
-			return nil, err
-		}
-
-		list.AddIdentifier(id)
-
-		if err := p.skipToken(token.Comma, RuleIdentifierList); err != nil {
-			break
-		}
-
-		if p.expect(token.Identifier, RuleIdentifierList) != nil {
-			break
-		}
-	}
-
-	return list, err
-}
+// Parse terminal symbols, include identifiers and literals.
 
 // identifier
 // => [identifier-prefix] ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" ) [identifier-suffix]
@@ -255,6 +235,94 @@ func (p *LLParser) parseIdentifier() (*ast.Identifier, error) {
 
 	return id, err
 }
+
+func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
+	var err error
+	list := &ast.IdentifierList{}
+
+	for {
+		id, err := p.parseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+
+		list.AddIdentifier(id)
+
+		if err := p.skipToken(token.Comma, RuleIdentifierList); err != nil {
+			break
+		}
+
+		if p.expect(token.Identifier, RuleIdentifierList) != nil {
+			break
+		}
+	}
+
+	return list, err
+}
+
+// literals
+// => null-literal
+// => boolean-literal
+// => integer-literal
+// => float-literal
+// => string-literal
+// => array-literal
+// => hash-literal
+// => function-literal
+func (p *LLParser) parseLiteral() (ast.Expression, error) {
+	var expr ast.Expression
+	var err error
+
+	current := p.current()
+	switch current.Token {
+	case token.Integer:
+		expr = NewInteger(current)
+		p.nextToken()
+
+	case token.Float:
+		expr = NewFloat(current)
+		p.nextToken()
+
+	case token.String:
+		expr = NewString(current)
+		p.nextToken()
+
+	case token.True, token.False:
+		expr = NewBoolean(current)
+		p.nextToken()
+
+	case token.Null:
+		expr = NewNull(current)
+		p.nextToken()
+
+	case token.LBracket:
+		expr, err = p.parseArrayLiteral()
+	}
+
+	return expr, err
+}
+
+// array-literal
+// => "[" expression-list "]"
+func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
+	_ = p.skipToken(token.LBracket, RuleArrayLiteral)
+	list, err := p.parseExpressionList()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := p.skipToken(token.RBracket, RuleArrayLiteral); err != nil {
+		return nil, err
+	}
+
+	array := &ast.ArrayLiteral{
+		Elements: list.Expressions,
+	}
+
+	return array, nil
+}
+
+// Parse expressions
 
 // expression-list
 // => expression *( "," expression ) [","]
@@ -346,68 +414,6 @@ func (p *LLParser) parseExpressionWithOperator(expr ast.Expression, precedence i
 	}
 
 	return p.parseExpressionWithOperator(expr, precedence)
-}
-
-// literals
-// => null-literal
-// => boolean-literal
-// => integer-literal
-// => float-literal
-// => string-literal
-// => array-literal
-// => hash-literal
-// => function-literal
-func (p *LLParser) parseLiteral() (ast.Expression, error) {
-	var expr ast.Expression
-	var err error
-
-	current := p.current()
-	switch current.Token {
-	case token.Integer:
-		expr = NewInteger(current)
-		p.nextToken()
-
-	case token.Float:
-		expr = NewFloat(current)
-		p.nextToken()
-
-	case token.String:
-		expr = NewString(current)
-		p.nextToken()
-
-	case token.True, token.False:
-		expr = NewBoolean(current)
-		p.nextToken()
-
-	case token.Null:
-		expr = NewNull(current)
-		p.nextToken()
-
-	case token.LBracket:
-		expr, err = p.parseArrayLiteral()
-	}
-
-	return expr, err
-}
-
-// array-literal
-// => "[" expression-list "]"
-func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
-	_ = p.skipToken(token.LBracket, RuleArrayLiteral)
-	list, err := p.parseExpressionList()
-	if err != nil {
-		return nil, err
-	}
-
-	if err := p.skipToken(token.RBracket, RuleArrayLiteral); err != nil {
-		return nil, err
-	}
-
-	array := &ast.ArrayLiteral{
-		Elements: list.Expressions,
-	}
-
-	return array, nil
 }
 
 // prefix-expression = prefix-operator expression
