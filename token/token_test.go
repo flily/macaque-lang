@@ -64,18 +64,17 @@ func TestTokenType(t *testing.T) {
 		isLiteral     bool
 		isKeyword     bool
 		isOperator    bool
-		isPunctuation bool
 	}{
-		{Illegal, false, false, false, false},
-		{EOF, false, false, false, false},
-		{Identifier, true, false, false, false},
-		{Integer, true, false, false, false},
-		{Let, false, true, false, false},
-		{Return, false, true, false, false},
-		{Plus, false, false, true, false},
-		{AND, false, false, true, false},
-		{Assign, false, false, false, true},
-		{Semicolon, false, false, false, true},
+		{Illegal, false, false, false, },
+		{EOF, false, false, false, },
+		{Identifier, true, false, false, },
+		{Integer, true, false, false, },
+		{Let, false, true, false, },
+		{Return, false, true, false, },
+		{Plus, false, false, true, },
+		{AND, false, false, true, },
+		{Assign, false, false, true, },
+		{Semicolon, false, false, true, },
 	}
 
 	for _, c := range tests {
