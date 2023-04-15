@@ -46,10 +46,10 @@ func TestParseSimpleLetStatement(t *testing.T) {
 			`let answer = 42;`,
 			makeProgram(
 				makeLetStatement(
-					makeIdentifierList(
+					idList(
 						"answer"),
-					makeExpressionList(
-						makeInteger("42", nil),
+					exprList(
+						l(42),
 					),
 				),
 			),
@@ -59,15 +59,15 @@ func TestParseSimpleLetStatement(t *testing.T) {
 				42, 3.1415926, "hello, world", true, false, null;`,
 			makeProgram(
 				makeLetStatement(
-					makeIdentifierList(
+					idList(
 						"answer", "pi", "hello", "yes", "no", "nil"),
-					makeExpressionList(
-						makeInteger("42", nil),
-						makeFloat("3.1415926", nil),
-						makeString(`"hello, world"`, nil),
-						makeBoolean(true, nil),
-						makeBoolean(false, nil),
-						makeNull(nil),
+					exprList(
+						l(42),
+						float("3.1415926"),
+						l(`"hello, world"`),
+						l(true),
+						l(false),
+						l(nil),
 					),
 				),
 			),
@@ -77,15 +77,15 @@ func TestParseSimpleLetStatement(t *testing.T) {
 				42, 3.1415926, "hello, world", true, false, null,;`,
 			makeProgram(
 				makeLetStatement(
-					makeIdentifierList(
+					idList(
 						"answer", "pi", "hello", "yes", "no", "nil"),
-					makeExpressionList(
-						makeInteger("42", nil),
-						makeFloat("3.1415926", nil),
-						makeString(`"hello, world"`, nil),
-						makeBoolean(true, nil),
-						makeBoolean(false, nil),
-						makeNull(nil),
+					exprList(
+						l(42),
+						float("3.1415926"),
+						l(`"hello, world"`),
+						l(true),
+						l(false),
+						l(nil),
 					),
 				),
 			),
@@ -101,7 +101,7 @@ func TestParseExpressionList(t *testing.T) {
 			`42`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInteger("42", nil),
+					l(42),
 				),
 			),
 		},
@@ -109,7 +109,7 @@ func TestParseExpressionList(t *testing.T) {
 			`42,`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInteger("42", nil),
+					l(42),
 				),
 			),
 		},
@@ -117,12 +117,12 @@ func TestParseExpressionList(t *testing.T) {
 			`42, 3.1415926, "hello, world", true, false, null`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInteger("42", nil),
-					makeFloat("3.1415926", nil),
-					makeString(`"hello, world"`, nil),
-					makeBoolean(true, nil),
-					makeBoolean(false, nil),
-					makeNull(nil),
+					l(42),
+					float("3.1415926"),
+					l(`"hello, world"`),
+					l(true),
+					l(false),
+					l(nil),
 				),
 			),
 		},
@@ -130,12 +130,25 @@ func TestParseExpressionList(t *testing.T) {
 			`42, 3.1415926, "hello, world", true, false, null,`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInteger("42", nil),
-					makeFloat("3.1415926", nil),
-					makeString(`"hello, world"`, nil),
-					makeBoolean(true, nil),
-					makeBoolean(false, nil),
-					makeNull(nil),
+					l(42),
+					float("3.1415926"),
+					l(`"hello, world"`),
+					l(true),
+					l(false),
+					l(nil),
+				),
+			),
+		},
+		{
+			`42, 3.1415926, "hello, world", true, false, null,;`,
+			makeProgram(
+				makeExpressionStatement(
+					l(42),
+					float("3.1415926"),
+					l(`"hello, world"`),
+					l(true),
+					l(false),
+					l(nil),
 				),
 			),
 		},
@@ -150,12 +163,9 @@ func TestExpressionParsing(t *testing.T) {
 			`1 + 2 * 3`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInfixExpression("+",
-						makeInteger("1", nil),
-						makeInfixExpression("*",
-							makeInteger("2", nil),
-							makeInteger("3", nil),
-						),
+					infix("+",
+						l(1),
+						infix("*", l(2), l(3)),
 					),
 				),
 			),
@@ -164,12 +174,9 @@ func TestExpressionParsing(t *testing.T) {
 			`1 + 2 + 3`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInfixExpression("+",
-						makeInfixExpression("+",
-							makeInteger("1", nil),
-							makeInteger("2", nil),
-						),
-						makeInteger("3", nil),
+					infix("+",
+						infix("+", l(1), l(2)),
+						l(3),
 					),
 				),
 			),
@@ -178,16 +185,16 @@ func TestExpressionParsing(t *testing.T) {
 			`-1 + --2 + ---3`,
 			makeProgram(
 				makeExpressionStatement(
-					makeInfixExpression("+",
-						makeInfixExpression("+",
-							makePrefixExpression("-", makeInteger("1", nil)),
-							makePrefixExpression("-",
-								makePrefixExpression("-", makeInteger("2", nil)),
+					infix("+",
+						infix("+",
+							prefix("-", l(1)),
+							prefix("-",
+								prefix("-", l(2)),
 							),
 						),
-						makePrefixExpression("-",
-							makePrefixExpression("-",
-								makePrefixExpression("-", makeInteger("3", nil)),
+						prefix("-",
+							prefix("-",
+								prefix("-", l(3)),
 							),
 						),
 					),
@@ -199,24 +206,63 @@ func TestExpressionParsing(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseArrayLiteral(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`[]`,
+			makeProgram(
+				makeExpressionStatement(
+					array(),
+				),
+			),
+		},
+		{
+			`[1, 2, 3]`,
+			makeProgram(
+				makeExpressionStatement(
+					array(
+						l(1),
+						l(2),
+						l(3),
+					),
+				),
+			),
+		},
+		{
+			`[1, 2 * 2, 3 + 3]`,
+			makeProgram(
+				makeExpressionStatement(
+					array(
+						l(1),
+						infix("*", l(2), l(2)),
+						infix("+", l(3), l(3)),
+					),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
 func TestParseHashLiteral(t *testing.T) {
 	tests := []parserTestCase{
-		// {
-		// 	`{}`,
-		// 	makeProgram(
-		// 		makeExpressionStatement(
-		// 			makeHashLiteral(),
-		// 		),
-		// 	),
-		// },
+		{
+			`{}`,
+			makeProgram(
+				makeExpressionStatement(
+					hash(),
+				),
+			),
+		},
 		{
 			`{"one": 1, "two": 2, "three": 3}`,
 			makeProgram(
 				makeExpressionStatement(
-					makeHashLiteral(
-						makePair(l("one"), l(1)),
-						makePair(l("two"), l(2)),
-						makePair(l("three"), l(3)),
+					hash(
+						pair(l(`"one"`), l(1)),
+						pair(l(`"two"`), l(2)),
+						pair(l(`"three"`), l(3)),
 					),
 				),
 			),
@@ -225,13 +271,13 @@ func TestParseHashLiteral(t *testing.T) {
 			`{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`,
 			makeProgram(
 				makeExpressionStatement(
-					makeHashLiteral(
-						makePair(l("one"),
-							makeInfixExpression("+", l(0), l(1))),
-						makePair(l("two"),
-							makeInfixExpression("-", l(10), l(8))),
-						makePair(l("three"),
-							makeInfixExpression("/", l(15), l(5))),
+					hash(
+						pair(l(`"one"`),
+							infix("+", l(0), l(1))),
+						pair(l(`"two"`),
+							infix("-", l(10), l(8))),
+						pair(l(`"three"`),
+							infix("/", l(15), l(5))),
 					),
 				),
 			),

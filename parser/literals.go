@@ -11,32 +11,28 @@ const (
 	BooleanFalse = token.False
 )
 
-func makeInteger(content string, position *token.TokenInfo) *ast.IntegerLiteral {
+func newInteger(token *lex.LexicalElement) *ast.IntegerLiteral {
+	content := token.Content
+
 	literal := &ast.IntegerLiteral{
 		Value:    ConvertInteger(content),
 		Content:  content,
-		Position: position,
+		Position: token.Position,
 	}
 
 	return literal
 }
 
-func NewInteger(token *lex.LexicalElement) *ast.IntegerLiteral {
-	return makeInteger(token.Content, token.Position)
-}
+func newFloat(token *lex.LexicalElement) *ast.FloatLiteral {
+	content := token.Content
 
-func makeFloat(content string, position *token.TokenInfo) *ast.FloatLiteral {
 	literal := &ast.FloatLiteral{
 		Value:    ConvertFloat(content),
 		Content:  content,
-		Position: position,
+		Position: token.Position,
 	}
 
 	return literal
-}
-
-func NewFloat(token *lex.LexicalElement) *ast.FloatLiteral {
-	return makeFloat(token.Content, token.Position)
 }
 
 func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
@@ -49,31 +45,23 @@ func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
 	return literal
 }
 
-func NewString(token *lex.LexicalElement) *ast.StringLiteral {
+func newString(token *lex.LexicalElement) *ast.StringLiteral {
 	return makeString(token.Content, token.Position)
 }
 
-func makeNull(position *token.TokenInfo) *ast.NullLiteral {
+func newNull(token *lex.LexicalElement) *ast.NullLiteral {
 	literal := &ast.NullLiteral{
-		Position: position,
+		Position: token.Position,
 	}
 
 	return literal
 }
 
-func NewNull(token *lex.LexicalElement) *ast.NullLiteral {
-	return makeNull(token.Position)
-}
-
-func makeBoolean(value bool, position *token.TokenInfo) *ast.BooleanLiteral {
+func newBoolean(token *lex.LexicalElement) *ast.BooleanLiteral {
 	literal := &ast.BooleanLiteral{
-		Value:    value,
-		Position: position,
+		Value:    token.Token == BooleanTrue,
+		Position: token.Position,
 	}
 
 	return literal
-}
-
-func NewBoolean(token *lex.LexicalElement) *ast.BooleanLiteral {
-	return makeBoolean(token.Token == BooleanTrue, token.Position)
 }

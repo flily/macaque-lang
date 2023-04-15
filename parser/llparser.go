@@ -20,6 +20,7 @@ var expressionFirstSet = [...]bool{
 	token.Bang:       true,
 	token.LBracket:   true,
 	token.LBrace:     true,
+	token.LastToken:  false,
 }
 
 func isExpressionFirstSet(token token.Token) bool {
@@ -287,23 +288,23 @@ func (p *LLParser) parseLiteral() (ast.Expression, error) {
 	current := p.current()
 	switch current.Token {
 	case token.Integer:
-		expr = NewInteger(current)
+		expr = newInteger(current)
 		p.nextToken()
 
 	case token.Float:
-		expr = NewFloat(current)
+		expr = newFloat(current)
 		p.nextToken()
 
 	case token.String:
-		expr = NewString(current)
+		expr = newString(current)
 		p.nextToken()
 
 	case token.True, token.False:
-		expr = NewBoolean(current)
+		expr = newBoolean(current)
 		p.nextToken()
 
 	case token.Null:
-		expr = NewNull(current)
+		expr = newNull(current)
 		p.nextToken()
 
 	case token.LBracket:
@@ -320,6 +321,11 @@ func (p *LLParser) parseLiteral() (ast.Expression, error) {
 // => "[" expression-list "]"
 func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 	_ = p.skipToken(token.LBracket, RuleArrayLiteral)
+
+	if p.skipToken(token.RBracket, RuleArrayLiteral) == nil {
+		return array(), nil
+	}
+
 	list, err := p.parseExpressionList()
 	if err != nil {
 		return nil, err

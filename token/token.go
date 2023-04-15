@@ -65,6 +65,7 @@ const (
 	CommentStart // //
 	punctuationEnd
 	operatorEnd
+	LastToken // This is not a token, but a marker for the last token.
 
 	SLet          = "let"
 	SFn           = "fn"
@@ -156,6 +157,7 @@ var displayName = [...]string{
 	LBracket:     "[",
 	RBracket:     "]",
 	CommentStart: "//",
+	LastToken:    "<LAST>",
 }
 
 // String returns a string representation of the token.

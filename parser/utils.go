@@ -34,10 +34,16 @@ func l(v interface{}) ast.Expression {
 			Content: fmt.Sprintf("%d", v),
 		}
 
+	case float64:
+		r = &ast.FloatLiteral{
+			Value:   v,
+			Content: fmt.Sprintf("%f", v),
+		}
+
 	case string:
 		r = &ast.StringLiteral{
-			Value:   v,
-			Content: fmt.Sprintf("\"%s\"", v),
+			Content: v,
+			Value:   ConvertString(v),
 		}
 
 	case bool:
@@ -48,6 +54,20 @@ func l(v interface{}) ast.Expression {
 
 	return r
 }
+
+func float(s string) ast.Expression {
+	return &ast.FloatLiteral{
+		Value:   ConvertFloat(s),
+		Content: s,
+	}
+}
+
+// func integer(s string) ast.Expression {
+// 	return &ast.IntegerLiteral{
+// 		Value:   ConvertInteger(s),
+// 		Content: s,
+// 	}
+// }
 
 func makeExpressionStatement(expressions ...ast.Expression) *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{
@@ -68,7 +88,7 @@ func makeLetStatement(identifers *ast.IdentifierList, expressions *ast.Expressio
 	return stmt
 }
 
-func makeIdentifierList(names ...string) *ast.IdentifierList {
+func idList(names ...string) *ast.IdentifierList {
 	list := &ast.IdentifierList{}
 	for _, name := range names {
 		id := &ast.Identifier{
@@ -80,7 +100,7 @@ func makeIdentifierList(names ...string) *ast.IdentifierList {
 	return list
 }
 
-func makeExpressionList(expressions ...ast.Expression) *ast.ExpressionList {
+func exprList(expressions ...ast.Expression) *ast.ExpressionList {
 	list := &ast.ExpressionList{
 		Expressions: expressions,
 	}
@@ -88,7 +108,7 @@ func makeExpressionList(expressions ...ast.Expression) *ast.ExpressionList {
 	return list
 }
 
-func makePrefixExpression(operator string, right ast.Expression) *ast.PrefixExpression {
+func prefix(operator string, right ast.Expression) *ast.PrefixExpression {
 	expr := &ast.PrefixExpression{
 		PrefixOperator: token.CheckOperatorToken(operator),
 		Operand:        right,
@@ -97,7 +117,7 @@ func makePrefixExpression(operator string, right ast.Expression) *ast.PrefixExpr
 	return expr
 }
 
-func makeInfixExpression(operator string, left ast.Expression, right ast.Expression) *ast.InfixExpression {
+func infix(operator string, left ast.Expression, right ast.Expression) *ast.InfixExpression {
 	expr := &ast.InfixExpression{
 		LeftOperand:  left,
 		Operator:     token.CheckOperatorToken(operator),
@@ -107,7 +127,7 @@ func makeInfixExpression(operator string, left ast.Expression, right ast.Express
 	return expr
 }
 
-func makeArrayLiteral(elements ...ast.Expression) *ast.ArrayLiteral {
+func array(elements ...ast.Expression) *ast.ArrayLiteral {
 	expr := &ast.ArrayLiteral{
 		Elements: elements,
 	}
@@ -115,7 +135,7 @@ func makeArrayLiteral(elements ...ast.Expression) *ast.ArrayLiteral {
 	return expr
 }
 
-func makePair(key ast.Expression, value ast.Expression) *ast.HashItem {
+func pair(key ast.Expression, value ast.Expression) *ast.HashItem {
 	pair := &ast.HashItem{
 		Key:   key,
 		Value: value,
@@ -124,7 +144,7 @@ func makePair(key ast.Expression, value ast.Expression) *ast.HashItem {
 	return pair
 }
 
-func makeHashLiteral(pairs ...*ast.HashItem) *ast.HashLiteral {
+func hash(pairs ...*ast.HashItem) *ast.HashLiteral {
 	expr := &ast.HashLiteral{
 		Pairs: pairs,
 	}
