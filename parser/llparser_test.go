@@ -95,6 +95,51 @@ func TestParseSimpleLetStatement(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseReturnStatement(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`return`,
+			makeProgram(
+				makeReturnStatement(),
+			),
+		},
+		{
+			`return;`,
+			makeProgram(
+				makeReturnStatement(),
+			),
+		},
+		{
+			`return 42`,
+			makeProgram(
+				makeReturnStatement(
+					l(42),
+				),
+			),
+		},
+		{
+			`return 42;`,
+			makeProgram(
+				makeReturnStatement(
+					l(42),
+				),
+			),
+		},
+		{
+			`return 42, answer, "hello, world";`,
+			makeProgram(
+				makeReturnStatement(
+					l(42),
+					id("answer"),
+					l(`"hello, world"`),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
 func TestParseExpressionList(t *testing.T) {
 	tests := []parserTestCase{
 		{

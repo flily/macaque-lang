@@ -30,6 +30,7 @@ func isExpressionFirstSet(token token.Token) bool {
 const (
 	RuleLetStatement        = "let statement"
 	RuleExpressionStatement = "expression statement"
+	RuleReturnStatement     = "return statement"
 	RuleIdentifierList      = "identifier list"
 	RuleIdentifier          = "identifier"
 	RuleExpressionList      = "expression list"
@@ -132,26 +133,7 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 	p.DebugDbg()
 
 	for current != nil && current.Token != token.EOF {
-		var stmt ast.Statement
-		var err error
-
-		switch current.Token {
-		case token.Let:
-			stmt, err = p.parseLetStatement()
-
-		case token.Comment:
-			// skip comment
-			p.skipComment()
-			continue
-
-		case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
-			token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace:
-			stmt, err = p.parseExpressionStatement()
-
-		default:
-			return nil, p.makeSyntaxError("unexpected token in PROGRAM: %s", current.Token)
-		}
-
+		stmt, err := p.parseStatement()
 		if err != nil {
 			return nil, err
 		}
@@ -170,6 +152,37 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 }
 
 // Parse statements
+
+func (p *LLParser) parseStatement() (ast.Statement, error) {
+	var stmt ast.Statement
+	var err error
+
+	current := p.current()
+	switch current.Token {
+	case token.Let:
+		stmt, err = p.parseLetStatement()
+
+	case token.Comment:
+		// skip comment
+		p.skipComment()
+
+	case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
+		token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace:
+		stmt, err = p.parseExpressionStatement()
+
+	case token.Return:
+		stmt, err = p.parseReturnStatement()
+
+	default:
+		return nil, p.makeSyntaxError("unexpected token in PROGRAM: %s", current.Token)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stmt, nil
+}
 
 // let-stmt
 // => "let" identifier-list "=" expression-list ";"
@@ -213,6 +226,23 @@ func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) 
 	_ = p.skipToken(token.Semicolon, RuleExpressionStatement)
 
 	stmt := &ast.ExpressionStatement{
+		Expressions: exprList,
+	}
+
+	return stmt, nil
+}
+
+func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
+	_ = p.skipToken(token.Return, RuleReturnStatement)
+
+	exprList, err := p.parseExpressionList()
+	if err != nil {
+		return nil, err
+	}
+
+	_ = p.skipToken(token.Semicolon, RuleReturnStatement)
+
+	stmt := &ast.ReturnStatement{
 		Expressions: exprList,
 	}
 

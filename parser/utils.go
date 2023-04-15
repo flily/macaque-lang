@@ -88,6 +88,24 @@ func makeLetStatement(identifers *ast.IdentifierList, expressions *ast.Expressio
 	return stmt
 }
 
+func makeReturnStatement(expressions ...ast.Expression) *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{
+		Expressions: &ast.ExpressionList{
+			Expressions: expressions,
+		},
+	}
+
+	return stmt
+}
+
+func id(name string) *ast.Identifier {
+	id := &ast.Identifier{
+		Value: name,
+	}
+
+	return id
+}
+
 func idList(names ...string) *ast.IdentifierList {
 	list := &ast.IdentifierList{}
 	for _, name := range names {
