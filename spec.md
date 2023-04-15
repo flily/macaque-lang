@@ -386,8 +386,11 @@ infix-operator = "+" / "-" / "*" / "/" / "==" / "!=" / "<" / ">"
 
 group-expression = "(" expression ")"
 
-if-stmt = "if" "(" expression ")" block-stmt [ "else" ( block-stmt / if-stmt ) ]
+
+if-expression = "if" "(" expression ")" block-stmt [ "else" ( block-stmt / if-stmt ) ]
           ; support 'else if' statement
+
+if-stmt = if-expression
 
 block-stmt = "{" *statement "}"
 

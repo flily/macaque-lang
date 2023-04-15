@@ -271,3 +271,48 @@ func (e *CallExpression) EqualTo(node Node) bool {
 
 	return result
 }
+
+type IfExpression struct {
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative BlockStatementNode
+}
+
+func (e *IfExpression) expressionNode() {}
+
+func (e *IfExpression) Children() []Node {
+	nodes := []Node{e.Condition, e.Consequence}
+	if e.Alternative != nil {
+		nodes = append(nodes, e.Alternative)
+	}
+
+	return nodes
+}
+
+func (e *IfExpression) CanonicalCode() string {
+	result := fmt.Sprintf("if ( %s ) %s",
+		e.Condition.CanonicalCode(),
+		e.Consequence.CanonicalCode(),
+	)
+
+	if e.Alternative != nil {
+		result += fmt.Sprintf(" else %s", e.Alternative.CanonicalCode())
+	}
+
+	return result
+}
+
+func (e *IfExpression) EqualTo(node Node) bool {
+	result := false
+	switch n := node.(type) {
+	case *IfExpression:
+		result = e.Condition.EqualTo(n.Condition) &&
+			e.Consequence.EqualTo(n.Consequence)
+
+		if result && e.Alternative != nil {
+			result = result && e.Alternative.EqualTo(n.Alternative)
+		}
+	}
+
+	return result
+}

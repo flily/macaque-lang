@@ -169,3 +169,29 @@ func hash(pairs ...*ast.HashItem) *ast.HashLiteral {
 
 	return expr
 }
+
+func ifexp(condition ast.Expression, consequence *ast.BlockStatement, alternative ast.BlockStatementNode) *ast.IfExpression {
+	expr := &ast.IfExpression{
+		Condition:   condition,
+		Consequence: consequence,
+		Alternative: alternative,
+	}
+
+	return expr
+}
+
+func elseif(condition ast.Expression, consequence *ast.BlockStatement, alternative ast.BlockStatementNode) *ast.IfStatement {
+	expr := &ast.IfStatement{
+		Expression: ifexp(condition, consequence, alternative),
+	}
+
+	return expr
+}
+
+func block(statements ...ast.Statement) *ast.BlockStatement {
+	stmt := &ast.BlockStatement{
+		Statements: statements,
+	}
+
+	return stmt
+}

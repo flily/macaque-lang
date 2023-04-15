@@ -20,6 +20,7 @@ var expressionFirstSet = [...]bool{
 	token.Bang:       true,
 	token.LBracket:   true,
 	token.LBrace:     true,
+	token.If:         true,
 	token.LastToken:  false,
 }
 
@@ -31,6 +32,8 @@ const (
 	RuleLetStatement        = "let statement"
 	RuleExpressionStatement = "expression statement"
 	RuleReturnStatement     = "return statement"
+	RuleBlockStatement      = "block statement"
+	RuleFunctionLiteral     = "function literal"
 	RuleIdentifierList      = "identifier list"
 	RuleIdentifier          = "identifier"
 	RuleExpressionList      = "expression list"
@@ -40,6 +43,7 @@ const (
 	RuleCallExpression      = "call expression"
 	RuleIndexExpression     = "index expression"
 	RuleGroupedExpression   = "grouped expression"
+	RuleIfExpression        = "if expression"
 )
 
 type LLParser struct {
@@ -142,7 +146,7 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 
 		next := p.current()
 		if next == current {
-			return nil, p.makeSyntaxError("parse does not shift any token")
+			return nil, p.makeSyntaxError("parser does not shift any token")
 		}
 
 		current = next
@@ -167,7 +171,8 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 		p.skipComment()
 
 	case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
-		token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace:
+		token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace,
+		token.If:
 		stmt, err = p.parseExpressionStatement()
 
 	case token.Return:
@@ -244,6 +249,47 @@ func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 
 	stmt := &ast.ReturnStatement{
 		Expressions: exprList,
+	}
+
+	return stmt, nil
+}
+
+func (p *LLParser) parseBlockStatement(context string) (*ast.BlockStatement, error) {
+	_ = p.skipToken(token.LBrace, context)
+
+	block := &ast.BlockStatement{}
+	current := p.current()
+	for current != nil && current.Token != token.RBrace && current.Token != token.EOF {
+		stmt, err := p.parseStatement()
+		if err != nil {
+			return nil, err
+		}
+
+		block.AddStatement(stmt)
+
+		next := p.current()
+		if next == current {
+			return nil, p.makeSyntaxError("parser does not shift any token")
+		}
+
+		current = next
+	}
+
+	if err := p.skipToken(token.RBrace, context); err != nil {
+		return nil, err
+	}
+
+	return block, nil
+}
+
+func (p *LLParser) parseIfStatement() (*ast.IfStatement, error) {
+	expr, err := p.parseIfExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := &ast.IfStatement{
+		Expression: expr,
 	}
 
 	return stmt, nil
@@ -455,6 +501,9 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 	case token.Bang, token.Minus:
 		expr, err = p.parsePrefixExpression()
 
+	case token.If:
+		expr, err = p.parseIfExpression()
+
 	default:
 		err = p.makeSyntaxError("unexpected token in EXPRESSION: %s", current.Token)
 	}
@@ -645,4 +694,56 @@ func (p *LLParser) parseGroupExpression() (ast.Expression, error) {
 	}
 
 	return expr, nil
+}
+
+func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
+	_ = p.skipToken(token.If, RuleIfExpression)
+
+	if err := p.skipToken(token.LParen, RuleIfExpression); err != nil {
+		return nil, err
+	}
+
+	condition, err := p.parseExpression(PrecedenceLowest)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := p.skipToken(token.RParen, RuleIfExpression); err != nil {
+		return nil, err
+	}
+
+	consequence, err := p.parseBlockStatement(RuleIfExpression)
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := &ast.IfExpression{
+		Condition:   condition,
+		Consequence: consequence,
+	}
+
+	if err := p.skipToken(token.Else, RuleIfExpression); err == nil {
+		var alternative ast.BlockStatementNode
+		var err error
+
+		current := p.current()
+		switch current.Token {
+		case token.If:
+			alternative, err = p.parseIfStatement()
+
+		case token.LBrace:
+			alternative, err = p.parseBlockStatement(RuleIfExpression)
+
+		default:
+			return nil, p.makeSyntaxError("unexpected token in IF-ELSE: %s", current.Token)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		stmt.Alternative = alternative
+	}
+
+	return stmt, nil
 }

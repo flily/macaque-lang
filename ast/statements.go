@@ -82,44 +82,25 @@ func (s *ReturnStatement) EqualTo(node Node) bool {
 }
 
 type IfStatement struct {
-	Condition   Expression
-	Consequence *BlockStatement
-	Alternative BlockStatementNode
+	Expression *IfExpression
 }
 
 func (s *IfStatement) statementNode()      {}
 func (s *IfStatement) blockStatementNode() {}
 
 func (s *IfStatement) Children() []Node {
-	nodes := []Node{
-		s.Condition,
-		s.Consequence,
-		s.Alternative,
-	}
-
-	return nodes
+	return s.Expression.Children()
 }
 
 func (s *IfStatement) CanonicalCode() string {
-	result := fmt.Sprintf("if ( %s ) %s",
-		s.Condition.CanonicalCode(),
-		s.Consequence.CanonicalCode(),
-	)
-
-	if s.Alternative != nil {
-		result += fmt.Sprintf(" else %s", s.Alternative.CanonicalCode())
-	}
-
-	return result
+	return s.Expression.CanonicalCode()
 }
 
 func (s *IfStatement) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
 	case *IfStatement:
-		result = s.Condition.EqualTo(n.Condition) &&
-			s.Consequence.EqualTo(n.Consequence) &&
-			s.Alternative.EqualTo(n.Alternative)
+		result = s.Expression.EqualTo(n.Expression)
 	}
 
 	return result
@@ -166,6 +147,10 @@ func (s *BlockStatement) EqualTo(node Node) bool {
 	}
 
 	return result
+}
+
+func (s *BlockStatement) AddStatement(stmt Statement) {
+	s.Statements = append(s.Statements, stmt)
 }
 
 type ExpressionStatement struct {

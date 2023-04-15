@@ -332,6 +332,108 @@ func TestParseHashLiteral(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseIfExpression(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`if (10 > 1) { 10 }`,
+			makeProgram(
+				makeExpressionStatement(
+					ifexp(
+						infix(">", l(10), l(1)),
+						block(
+							makeExpressionStatement(l(10)),
+						),
+						nil,
+					),
+				),
+			),
+		},
+		{
+			`if (10 > 1) { 10 } else { 20 }`,
+			makeProgram(
+				makeExpressionStatement(
+					ifexp(
+						infix(">", l(10), l(1)),
+						block(
+							makeExpressionStatement(l(10)),
+						),
+						block(
+							makeExpressionStatement(l(20)),
+						),
+					),
+				),
+			),
+		},
+		{
+			`if (10 > 1) {
+				10
+			} else {
+				20
+			}`,
+			makeProgram(
+				makeExpressionStatement(
+					ifexp(
+						infix(">", l(10), l(1)),
+						block(
+							makeExpressionStatement(l(10)),
+						),
+						block(
+							makeExpressionStatement(l(20)),
+						),
+					),
+				),
+			),
+		},
+		{
+			`if (10 > 1) {
+				10
+			} else if (10 > 20) {
+				20
+			} else {
+				30
+			}`,
+			makeProgram(
+				makeExpressionStatement(
+					ifexp(
+						infix(">", l(10), l(1)),
+						block(
+							makeExpressionStatement(l(10)),
+						),
+						elseif(
+							infix(">", l(10), l(20)),
+							block(
+								makeExpressionStatement(l(20)),
+							),
+							block(
+								makeExpressionStatement(l(30)),
+							),
+						),
+					),
+				),
+			),
+		},
+		{
+			`let x = if (10 > 1) { 10 }`,
+			makeProgram(
+				makeLetStatement(
+					idList("x"),
+					exprList(
+						ifexp(
+							infix(">", l(10), l(1)),
+							block(
+								makeExpressionStatement(l(10)),
+							),
+							nil,
+						),
+					),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
 func TestOperatorPrecedence(t *testing.T) {
 	tests := []struct {
 		input    string
