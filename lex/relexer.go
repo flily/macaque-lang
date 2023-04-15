@@ -395,6 +395,7 @@ var multiBytesPunctutations = []string{
 	token.SNE, token.SBang,
 	token.SGE, token.SGT,
 	token.SLE, token.SLT,
+	token.SDualColon, token.SColon,
 }
 
 func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {

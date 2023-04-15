@@ -55,6 +55,7 @@ const (
 	Period       // .
 	Colon        // :
 	Semicolon    // ;
+	DualColon    // ::
 	LParen       // (
 	RParen       // )
 	LBrace       // {
@@ -97,6 +98,7 @@ const (
 	SPeriod       = "."
 	SColon        = ":"
 	SSemicolon    = ";"
+	SDualColon    = "::"
 	SLParen       = "("
 	SRParen       = ")"
 	SLBrace       = "{"
@@ -146,6 +148,7 @@ var displayName = [...]string{
 	Period:       ".",
 	Colon:        ":",
 	Semicolon:    ";",
+	DualColon:    "::",
 	LParen:       "(",
 	RParen:       ")",
 	LBrace:       "{",
@@ -236,6 +239,7 @@ var operatorMap = map[string]Token{
 	SPeriod:       Period,
 	SColon:        Colon,
 	SSemicolon:    Semicolon,
+	SDualColon:    DualColon,
 	SLParen:       LParen,
 	SRParen:       RParen,
 	SLBrace:       LBrace,

@@ -243,7 +243,7 @@ func (e *CallExpression) CanonicalCode() string {
 	var result string
 
 	if e.Member != nil {
-		result = fmt.Sprintf("%s:%s(%s)",
+		result = fmt.Sprintf("%s::%s(%s)",
 			e.Callable.CanonicalCode(),
 			e.Member.CanonicalCode(),
 			e.Args.CanonicalCode(),

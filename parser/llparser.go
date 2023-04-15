@@ -19,6 +19,7 @@ var expressionFirstSet = [...]bool{
 	token.Minus:      true,
 	token.Bang:       true,
 	token.LBracket:   true,
+	token.LBrace:     true,
 }
 
 func isExpressionFirstSet(token token.Token) bool {
@@ -33,6 +34,7 @@ const (
 	RuleExpressionList      = "expression list"
 	RuleExpression          = "expression"
 	RuleArrayLiteral        = "array literal"
+	RuleHashLiteral         = "hash literal"
 	RuleCallExpression      = "call expression"
 	RuleIndexExpression     = "index expression"
 	RuleGroupedExpression   = "grouped expression"
@@ -125,6 +127,9 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 	program := ast.NewEmptyProgram()
 	current := p.current()
 
+	p.DebugLin()
+	p.DebugDbg()
+
 	for current != nil && current.Token != token.EOF {
 		var stmt ast.Statement
 		var err error
@@ -139,7 +144,7 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 			continue
 
 		case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
-			token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket:
+			token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace:
 			stmt, err = p.parseExpressionStatement()
 
 		default:
@@ -151,7 +156,13 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 		}
 
 		program.AddStatement(stmt)
-		current = p.current()
+
+		next := p.current()
+		if next == current {
+			return nil, p.makeSyntaxError("parse does not shift any token")
+		}
+
+		current = next
 	}
 
 	return program, nil
@@ -297,6 +308,9 @@ func (p *LLParser) parseLiteral() (ast.Expression, error) {
 
 	case token.LBracket:
 		expr, err = p.parseArrayLiteral()
+
+	case token.LBrace:
+		expr, err = p.parseHashLiteral()
 	}
 
 	return expr, err
@@ -320,6 +334,45 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 	}
 
 	return array, nil
+}
+
+func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
+	_ = p.skipToken(token.LBrace, RuleHashLiteral)
+
+	hash := &ast.HashLiteral{}
+
+	for {
+		current := p.current()
+		if current.Token == token.RBrace {
+			break
+		}
+
+		key, err := p.parseExpression(PrecedenceLowest)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := p.skipToken(token.Colon, RuleHashLiteral); err != nil {
+			return nil, err
+		}
+
+		value, err := p.parseExpression(PrecedenceLowest)
+		if err != nil {
+			return nil, err
+		}
+
+		hash.AddPair(key, value)
+
+		if err := p.skipToken(token.Comma, RuleHashLiteral); err != nil {
+			break
+		}
+	}
+
+	if err := p.skipToken(token.RBrace, RuleHashLiteral); err != nil {
+		return nil, err
+	}
+
+	return hash, nil
 }
 
 // Parse expressions
@@ -357,7 +410,7 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 		expr, err = p.parseGroupExpression()
 
 	case token.Integer, token.Float, token.String, token.True, token.False, token.Null,
-		token.LBracket:
+		token.LBracket, token.LBrace:
 		expr, err = p.parseLiteral()
 
 	case token.Identifier:
@@ -391,7 +444,7 @@ func (p *LLParser) parseExpressionWithOperator(expr ast.Expression, precedence i
 	case token.LParen:
 		expr, err = p.parseCallExpression(expr, false)
 
-	case token.Colon:
+	case token.DualColon:
 		expr, err = p.parseCallExpression(expr, true)
 
 	case token.LBracket:
@@ -405,7 +458,7 @@ func (p *LLParser) parseExpressionWithOperator(expr ast.Expression, precedence i
 			expr, err = p.parseInfixExpression(expr, precedence)
 
 		} else {
-			err = p.makeSyntaxError("unexpected token in EXPRESSION: %s", operator)
+			err = p.makeSyntaxError("unexpected token in EXPRESSION_OP: %s", operator)
 		}
 	}
 
@@ -461,7 +514,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 	var member *ast.Identifier
 
 	if findMethod {
-		_ = p.skipToken(token.Colon, RuleCallExpression)
+		_ = p.skipToken(token.DualColon, RuleCallExpression)
 		member, err = p.parseIdentifier()
 		if err != nil {
 			return nil, err

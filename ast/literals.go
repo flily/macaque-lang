@@ -286,6 +286,14 @@ func (h *HashLiteral) EqualTo(node Node) bool {
 	return result
 }
 
+func (h *HashLiteral) AddPair(key Expression, value Expression) {
+	item := &HashItem{
+		Key:   key,
+		Value: value,
+	}
+	h.Pairs = append(h.Pairs, item)
+}
+
 type FunctionLiteral struct {
 	Arguments *IdentifierList
 	Body      *BlockStatement

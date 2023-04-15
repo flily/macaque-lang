@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/flily/macaque-lang/ast"
@@ -17,6 +18,35 @@ func makeProgram(statements ...ast.Statement) *ast.Program {
 	}
 
 	return program
+}
+
+func l(v interface{}) ast.Expression {
+	var r ast.Expression
+
+	if v == nil {
+		return &ast.NullLiteral{}
+	}
+
+	switch v := v.(type) {
+	case int:
+		r = &ast.IntegerLiteral{
+			Value:   int64(v),
+			Content: fmt.Sprintf("%d", v),
+		}
+
+	case string:
+		r = &ast.StringLiteral{
+			Value:   v,
+			Content: fmt.Sprintf("\"%s\"", v),
+		}
+
+	case bool:
+		r = &ast.BooleanLiteral{
+			Value: v,
+		}
+	}
+
+	return r
 }
 
 func makeExpressionStatement(expressions ...ast.Expression) *ast.ExpressionStatement {
@@ -72,6 +102,31 @@ func makeInfixExpression(operator string, left ast.Expression, right ast.Express
 		LeftOperand:  left,
 		Operator:     token.CheckOperatorToken(operator),
 		RightOperand: right,
+	}
+
+	return expr
+}
+
+func makeArrayLiteral(elements ...ast.Expression) *ast.ArrayLiteral {
+	expr := &ast.ArrayLiteral{
+		Elements: elements,
+	}
+
+	return expr
+}
+
+func makePair(key ast.Expression, value ast.Expression) *ast.HashItem {
+	pair := &ast.HashItem{
+		Key:   key,
+		Value: value,
+	}
+
+	return pair
+}
+
+func makeHashLiteral(pairs ...*ast.HashItem) *ast.HashLiteral {
+	expr := &ast.HashLiteral{
+		Pairs: pairs,
 	}
 
 	return expr

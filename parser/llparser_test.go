@@ -28,7 +28,7 @@ func runParserTestCase(t *testing.T, cases []parserTestCase) {
 	for _, c := range cases {
 		program, err := testLLParseCode(c.code)
 		if err != nil {
-			t.Fatalf("Parse() failed.\n%v\n%s", err, c.code)
+			t.Errorf("Parse() failed.\n%v\n%s", err, c.code)
 		}
 
 		if !program.EqualTo(c.expected) {
@@ -199,6 +199,48 @@ func TestExpressionParsing(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseHashLiteral(t *testing.T) {
+	tests := []parserTestCase{
+		// {
+		// 	`{}`,
+		// 	makeProgram(
+		// 		makeExpressionStatement(
+		// 			makeHashLiteral(),
+		// 		),
+		// 	),
+		// },
+		{
+			`{"one": 1, "two": 2, "three": 3}`,
+			makeProgram(
+				makeExpressionStatement(
+					makeHashLiteral(
+						makePair(l("one"), l(1)),
+						makePair(l("two"), l(2)),
+						makePair(l("three"), l(3)),
+					),
+				),
+			),
+		},
+		{
+			`{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`,
+			makeProgram(
+				makeExpressionStatement(
+					makeHashLiteral(
+						makePair(l("one"),
+							makeInfixExpression("+", l(0), l(1))),
+						makePair(l("two"),
+							makeInfixExpression("-", l(10), l(8))),
+						makePair(l("three"),
+							makeInfixExpression("/", l(15), l(5))),
+					),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
 func TestOperatorPrecedence(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -320,12 +362,12 @@ func TestOperatorPrecedence(t *testing.T) {
 			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])));",
 		},
 		{
-			"a + b:c(d + e) * f",
-			"(a + (b:c((d + e)) * f));",
+			"a + b::c(d + e) * f",
+			"(a + (b::c((d + e)) * f));",
 		},
 		{
-			"a * b:c(d + e) + f",
-			"((a * b:c((d + e))) + f);",
+			"a * b::c(d + e) + f",
+			"((a * b::c((d + e))) + f);",
 		},
 	}
 
