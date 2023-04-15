@@ -158,7 +158,48 @@ Macaque has 9 basic data types:
 Expressions
 ------------
 
+Most other programming languages, the term `expression` is used to describe a
+sequence of codes which can be evaluated to a value, and the term `statement`
+can not. In monkey language, every statement is actually an expression, and they
+can be evaluated to a value, even if the LET statement is evaluated to `null`.
+
+Macaque language keeps this design. But we will call the EXPRESSIONs which may
+take effects to the flow of the program STATEMENTs.
+
 ### Operands
+
+### If expression
+
+In original Monkey language, the author let the IF expression acts like both
+expression and statement. It is an expression because it is made to has a value,
+and it can be used as a default return value of a function. But it acts like a
+statement because it can terminate the execution of the function if it contains
+a RETURN statement.
+
+In Macaque language, original design of IF expression is kept. And a useful
+syntax ELSE-IF is added, which is very common in other programming languages.
+
+```monkey
+if (condition) {
+    code
+}
+
+if (condition) {
+    do_something()
+} else {
+    do_some_other_thing()
+}
+
+if (condition1) {
+    do_something_when_1()
+} else if (condition2) {
+    do_something_when_2()
+} else {
+    do_some_other_thing()
+}
+
+```
+
 
 ### Index expression
 
@@ -178,6 +219,61 @@ Statements
 
 ### Return statement
 
+In original Monkey language, the behaviour of RETURN statement is not well
+defined. It can appear in some strange places, like IF expression. In Chatper
+3.7 of the book **Writing An Interpreter In Go**, the use of `return` in
+top-level code is presented as a test case.
+
+```monkey
+if (10 > 1) {
+    if (10 > 1) {
+        return 10;
+    }
+
+    return 1;
+}
+```
+
+But the following code will get a strange error,
+`ERROR: type mismatch: RETURN_VALUE + INTEGER`
+```monkey
+let r = if (10 > 1) {
+    if (10 > 1) {
+        return 10;
+    }
+
+    return 1;
+}
+
+r + 1
+```
+
+
+Macaque language fix this bug and defines the behaviour of RETURN in following
+situations:
+  - Top-level RETURN statement: return value as a module, terminate the
+    execution of the rest code of program.
+    ```monkey
+    let M = {"one": 1, "two": 2, "three": 3};
+    return M;
+    ```
+  - RETURN statement in top-level IF-statement: return value as the result of 
+    out most IF-statement, like a function, terminate the execution of the rest
+    code of the out most IF-statement.
+    ```monkey
+    let r = if (10 > 1) {
+        if (10 > 1) {
+            return 10;
+        }
+
+        return 1;
+    }
+    
+    r + 1;  // 11
+    ```
+  - RETURN statement in function: return value as the result of the function,
+    terminate the execution of the rest code of the function.
+
 ### Import statement
 
 
@@ -195,7 +291,6 @@ program = *statement
 statement = let-stmt
           / return-stmt
           / import-stmt       ; not determined yet
-          / if-stmt
           / expression-stmt
 
 let-stmt = "let" identifier-list "=" expression-list ";"
@@ -215,6 +310,7 @@ expression = literals
            / index-expression
            / call-expression
            / group-expression
+           / if-expression
 
 literals = null-literal
          / boolean-literal

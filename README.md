@@ -50,6 +50,12 @@ Macaque makes some improvements from Monkey:
     + Reference item key with identifier, like `hash.key`;
     + Use `hash::key()` to call a member function of a object, like this-call, with the object
       itself as the first parameter.
+  - `return` statement will act differently in following situations:
+    + In top-level scope, it will return the value as a module for importing.
+    + In IF-statements in top-level scope, it will return the value as the result of the out most
+      IF-statement.
+    + In function body, it will return the value as the result of the function, and terminate the
+      execution of rest code in the function.
 
 Missing features in Monkey, but not decided to add in Macaque yet:
   - Loop statement, like `while` and `for`, but it can be implemented by recursion.
