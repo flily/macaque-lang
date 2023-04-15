@@ -46,7 +46,10 @@ Macaque makes some improvements from Monkey:
     + add `&`, `|` and `^` for bitwise AND, OR and XOR.
   - Add one-line comments, leading with `//`.
   - Recursive call in closure by call `fn(a, b, c)` without function body.
-
+  - Add support for object-like use of hash, with following features:
+    + Reference item key with identifier, like `hash.key`;
+    + Use `hash::key()` to call a member function of a object, like this-call, with the object
+      itself as the first parameter.
 
 Missing features in Monkey, but not decided to add in Macaque yet:
   - Loop statement, like `while` and `for`, but it can be implemented by recursion.
@@ -57,12 +60,9 @@ Missing features in Monkey, but not decided to add in Macaque yet:
     + For global variables is harmful, make all variables are local variables may be better.
     + Use naming convention to distinguish local and global variables, variables start with `_` is
       local.
-  - Add support for object-like use of hash, with following features:
-    + Reference item key with identifier, like `hash.key`;
-    + Call function item directly with key reference, use `hash:key()` like lua.
   - Make all types object.
-    + Use `:function()` to make class-call, like lua.
-    + `int` is object, has native methods and can be called on literals, `5:times()` like ruby.
+    + Use `::function()` to make class-call, like lua.
+    + `int` is object, has native methods and can be called on literals, `5::times()` like ruby.
   - Error handling mechanism.
     + Use `try`, `catch`, `finally` and `throw` like Java.
     + Use `ON ERROR` trap like BASIC.

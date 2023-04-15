@@ -269,7 +269,7 @@ identifier-suffix = "!" / "?"  ; not implemented for now
 index-expression = ( expression "[" expression "]" )
                  / ( expression "." identifier )
 
-call-expression = expression [ ":" identifier ] "(" [expression-list] ")"
+call-expression = expression [ "::" identifier ] "(" [expression-list] ")"
 
 prefix-expression = prefix-operator expression
 
