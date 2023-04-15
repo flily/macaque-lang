@@ -429,6 +429,32 @@ func TestParseIfExpression(t *testing.T) {
 				),
 			),
 		},
+		{
+			`let x = 3 + if (10 > 1) { 9 } * 5 + 8`,
+			makeProgram(
+				makeLetStatement(
+					idList("x"),
+					exprList(
+						infix("+",
+							infix("+",
+								l(3),
+								infix("*",
+									ifexp(
+										infix(">", l(10), l(1)),
+										block(
+											makeExpressionStatement(l(9)),
+										),
+										nil,
+									),
+									l(5),
+								),
+							),
+							l(8),
+						),
+					),
+				),
+			),
+		},
 	}
 
 	runParserTestCase(t, tests)
