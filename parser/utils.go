@@ -12,7 +12,7 @@ func makeMultilines(lines ...string) string {
 	return strings.Join(lines, "\n")
 }
 
-func makeProgram(statements ...ast.Statement) *ast.Program {
+func program(statements ...ast.Statement) *ast.Program {
 	program := &ast.Program{
 		Statements: statements,
 	}
@@ -32,12 +32,6 @@ func l(v interface{}) ast.Expression {
 		r = &ast.IntegerLiteral{
 			Value:   int64(v),
 			Content: fmt.Sprintf("%d", v),
-		}
-
-	case float64:
-		r = &ast.FloatLiteral{
-			Value:   v,
-			Content: fmt.Sprintf("%f", v),
 		}
 
 	case string:
@@ -69,7 +63,7 @@ func float(s string) ast.Expression {
 // 	}
 // }
 
-func makeExpressionStatement(expressions ...ast.Expression) *ast.ExpressionStatement {
+func expr(expressions ...ast.Expression) *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{
 		Expressions: &ast.ExpressionList{
 			Expressions: expressions,
@@ -79,7 +73,7 @@ func makeExpressionStatement(expressions ...ast.Expression) *ast.ExpressionState
 	return stmt
 }
 
-func makeLetStatement(identifers *ast.IdentifierList, expressions *ast.ExpressionList) *ast.LetStatement {
+func let(identifers *ast.IdentifierList, expressions *ast.ExpressionList) *ast.LetStatement {
 	stmt := &ast.LetStatement{
 		Identifiers: identifers,
 		Expressions: expressions,
@@ -88,7 +82,7 @@ func makeLetStatement(identifers *ast.IdentifierList, expressions *ast.Expressio
 	return stmt
 }
 
-func makeReturnStatement(expressions ...ast.Expression) *ast.ReturnStatement {
+func ret(expressions ...ast.Expression) *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{
 		Expressions: &ast.ExpressionList{
 			Expressions: expressions,
@@ -194,4 +188,13 @@ func block(statements ...ast.Statement) *ast.BlockStatement {
 	}
 
 	return stmt
+}
+
+func fn(args *ast.IdentifierList, body *ast.BlockStatement) *ast.FunctionLiteral {
+	expr := &ast.FunctionLiteral{
+		Arguments: args,
+		Body:      body,
+	}
+
+	return expr
 }

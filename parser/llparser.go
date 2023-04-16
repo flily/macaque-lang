@@ -21,6 +21,7 @@ var expressionFirstSet = [...]bool{
 	token.LBracket:   true,
 	token.LBrace:     true,
 	token.If:         true,
+	token.Fn:         true,
 	token.LastToken:  false,
 }
 
@@ -172,7 +173,7 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 
 	case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
 		token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace,
-		token.If:
+		token.If, token.Fn:
 		stmt, err = p.parseExpressionStatement()
 
 	case token.Return:
@@ -389,6 +390,9 @@ func (p *LLParser) parseLiteral() (ast.Expression, error) {
 
 	case token.LBrace:
 		expr, err = p.parseHashLiteral()
+
+	case token.Fn:
+		expr, err = p.parseFunctionLiteral()
 	}
 
 	return expr, err
@@ -460,6 +464,44 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 	return hash, nil
 }
 
+func (p *LLParser) parseFunctionLiteral() (*ast.FunctionLiteral, error) {
+	_ = p.skipToken(token.Fn, RuleFunctionLiteral)
+
+	if err := p.skipToken(token.LParen, RuleFunctionLiteral); err != nil {
+		return nil, err
+	}
+
+	args := idList()
+	var err error
+
+	if p.currentToken() != token.RParen {
+		args, err = p.parseIdentifierList()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := p.skipToken(token.RParen, RuleFunctionLiteral); err != nil {
+		return nil, err
+	}
+
+	if err := p.skipToken(token.LBrace, RuleFunctionLiteral); err != nil {
+		return nil, err
+	}
+
+	body, err := p.parseBlockStatement(RuleFunctionLiteral)
+	if err != nil {
+		return nil, err
+	}
+
+	literal := &ast.FunctionLiteral{
+		Arguments: args,
+		Body:      body,
+	}
+
+	return literal, nil
+}
+
 // Parse expressions
 
 // expression-list => expression *( "," expression ) [","]
@@ -494,7 +536,7 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 		expr, err = p.parseGroupExpression()
 
 	case token.Integer, token.Float, token.String, token.True, token.False, token.Null,
-		token.LBracket, token.LBrace:
+		token.LBracket, token.LBrace, token.Fn:
 		expr, err = p.parseLiteral()
 
 	case token.Identifier:

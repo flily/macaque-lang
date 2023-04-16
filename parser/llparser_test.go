@@ -44,8 +44,8 @@ func TestParseSimpleLetStatement(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`let answer = 42;`,
-			makeProgram(
-				makeLetStatement(
+			program(
+				let(
 					idList(
 						"answer"),
 					exprList(
@@ -57,8 +57,8 @@ func TestParseSimpleLetStatement(t *testing.T) {
 		{
 			`let answer, pi, hello,  yes, no, nil = 
 				42, 3.1415926, "hello, world", true, false, null;`,
-			makeProgram(
-				makeLetStatement(
+			program(
+				let(
 					idList(
 						"answer", "pi", "hello", "yes", "no", "nil"),
 					exprList(
@@ -75,8 +75,8 @@ func TestParseSimpleLetStatement(t *testing.T) {
 		{
 			`let answer, pi, hello,  yes, no, nil, = 
 				42, 3.1415926, "hello, world", true, false, null,;`,
-			makeProgram(
-				makeLetStatement(
+			program(
+				let(
 					idList(
 						"answer", "pi", "hello", "yes", "no", "nil"),
 					exprList(
@@ -99,36 +99,36 @@ func TestParseReturnStatement(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`return`,
-			makeProgram(
-				makeReturnStatement(),
+			program(
+				ret(),
 			),
 		},
 		{
 			`return;`,
-			makeProgram(
-				makeReturnStatement(),
+			program(
+				ret(),
 			),
 		},
 		{
 			`return 42`,
-			makeProgram(
-				makeReturnStatement(
+			program(
+				ret(
 					l(42),
 				),
 			),
 		},
 		{
 			`return 42;`,
-			makeProgram(
-				makeReturnStatement(
+			program(
+				ret(
 					l(42),
 				),
 			),
 		},
 		{
 			`return 42, answer, "hello, world";`,
-			makeProgram(
-				makeReturnStatement(
+			program(
+				ret(
 					l(42),
 					id("answer"),
 					l(`"hello, world"`),
@@ -144,24 +144,24 @@ func TestParseExpressionList(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`42`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					l(42),
 				),
 			),
 		},
 		{
 			`42,`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					l(42),
 				),
 			),
 		},
 		{
 			`42, 3.1415926, "hello, world", true, false, null`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					l(42),
 					float("3.1415926"),
 					l(`"hello, world"`),
@@ -173,8 +173,8 @@ func TestParseExpressionList(t *testing.T) {
 		},
 		{
 			`42, 3.1415926, "hello, world", true, false, null,`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					l(42),
 					float("3.1415926"),
 					l(`"hello, world"`),
@@ -186,8 +186,8 @@ func TestParseExpressionList(t *testing.T) {
 		},
 		{
 			`42, 3.1415926, "hello, world", true, false, null,;`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					l(42),
 					float("3.1415926"),
 					l(`"hello, world"`),
@@ -206,8 +206,8 @@ func TestExpressionParsing(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`1 + 2 * 3`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					infix("+",
 						l(1),
 						infix("*", l(2), l(3)),
@@ -217,8 +217,8 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		{
 			`1 + 2 + 3`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					infix("+",
 						infix("+", l(1), l(2)),
 						l(3),
@@ -228,8 +228,8 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		{
 			`-1 + --2 + ---3`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					infix("+",
 						infix("+",
 							prefix("-", l(1)),
@@ -255,16 +255,16 @@ func TestParseArrayLiteral(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`[]`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					array(),
 				),
 			),
 		},
 		{
 			`[1, 2, 3]`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					array(
 						l(1),
 						l(2),
@@ -275,8 +275,8 @@ func TestParseArrayLiteral(t *testing.T) {
 		},
 		{
 			`[1, 2 * 2, 3 + 3]`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					array(
 						l(1),
 						infix("*", l(2), l(2)),
@@ -294,16 +294,16 @@ func TestParseHashLiteral(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`{}`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					hash(),
 				),
 			),
 		},
 		{
 			`{"one": 1, "two": 2, "three": 3}`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					hash(
 						pair(l(`"one"`), l(1)),
 						pair(l(`"two"`), l(2)),
@@ -314,8 +314,8 @@ func TestParseHashLiteral(t *testing.T) {
 		},
 		{
 			`{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					hash(
 						pair(l(`"one"`),
 							infix("+", l(0), l(1))),
@@ -332,16 +332,72 @@ func TestParseHashLiteral(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestFunctionLiteral(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`fn() {}`,
+			program(
+				expr(
+					fn(
+						idList(),
+						block(),
+					),
+				),
+			),
+		},
+		{
+			`fn(x) { x }`,
+			program(
+				expr(
+					fn(
+						idList("x"),
+						block(
+							expr(id("x")),
+						),
+					),
+				),
+			),
+		},
+		{
+			`let add = fn(x) { fn(y) { x + y } }`,
+			program(
+				let(
+					idList("add"),
+					exprList(
+						fn(
+							idList("x"),
+							block(
+								expr(
+									fn(
+										idList("y"),
+										block(
+											expr(
+												infix("+", id("x"), id("y")),
+											),
+										),
+									),
+								),
+							),
+						),
+					),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
 func TestParseIfExpression(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`if (10 > 1) { 10 }`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					ifexp(
 						infix(">", l(10), l(1)),
 						block(
-							makeExpressionStatement(l(10)),
+							expr(l(10)),
 						),
 						nil,
 					),
@@ -350,15 +406,15 @@ func TestParseIfExpression(t *testing.T) {
 		},
 		{
 			`if (10 > 1) { 10 } else { 20 }`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					ifexp(
 						infix(">", l(10), l(1)),
 						block(
-							makeExpressionStatement(l(10)),
+							expr(l(10)),
 						),
 						block(
-							makeExpressionStatement(l(20)),
+							expr(l(20)),
 						),
 					),
 				),
@@ -370,15 +426,15 @@ func TestParseIfExpression(t *testing.T) {
 			} else {
 				20
 			}`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					ifexp(
 						infix(">", l(10), l(1)),
 						block(
-							makeExpressionStatement(l(10)),
+							expr(l(10)),
 						),
 						block(
-							makeExpressionStatement(l(20)),
+							expr(l(20)),
 						),
 					),
 				),
@@ -392,20 +448,20 @@ func TestParseIfExpression(t *testing.T) {
 			} else {
 				30
 			}`,
-			makeProgram(
-				makeExpressionStatement(
+			program(
+				expr(
 					ifexp(
 						infix(">", l(10), l(1)),
 						block(
-							makeExpressionStatement(l(10)),
+							expr(l(10)),
 						),
 						elseif(
 							infix(">", l(10), l(20)),
 							block(
-								makeExpressionStatement(l(20)),
+								expr(l(20)),
 							),
 							block(
-								makeExpressionStatement(l(30)),
+								expr(l(30)),
 							),
 						),
 					),
@@ -414,14 +470,14 @@ func TestParseIfExpression(t *testing.T) {
 		},
 		{
 			`let x = if (10 > 1) { 10 }`,
-			makeProgram(
-				makeLetStatement(
+			program(
+				let(
 					idList("x"),
 					exprList(
 						ifexp(
 							infix(">", l(10), l(1)),
 							block(
-								makeExpressionStatement(l(10)),
+								expr(l(10)),
 							),
 							nil,
 						),
@@ -431,8 +487,8 @@ func TestParseIfExpression(t *testing.T) {
 		},
 		{
 			`let x = 3 + if (10 > 1) { 9 } * 5 + 8`,
-			makeProgram(
-				makeLetStatement(
+			program(
+				let(
 					idList("x"),
 					exprList(
 						infix("+",
@@ -442,7 +498,7 @@ func TestParseIfExpression(t *testing.T) {
 									ifexp(
 										infix(">", l(10), l(1)),
 										block(
-											makeExpressionStatement(l(9)),
+											expr(l(9)),
 										),
 										nil,
 									),
