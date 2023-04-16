@@ -59,9 +59,14 @@ func (c parserErrorTestCase) expect(got string) bool {
 
 func runParserErrorTestCase(t *testing.T, cases []parserErrorTestCase) {
 	for _, c := range cases {
-		_, err := testLLParseCode(c.code())
+		program, err := testLLParseCode(c.code())
 		if err == nil {
-			t.Fatalf("Parse() should fail.\n%s", c.code())
+			s := "no PROGRAM returned"
+			if program != nil {
+				s = program.CanonicalCode()
+			}
+
+			t.Fatalf("Parse() should fail.\n%s\ngot:\n%s", c.code(), s)
 		}
 
 		if !c.expect(err.Error()) {
@@ -152,6 +157,22 @@ func TestParseLetStatementError(t *testing.T) {
 				"                 ^^^^^^",
 				"                 unexpected token in EXPRESSION: RETURN",
 				"  at testcase:1:18",
+			},
+		},
+		{
+			[]string{
+				`let answer = return`,
+				"             ^^^^^^",
+				"             expect token IDENTIFIER IN expression list, but got RETURN",
+				"  at testcase:1:14",
+			},
+		},
+		{
+			[]string{
+				`let = 42,`,
+				"    ^",
+				"    expect token IDENTIFIER IN identifier, but got <=>",
+				"  at testcase:1:5",
 			},
 		},
 	}

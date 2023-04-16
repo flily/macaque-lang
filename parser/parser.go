@@ -21,6 +21,11 @@ const (
 	PrecedenceIndex                 // array[index]
 )
 
+const (
+	ExprListCanBeEmpty = true
+	ExprListMustHave   = false
+)
+
 var precedenceMap = map[token.Token]int{
 	token.AND:       PrecedenceLogicalAND,
 	token.OR:        PrecedenceLogicalOR,

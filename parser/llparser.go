@@ -203,7 +203,7 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, err
 	}
 
-	exprList, err := p.parseExpressionList()
+	exprList, err := p.parseExpressionList(ExprListMustHave)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 
 // expression-stmt => expression-list ";"
 func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) {
-	exprList, err := p.parseExpressionList()
+	exprList, err := p.parseExpressionList(ExprListMustHave)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) 
 func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 	_ = p.skipToken(token.Return, RuleReturnStatement)
 
-	exprList, err := p.parseExpressionList()
+	exprList, err := p.parseExpressionList(ExprListCanBeEmpty)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 		return array(), nil
 	}
 
-	list, err := p.parseExpressionList()
+	list, err := p.parseExpressionList(ExprListCanBeEmpty)
 	if err != nil {
 		return nil, err
 	}
@@ -503,11 +503,16 @@ func (p *LLParser) parseFunctionLiteral() (*ast.FunctionLiteral, error) {
 // Parse expressions
 
 // expression-list => expression *( "," expression ) [","]
-func (p *LLParser) parseExpressionList() (*ast.ExpressionList, error) {
+func (p *LLParser) parseExpressionList(canBeEmpty bool) (*ast.ExpressionList, error) {
 	var err error
 	list := &ast.ExpressionList{}
 
-	for isExpressionFirstSet(p.currentToken()) {
+	current := p.current()
+	if !canBeEmpty && !isExpressionFirstSet(current.Token) {
+		return nil, p.expect(token.Identifier, RuleExpressionList)
+	}
+
+	for isExpressionFirstSet(current.Token) {
 		exp, err := p.parseExpression(PrecedenceLowest)
 		if err != nil {
 			return nil, err
@@ -518,6 +523,8 @@ func (p *LLParser) parseExpressionList() (*ast.ExpressionList, error) {
 		if err := p.skipToken(token.Comma, RuleExpressionList); err != nil {
 			break
 		}
+
+		current = p.current()
 	}
 
 	return list, err
@@ -661,7 +668,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 		_ = p.skipToken(token.LParen, RuleCallExpression)
 	}
 
-	arguments, err := p.parseExpressionList()
+	arguments, err := p.parseExpressionList(ExprListCanBeEmpty)
 	if err != nil {
 		return nil, err
 	}
