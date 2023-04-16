@@ -147,7 +147,7 @@ func TestParseLetStatementError(t *testing.T) {
 			[]string{
 				`let answer;`,
 				"          ^",
-				"          expect token <=> IN let statement, but got <;>",
+				"          expect token ASSIGN(=) IN let statement, but got SEMICOLON(;)",
 				"  at testcase:1:11",
 			},
 		},
@@ -171,7 +171,7 @@ func TestParseLetStatementError(t *testing.T) {
 			[]string{
 				`let = 42,`,
 				"    ^",
-				"    expect token IDENTIFIER IN identifier, but got <=>",
+				"    expect token IDENTIFIER IN identifier, but got ASSIGN(=)",
 				"  at testcase:1:5",
 			},
 		},
@@ -393,7 +393,7 @@ func TestParseArrayLiteralError(t *testing.T) {
 			[]string{
 				`[1, 2, 3`,
 				"        ^",
-				"        expect token <]> IN array literal, but got EOF",
+				"        expect token RBRACKET(']') IN array literal, but got EOF",
 				"  at testcase:1:9",
 			},
 		},
@@ -401,7 +401,7 @@ func TestParseArrayLiteralError(t *testing.T) {
 			[]string{
 				`[1, return, 3,]`,
 				"    ^^^^^^",
-				"    expect token <]> IN array literal, but got RETURN",
+				"    expect token RBRACKET(']') IN array literal, but got RETURN",
 				"  at testcase:1:5",
 			},
 		},
@@ -478,7 +478,7 @@ func TestParseHashLiteralError(t *testing.T) {
 			[]string{
 				`{1: 1, 2: 2, 3: 3`,
 				"                 ^",
-				"                 expect token <}> IN hash literal, but got EOF",
+				"                 expect token RBRACE('}') IN hash literal, but got EOF",
 				"  at testcase:1:18",
 			},
 		},
@@ -502,7 +502,7 @@ func TestParseHashLiteralError(t *testing.T) {
 			[]string{
 				`{1, 2, 3, 4}`,
 				"  ^",
-				"  expect token <:> IN hash literal, but got <,>",
+				"  expect token COLON(:) IN hash literal, but got COMMA(,)",
 				"  at testcase:1:3",
 			},
 		},

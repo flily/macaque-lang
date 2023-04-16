@@ -15,11 +15,17 @@ func TestTokenString(t *testing.T) {
 		{Integer, "INTEGER"},
 		{Let, "LET"},
 		{Return, "RETURN"},
-		{Plus, "<+>"},
-		{LT, "<<>"},
-		{AND, "<&&>"},
-		{Assign, "<=>"},
-		{Semicolon, "<;>"},
+		{Plus, "PLUS(+)"},
+		{LT, "LT(<)"},
+		{AND, "AND(&&)"},
+		{Assign, "ASSIGN(=)"},
+		{Semicolon, "SEMICOLON(;)"},
+		{LBracket, "LBRACKET('[')"},
+		{RBracket, "RBRACKET(']')"},
+		{LBrace, "LBRACE('{')"},
+		{RBrace, "RBRACE('}')"},
+		{LParen, "LPAREN('(')"},
+		{RParen, "RPAREN(')')"},
 		{-1, "ILLEGAL"},
 	}
 
@@ -60,21 +66,21 @@ func TestTokenCodeName(t *testing.T) {
 
 func TestTokenType(t *testing.T) {
 	tests := []struct {
-		token         Token
-		isLiteral     bool
-		isKeyword     bool
-		isOperator    bool
+		token      Token
+		isLiteral  bool
+		isKeyword  bool
+		isOperator bool
 	}{
-		{Illegal, false, false, false, },
-		{EOF, false, false, false, },
-		{Identifier, true, false, false, },
-		{Integer, true, false, false, },
-		{Let, false, true, false, },
-		{Return, false, true, false, },
-		{Plus, false, false, true, },
-		{AND, false, false, true, },
-		{Assign, false, false, true, },
-		{Semicolon, false, false, true, },
+		{Illegal, false, false, false},
+		{EOF, false, false, false},
+		{Identifier, true, false, false},
+		{Integer, true, false, false},
+		{Let, false, true, false},
+		{Return, false, true, false},
+		{Plus, false, false, true},
+		{AND, false, false, true},
+		{Assign, false, false, true},
+		{Semicolon, false, false, true},
 	}
 
 	for _, c := range tests {

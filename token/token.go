@@ -49,24 +49,28 @@ const (
 	BITXOR   // ^
 	BITNOT   // ~
 
-	punctuationBegin
-	Assign       // =
-	Comma        // ,
-	Period       // .
-	Colon        // :
-	Semicolon    // ;
-	DualColon    // ::
-	LParen       // (
-	RParen       // )
-	LBrace       // {
-	RBrace       // }
-	LBracket     // [
-	RBracket     // ]
-	CommentStart // //
-	punctuationEnd
-	operatorEnd
-	LastToken // This is not a token, but a marker for the last token.
+	punctuationBegin //
+	Assign           // =
+	Comma            // ,
+	Period           // .
+	Colon            // :
+	Semicolon        // ;
+	DualColon        // ::
+	bracketBegin     //
+	LParen           // (
+	RParen           // )
+	LBrace           // {
+	RBrace           // }
+	LBracket         // [
+	RBracket         // ]
+	CommentStart     // //
+	bracketEnd       //
+	punctuationEnd   //
+	operatorEnd      //
+	LastToken        // This is not a token, but a marker for the last token.
 
+	SIllegal      = "ILLEGAL"
+	SEOF          = "EOF"
 	SLet          = "let"
 	SFn           = "fn"
 	SReturn       = "return"
@@ -107,7 +111,53 @@ const (
 	SLBracket     = "["
 	SRBracket     = "]"
 	SCommentStart = "//"
+	SLastToken    = "<LAST_TOKEN>"
 )
+
+var displayToken = [...]string{
+	Illegal:   SIllegal,
+	EOF:       SEOF,
+	Let:       SLet,
+	Fn:        SFn,
+	Return:    SReturn,
+	If:        SIf,
+	Else:      SElse,
+	Import:    SImport,
+	Null:      SNull,
+	False:     SFalse,
+	True:      STrue,
+	Bang:      SBang,
+	Plus:      SPlus,
+	Minus:     SMinus,
+	Asterisk:  SAsterisk,
+	Slash:     SSlash,
+	EQ:        SEQ,
+	NE:        SNE,
+	LT:        SLT,
+	GT:        SGT,
+	Modulo:    SModulo,
+	LE:        SLE,
+	GE:        SGE,
+	AND:       SAND,
+	OR:        SOR,
+	BITAND:    SBITAND,
+	BITOR:     SBITOR,
+	BITXOR:    SBITXOR,
+	BITNOT:    SBITNOT,
+	Assign:    SAssign,
+	Comma:     SComma,
+	Period:    SPeriod,
+	Colon:     SColon,
+	Semicolon: SSemicolon,
+	DualColon: SDualColon,
+	LParen:    SLParen,
+	RParen:    SRParen,
+	LBrace:    SLBrace,
+	RBrace:    SRBrace,
+	LBracket:  SLBracket,
+	RBracket:  SRBracket,
+	LastToken: SLastToken,
+}
 
 var displayName = [...]string{
 	Illegal:      "ILLEGAL",
@@ -126,37 +176,37 @@ var displayName = [...]string{
 	If:           "IF",
 	Else:         "ELSE",
 	Import:       "IMPORT",
-	Bang:         "!",
-	Plus:         "+",
-	Minus:        "-",
-	Asterisk:     "*",
-	Slash:        "/",
-	EQ:           "==",
-	NE:           "!=",
-	LT:           "<",
-	GT:           ">",
-	Modulo:       "%",
-	LE:           "<=",
-	GE:           ">=",
-	AND:          "&&",
-	OR:           "||",
-	BITAND:       "&",
-	BITOR:        "|",
-	BITXOR:       "^",
-	BITNOT:       "~",
-	Assign:       "=",
-	Comma:        ",",
-	Period:       ".",
-	Colon:        ":",
-	Semicolon:    ";",
-	DualColon:    "::",
-	LParen:       "(",
-	RParen:       ")",
-	LBrace:       "{",
-	RBrace:       "}",
-	LBracket:     "[",
-	RBracket:     "]",
-	CommentStart: "//",
+	Bang:         "BANG",
+	Plus:         "PLUS",
+	Minus:        "MINUS",
+	Asterisk:     "ASTERISK",
+	Slash:        "SLASH",
+	EQ:           "EQ",
+	NE:           "NE",
+	LT:           "LT",
+	GT:           "GT",
+	Modulo:       "MODULO",
+	LE:           "LE",
+	GE:           "GE",
+	AND:          "AND",
+	OR:           "OR",
+	BITAND:       "BITAND",
+	BITOR:        "BITOR",
+	BITXOR:       "BITXOR",
+	BITNOT:       "BITNOT",
+	Assign:       "ASSIGN",
+	Comma:        "COMMA",
+	Period:       "PERIOD",
+	Colon:        "COLON",
+	Semicolon:    "SEMICOLON",
+	DualColon:    "DUALCOLON",
+	LParen:       "LPAREN",
+	RParen:       "RPAREN",
+	LBrace:       "LBRACE",
+	RBrace:       "RBRACE",
+	LBracket:     "LBRACKET",
+	RBracket:     "RBRACKET",
+	CommentStart: "COMMENT",
 	LastToken:    "<LAST>",
 }
 
@@ -166,12 +216,17 @@ func (t Token) String() string {
 		return "ILLEGAL"
 	}
 
-	s := displayName[t]
+	name := displayName[t]
 	if t > operatorBegin {
-		return fmt.Sprintf("<%s>", s)
+		token := displayToken[t]
+		if bracketBegin < t && t < bracketEnd {
+			return fmt.Sprintf("%s('%s')", name, token)
+		} else {
+			return fmt.Sprintf("%s(%s)", name, token)
+		}
 	}
 
-	return s
+	return name
 }
 
 func (t Token) CodeName() string {
@@ -179,8 +234,11 @@ func (t Token) CodeName() string {
 		return "ILLEGAL"
 	}
 
-	s := displayName[t]
-	return s
+	if t > operatorBegin {
+		return displayToken[t]
+	} else {
+		return displayName[t]
+	}
 }
 
 func (t Token) IsLiteral() bool {
