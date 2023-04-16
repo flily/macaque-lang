@@ -192,9 +192,7 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 
 // let-stmt => "let" identifier-list "=" expression-list ";"
 func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
-	if err := p.skipToken(token.Let, RuleLetStatement); err != nil {
-		return nil, err
-	}
+	_ = p.skipToken(token.Let, RuleLetStatement)
 
 	idList, err := p.parseIdentifierList()
 	if err != nil {

@@ -73,7 +73,7 @@ func runParserErrorTestCase(t *testing.T, cases []parserErrorTestCase) {
 	}
 }
 
-func TestParseSimpleLetStatement(t *testing.T) {
+func TestParseLetStatement(t *testing.T) {
 	tests := []parserTestCase{
 		{
 			`let answer = 42;`,
@@ -126,6 +126,37 @@ func TestParseSimpleLetStatement(t *testing.T) {
 	}
 
 	runParserTestCase(t, tests)
+}
+
+func TestParseLetStatementError(t *testing.T) {
+	tests := []parserErrorTestCase{
+		{
+			[]string{
+				`let 42 = answer;`,
+				"    ^^",
+				"    expect token IDENTIFIER IN identifier, but got INTEGER",
+				"  at testcase:1:5",
+			},
+		},
+		{
+			[]string{
+				`let answer;`,
+				"          ^",
+				"          expect token <=> IN let statement, but got <;>",
+				"  at testcase:1:11",
+			},
+		},
+		{
+			[]string{
+				`let answer = 3 + return`,
+				"                 ^^^^^^",
+				"                 unexpected token in EXPRESSION: RETURN",
+				"  at testcase:1:18",
+			},
+		},
+	}
+
+	runParserErrorTestCase(t, tests)
 }
 
 func TestParseReturnStatement(t *testing.T) {
