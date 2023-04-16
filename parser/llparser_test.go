@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/flily/macaque-lang/ast"
@@ -35,6 +36,38 @@ func runParserTestCase(t *testing.T, cases []parserTestCase) {
 			t.Errorf("wrong parse result, got:\n%s\nexpected:\n%s",
 				program.CanonicalCode(),
 				c.expected.CanonicalCode(),
+			)
+		}
+	}
+}
+
+type parserErrorTestCase struct {
+	lines []string
+}
+
+func (c parserErrorTestCase) code() string {
+	return c.lines[0]
+}
+
+func (c parserErrorTestCase) expected() string {
+	return strings.Join(c.lines, "\n")
+}
+
+func (c parserErrorTestCase) expect(got string) bool {
+	return c.expected() == got
+}
+
+func runParserErrorTestCase(t *testing.T, cases []parserErrorTestCase) {
+	for _, c := range cases {
+		_, err := testLLParseCode(c.code())
+		if err == nil {
+			t.Fatalf("Parse() should fail.\n%s", c.code())
+		}
+
+		if !c.expect(err.Error()) {
+			t.Errorf("wrong error message, got:\n%s\nexpected:\n%s",
+				err.Error(),
+				c.expected(),
 			)
 		}
 	}
@@ -274,6 +307,18 @@ func TestParseArrayLiteral(t *testing.T) {
 			),
 		},
 		{
+			`[1, 2, 3,]`,
+			program(
+				expr(
+					array(
+						l(1),
+						l(2),
+						l(3),
+					),
+				),
+			),
+		},
+		{
 			`[1, 2 * 2, 3 + 3]`,
 			program(
 				expr(
@@ -290,6 +335,37 @@ func TestParseArrayLiteral(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseArrayLiteralError(t *testing.T) {
+	tests := []parserErrorTestCase{
+		{
+			[]string{
+				`[1, 2, 3`,
+				"        ^",
+				"        expect token <]> IN array literal, but got EOF",
+				"  at testcase:1:9",
+			},
+		},
+		{
+			[]string{
+				`[1, return, 3,]`,
+				"    ^^^^^^",
+				"    expect token <]> IN array literal, but got RETURN",
+				"  at testcase:1:5",
+			},
+		},
+		{
+			[]string{
+				`[1 + return, 2, 3]`,
+				"     ^^^^^^",
+				"     unexpected token in EXPRESSION: RETURN",
+				"  at testcase:1:6",
+			},
+		},
+	}
+
+	runParserErrorTestCase(t, tests)
+}
+
 func TestParseHashLiteral(t *testing.T) {
 	tests := []parserTestCase{
 		{
@@ -302,6 +378,18 @@ func TestParseHashLiteral(t *testing.T) {
 		},
 		{
 			`{"one": 1, "two": 2, "three": 3}`,
+			program(
+				expr(
+					hash(
+						pair(l(`"one"`), l(1)),
+						pair(l(`"two"`), l(2)),
+						pair(l(`"three"`), l(3)),
+					),
+				),
+			),
+		},
+		{
+			`{"one": 1, "two": 2, "three": 3,}`,
 			program(
 				expr(
 					hash(
@@ -330,6 +418,45 @@ func TestParseHashLiteral(t *testing.T) {
 	}
 
 	runParserTestCase(t, tests)
+}
+
+func TestParseHashLiteralError(t *testing.T) {
+	tests := []parserErrorTestCase{
+		{
+			[]string{
+				`{1: 1, 2: 2, 3: 3`,
+				"                 ^",
+				"                 expect token <}> IN hash literal, but got EOF",
+				"  at testcase:1:18",
+			},
+		},
+		{
+			[]string{
+				`{1 + return: 1},`,
+				"     ^^^^^^",
+				"     unexpected token in EXPRESSION: RETURN",
+				"  at testcase:1:6",
+			},
+		},
+		{
+			[]string{
+				`{1: 1 + return}`,
+				"        ^^^^^^",
+				"        unexpected token in EXPRESSION: RETURN",
+				"  at testcase:1:9",
+			},
+		},
+		{
+			[]string{
+				`{1, 2, 3, 4}`,
+				"  ^",
+				"  expect token <:> IN hash literal, but got <,>",
+				"  at testcase:1:3",
+			},
+		},
+	}
+
+	runParserErrorTestCase(t, tests)
 }
 
 func TestFunctionLiteral(t *testing.T) {
