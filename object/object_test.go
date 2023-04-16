@@ -26,6 +26,14 @@ func (c testObjectEvaluationCase) expect(expected Object, ok bool) testObjectEva
 	return c
 }
 
+func (c testObjectEvaluationCase) match() bool {
+	if c.expected == nil {
+		return c.gotObject == nil
+	}
+
+	return c.expected.EqualTo(c.gotObject)
+}
+
 func evalTest(s string) testObjectEvaluationCase {
 	c := testObjectEvaluationCase{
 		desciption: s,
@@ -36,7 +44,7 @@ func evalTest(s string) testObjectEvaluationCase {
 
 func testObjectEvaluation(t *testing.T, cases []testObjectEvaluationCase) {
 	for _, c := range cases {
-		if c.gotObject != c.expected {
+		if !c.match() {
 			t.Errorf("%s: got %v, expected %v", c.desciption, c.gotObject, c.expected)
 		}
 
