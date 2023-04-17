@@ -14,7 +14,8 @@ func TestIntegerObject(t *testing.T) {
 	}
 
 	if i.Inspect() != "42" {
-		t.Errorf("integer.Inspect() is not '42'")
+		t.Errorf("integer.Inspect() wrong, expected %q, got %q",
+			"42", i.Inspect())
 	}
 
 	if !i.Hashable() {
@@ -22,7 +23,7 @@ func TestIntegerObject(t *testing.T) {
 	}
 
 	if i.HashKey() != int64(42) {
-		t.Errorf("integer.HashKey() is not 42")
+		t.Errorf("integer.HashKey() is not 42, got %v", i.HashKey())
 	}
 
 	if !i.EqualTo(i) {
@@ -65,6 +66,15 @@ func TestIntegerObjectInfixOnIntegerEvaluation(t *testing.T) {
 	j := NewInteger(2)
 
 	tests := []testObjectEvaluationCase{
+		evalTest("INTEGER(42) == INTEGER(2)").
+			call(i.OnInfix(token.EQ, j)).
+			expect(NewBoolean(false), true),
+		evalTest("INTEGER(42) == INTEGER(42)").
+			call(i.OnInfix(token.EQ, NewInteger(42))).
+			expect(NewBoolean(true), true),
+		evalTest("INTEGER(42) != INTEGER(2)").
+			call(i.OnInfix(token.NE, j)).
+			expect(NewBoolean(true), true),
 		evalTest("INTEGER(42) + INTEGER(2)").
 			call(i.OnInfix(token.Plus, j)).
 			expect(NewInteger(44), true),

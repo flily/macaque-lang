@@ -84,7 +84,11 @@ func (n *NullObject) OnPrefix(t token.Token) (Object, bool) {
 	return r, ok
 }
 
-func (n *NullObject) OnInfix(r token.Token, o Object) (Object, bool) {
+func (n *NullObject) OnInfix(t token.Token, o Object) (Object, bool) {
+	if t == token.EQ || t == token.NE {
+		return doEqualCompare(t, n.EqualTo(o))
+	}
+
 	return nil, false
 }
 
@@ -141,5 +145,17 @@ func (b *BooleanObject) OnPrefix(t token.Token) (Object, bool) {
 }
 
 func (b *BooleanObject) OnInfix(t token.Token, o Object) (Object, bool) {
+	if t == token.EQ || t == token.NE {
+		return doEqualCompare(t, b.EqualTo(o))
+	}
+
 	return nil, false
+}
+
+func doEqualCompare(t token.Token, equal bool) (Object, bool) {
+	if t == token.EQ {
+		return NewBoolean(equal), true
+	}
+
+	return NewBoolean(!equal), true
 }

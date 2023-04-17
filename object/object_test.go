@@ -45,11 +45,11 @@ func evalTest(s string) testObjectEvaluationCase {
 func testObjectEvaluation(t *testing.T, cases []testObjectEvaluationCase) {
 	for _, c := range cases {
 		if !c.match() {
-			t.Errorf("%s: got %v, expected %v", c.desciption, c.gotObject, c.expected)
+			t.Errorf("%s: result got %v, expected %v", c.desciption, c.gotObject, c.expected)
 		}
 
 		if c.gotOk != c.ok {
-			t.Errorf("%s: got %v, expected %v", c.desciption, c.gotOk, c.ok)
+			t.Errorf("%s: ok got %v, expected %v", c.desciption, c.gotOk, c.ok)
 		}
 	}
 }
@@ -62,7 +62,8 @@ func TestNullObject(t *testing.T) {
 	}
 
 	if null.Inspect() != token.SNull {
-		t.Errorf("null.Inspect() is not '%s'", token.SNull)
+		t.Errorf("null.Inspect() wrong, expected %q, got %q",
+			token.SNull, null.Inspect())
 	}
 
 	if null.Hashable() {
@@ -74,24 +75,35 @@ func TestNullObject(t *testing.T) {
 	}
 
 	if !null.EqualTo(NewNull()) {
-		t.Errorf("null.EqualTo(NewNull()) is not true")
+		t.Errorf("null != null")
 	}
 
 	if null.EqualTo(NewBoolean(true)) {
-		t.Errorf("null.EqualTo(NewBoolean(true)) is not false")
+		t.Errorf("null == true")
+	}
+}
+
+func TestNullObjectEvaluation(t *testing.T) {
+	null := NewNull()
+	tests := []testObjectEvaluationCase{
+		evalTest("-null").
+			call(null.OnPrefix(token.Minus)).
+			expect(nil, false),
+		evalTest("!null").
+			call(null.OnPrefix(token.Bang)).
+			expect(NewBoolean(true), true),
+		evalTest("null + null").
+			call(null.OnInfix(token.Plus, NewNull())).
+			expect(nil, false),
+		evalTest("null == null").
+			call(null.OnInfix(token.EQ, NewNull())).
+			expect(NewBoolean(true), true),
+		evalTest("null != null").
+			call(null.OnInfix(token.NE, NewNull())).
+			expect(NewBoolean(false), true),
 	}
 
-	if r, ok := null.OnPrefix(token.Minus); r != nil || ok {
-		t.Errorf("null.OnPrefix(token.Minus) is not (nil, false)")
-	}
-
-	if r, ok := null.OnPrefix(token.Bang); !r.EqualTo(NewBoolean(true)) || !ok {
-		t.Errorf("null.OnPrefix(token.Bang) is not (true, true)")
-	}
-
-	if r, ok := null.OnInfix(token.Plus, NewNull()); r != nil || ok {
-		t.Errorf("null.OnInfix(token.Plus, NewNull()) is not (nil, false)")
-	}
+	testObjectEvaluation(t, tests)
 }
 
 func TestBooleanObject(t *testing.T) {

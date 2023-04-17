@@ -65,15 +65,20 @@ func (i *IntegerObject) OnInfix(t token.Token, o Object) (Object, bool) {
 	var r Object
 	ok := false
 
+	if t == token.EQ || t == token.NE {
+		return doEqualCompare(t, i.EqualTo(o))
+	}
+
 	switch v := o.(type) {
 	case *IntegerObject:
-		r, ok = i.OnIntegerInfix(t, v)
+		r, ok = i.onIntegerInfix(t, v)
+
 	}
 
 	return r, ok
 }
 
-func (i *IntegerObject) OnIntegerInfix(t token.Token, o *IntegerObject) (Object, bool) {
+func (i *IntegerObject) onIntegerInfix(t token.Token, o *IntegerObject) (Object, bool) {
 	var r Object
 	ok := false
 	switch t {
