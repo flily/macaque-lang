@@ -26,38 +26,35 @@ func TestStringObject(t *testing.T) {
 		t.Errorf("string.HashKey() wrong, expected %q, got %q",
 			"foobar", s.HashKey())
 	}
-
-	l1 := NewString("foobar")
-	l2 := NewString("lorem ipsum")
-	if !l1.EqualTo(l1) {
-		t.Errorf("string(%s) should be equal to string(%s)",
-			l1.Inspect(), l1.Inspect())
-	}
-
-	if l1.EqualTo(l2) {
-		t.Errorf("string(%s) should not be equal to string(%s)",
-			l1.Inspect(), l2.Inspect())
-	}
 }
 
 func TestStringObjectEvalutation(t *testing.T) {
 	s := NewString("foobar")
 
 	tests := []testObjectEvaluationCase{
-		evalTest("STRING + STRING").
+		evalTest("!STRING(foobar)").
+			call(s.OnPrefix(token.Bang)).
+			expect(NewBoolean(false), true),
+		evalTest("-STRING(foobar)").
+			call(s.OnPrefix(token.Minus)).
+			expect(nil, false),
+		evalTest("STRING(foobar) + STRING(foobar)").
 			call(s.OnInfix(token.Plus, s)).
 			expect(NewString("foobarfoobar"), true),
-		evalTest("STRING == STRING").
+		evalTest("STRING(foobar) == STRING(foobar)").
 			call(s.OnInfix(token.EQ, s)).
 			expect(NewBoolean(true), true),
-		evalTest("STRING != STRING").
+		evalTest("STRING(foobar) != STRING(foobar)").
 			call(s.OnInfix(token.NE, s)).
 			expect(NewBoolean(false), true),
-		evalTest("STRING == INTEGER").
-			call(s.OnInfix(token.EQ, NewInteger(42))).
+		evalTest("STRING(foobar) == STRING(foobar)").
+			call(s.OnInfix(token.EQ, NewString("foobar"))).
+			expect(NewBoolean(true), true),
+		evalTest("STRING(foobar) == STRING(lorem ipsum)").
+			call(s.OnInfix(token.EQ, NewString("lorem ipsum"))).
 			expect(NewBoolean(false), true),
-		evalTest("!STRING").
-			call(s.OnPrefix(token.Bang)).
+		evalTest("STRING(foobar) == INTEGER(42)").
+			call(s.OnInfix(token.EQ, NewInteger(42))).
 			expect(NewBoolean(false), true),
 	}
 

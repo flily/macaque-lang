@@ -25,22 +25,6 @@ func TestIntegerObject(t *testing.T) {
 	if i.HashKey() != int64(42) {
 		t.Errorf("integer.HashKey() is not 42, got %v", i.HashKey())
 	}
-
-	if !i.EqualTo(i) {
-		t.Errorf("integer.EqualTo(integer) is not true")
-	}
-
-	if !i.EqualTo(NewInteger(42)) {
-		t.Errorf("integer.EqualTo(NewInteger(42)) is not false")
-	}
-
-	if i.EqualTo(NewInteger(1)) {
-		t.Errorf("integer.EqualTo(NewInteger(1)) is not true")
-	}
-
-	if i.EqualTo(NewNull()) {
-		t.Errorf("integer.EqualTo(NewNull()) is not false")
-	}
 }
 
 func TestIntegerObjectPrefixEvaluation(t *testing.T) {
