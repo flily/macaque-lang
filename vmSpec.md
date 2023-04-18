@@ -21,6 +21,7 @@ Macaque VM comes with 4 memory segments:
   2. **Data segment**: contains constants and some static data.
   3. **Stack segment**: contains local variable data.
   4. **Call stack**: contains the return address and info of each function call.
+     Call stack is a VM managed stack, and can not be accessed directly.
 
 
 Function call
@@ -86,3 +87,16 @@ Function calls `f(a, b)` are performed with following steps:
 Instructions
 -------------
 
+Letters `NBbWwDd` are used to represent the type of operands. Upper case letter
+represents an unsigned integer, and lower case represents a signed integer.
+  + `N`: nil, ALL-ZERO byte.
+  + `B`, `b`: byte, an 8-bit integer.
+  + `W`, `w`: word, a 16-bit integer.
+  + `D`, `W`: tri-byte word, a 24-bit integer.
+
+| Mnemonic | Operands | Description                                           |
+|:--------:|:--------:|:------------------------------------------------------|
+| NOP      |   NNN    | No operation
+| LOADINT  |   D      | Load an integer constant onto the stack
+| BINOP    |   W      | Perform a binary operation to the top 2 values on the stack
+| HALT     |   NNN    | Halt the VM

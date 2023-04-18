@@ -54,6 +54,28 @@ func testObjectEvaluation(t *testing.T, cases []testObjectEvaluationCase) {
 	}
 }
 
+func TestObjectTypeName(t *testing.T) {
+	tests := []struct {
+		input    ObjectType
+		expected string
+	}{
+		{ObjectTypeInteger, "INTEGER"},
+		{ObjectTypeBoolean, "BOOLEAN"},
+		{ObjectTypeNull, "NULL"},
+		{ObjectTypeFloat, "FLOAT"},
+		{ObjectTypeString, "STRING"},
+		{ObjectTypeArray, "ARRAY"},
+		{ObjectTypeHash, "HASH"},
+	}
+
+	for _, tt := range tests {
+		if tt.input.String() != tt.expected {
+			t.Errorf("object type name wrong, expected %q, got %q",
+				tt.expected, tt.input.String())
+		}
+	}
+}
+
 func TestNullObject(t *testing.T) {
 	null := NewNull()
 

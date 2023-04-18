@@ -8,6 +8,7 @@ import (
 const (
 	UnknownError       = iota
 	ErrCodeSyntaxError = 1
+	ErrRuntimeError    = 2
 	ErrScannerError    = 100
 )
 

@@ -19,6 +19,23 @@ const (
 	ObjectTypeSystemFlag ObjectType = 64
 )
 
+var objectTypeName = map[ObjectType]string{
+	ObjectTypeInvalid:    "INVALID",
+	ObjectTypeNull:       "NULL",
+	ObjectTypeBoolean:    "BOOLEAN",
+	ObjectTypeInteger:    "INTEGER",
+	ObjectTypeFloat:      "FLOAT",
+	ObjectTypeString:     "STRING",
+	ObjectTypeArray:      "ARRAY",
+	ObjectTypeHash:       "HASH",
+	ObjectTypeFunction:   "FUNCTION",
+	ObjectTypeSystemFlag: "SYSTEM",
+}
+
+func (t ObjectType) String() string {
+	return objectTypeName[t]
+}
+
 type Object interface {
 	Type() ObjectType
 	Inspect() string
