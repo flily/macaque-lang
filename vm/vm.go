@@ -20,7 +20,7 @@ type NaiveVM struct {
 
 	ip uint64
 	sp uint64
-	bp uint64
+	// bp uint64
 }
 
 func NewNaiveVM() *NaiveVM {
