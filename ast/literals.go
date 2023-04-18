@@ -24,10 +24,6 @@ func NewIdentifier(value string, position *token.TokenInfo) *Identifier {
 func (i *Identifier) expressionNode() {}
 func (i *Identifier) literalValue()   {}
 
-func (i *Identifier) Children() []Node {
-	return nil
-}
-
 func (i *Identifier) CanonicalCode() string {
 	return i.Value
 }
@@ -51,8 +47,8 @@ type IntegerLiteral struct {
 func (i *IntegerLiteral) expressionNode() {}
 func (i *IntegerLiteral) literalValue()   {}
 
-func (i *IntegerLiteral) Children() []Node {
-	return nil
+func (i *IntegerLiteral) Walk(v Visitor) int {
+	return v.Visit(i)
 }
 
 func (i *IntegerLiteral) CanonicalCode() string {
@@ -78,8 +74,8 @@ type FloatLiteral struct {
 func (f *FloatLiteral) expressionNode() {}
 func (f *FloatLiteral) literalValue()   {}
 
-func (f *FloatLiteral) Children() []Node {
-	return nil
+func (f *FloatLiteral) Walk(v Visitor) int {
+	return v.Visit(f)
 }
 
 func (f *FloatLiteral) CanonicalCode() string {
@@ -105,8 +101,8 @@ type StringLiteral struct {
 func (s *StringLiteral) expressionNode() {}
 func (s *StringLiteral) literalValue()   {}
 
-func (s *StringLiteral) Children() []Node {
-	return nil
+func (s *StringLiteral) Walk(v Visitor) int {
+	return v.Visit(s)
 }
 
 func (s *StringLiteral) CanonicalCode() string {
@@ -131,8 +127,8 @@ type BooleanLiteral struct {
 func (b *BooleanLiteral) expressionNode() {}
 func (b *BooleanLiteral) literalValue()   {}
 
-func (b *BooleanLiteral) Children() []Node {
-	return nil
+func (b *BooleanLiteral) Walk(v Visitor) int {
+	return v.Visit(b)
 }
 
 func (b *BooleanLiteral) CanonicalCode() string {
@@ -160,8 +156,8 @@ type NullLiteral struct {
 func (n *NullLiteral) expressionNode() {}
 func (n *NullLiteral) literalValue()   {}
 
-func (n *NullLiteral) Children() []Node {
-	return nil
+func (n *NullLiteral) Walk(v Visitor) int {
+	return v.Visit(n)
 }
 
 func (n *NullLiteral) CanonicalCode() string {
@@ -185,16 +181,6 @@ type ArrayLiteral struct {
 
 func (a *ArrayLiteral) expressionNode() {}
 func (a *ArrayLiteral) literalValue()   {}
-
-func (a *ArrayLiteral) Children() []Node {
-	var nodes []Node
-
-	for _, e := range a.Elements {
-		nodes = append(nodes, e)
-	}
-
-	return nodes
-}
 
 func (a *ArrayLiteral) CanonicalCode() string {
 	elements := make([]string, len(a.Elements))
@@ -248,17 +234,6 @@ type HashLiteral struct {
 func (h *HashLiteral) expressionNode() {}
 func (h *HashLiteral) literalValue()   {}
 
-func (h *HashLiteral) Children() []Node {
-	nodes := make([]Node, len(h.Pairs)*2)
-
-	for i, p := range h.Pairs {
-		nodes[i*2+0] = p.Key
-		nodes[i*2+1] = p.Value
-	}
-
-	return nodes
-}
-
 func (h *HashLiteral) CanonicalCode() string {
 	pairs := make([]string, len(h.Pairs))
 	for i, p := range h.Pairs {
@@ -300,17 +275,6 @@ type FunctionLiteral struct {
 }
 
 func (f *FunctionLiteral) expressionNode() {}
-
-func (f *FunctionLiteral) Children() []Node {
-	nodes := make([]Node, f.Arguments.Length()+1)
-
-	for i, arg := range f.Arguments.Identifiers {
-		nodes[i] = arg
-	}
-
-	nodes[f.Arguments.Length()] = f.Body
-	return nodes
-}
 
 func (f *FunctionLiteral) CanonicalCode() string {
 	result := fmt.Sprintf("fn(%s) %s",

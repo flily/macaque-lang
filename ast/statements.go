@@ -13,22 +13,6 @@ type LetStatement struct {
 func (s *LetStatement) statementNode()     {}
 func (s *LetStatement) lineStatementNode() {}
 
-func (s *LetStatement) Children() []Node {
-	idLength := s.Identifiers.Length()
-	count := idLength + s.Expressions.Length()
-	nodes := make([]Node, count)
-
-	for i, id := range s.Identifiers.Identifiers {
-		nodes[i] = id
-	}
-
-	for i, expr := range s.Expressions.Expressions {
-		nodes[idLength+i] = expr
-	}
-
-	return nodes
-}
-
 func (s *LetStatement) CanonicalCode() string {
 	result := fmt.Sprintf("let %s = %s;",
 		s.Identifiers.CanonicalCode(),
@@ -56,16 +40,6 @@ type ReturnStatement struct {
 func (s *ReturnStatement) statementNode()     {}
 func (s *ReturnStatement) lineStatementNode() {}
 
-func (s *ReturnStatement) Children() []Node {
-	nodes := make([]Node, s.Expressions.Length())
-
-	for i, expr := range s.Expressions.Expressions {
-		nodes[i] = expr
-	}
-
-	return nodes
-}
-
 func (s *ReturnStatement) CanonicalCode() string {
 	result := fmt.Sprintf("return %s;", s.Expressions.CanonicalCode())
 	return result
@@ -88,10 +62,6 @@ type IfStatement struct {
 func (s *IfStatement) statementNode()      {}
 func (s *IfStatement) blockStatementNode() {}
 
-func (s *IfStatement) Children() []Node {
-	return s.Expression.Children()
-}
-
 func (s *IfStatement) CanonicalCode() string {
 	return s.Expression.CanonicalCode()
 }
@@ -112,16 +82,6 @@ type BlockStatement struct {
 
 func (s *BlockStatement) statementNode()      {}
 func (s *BlockStatement) blockStatementNode() {}
-
-func (s *BlockStatement) Children() []Node {
-	nodes := make([]Node, len(s.Statements))
-
-	for i, stmt := range s.Statements {
-		nodes[i] = stmt
-	}
-
-	return nodes
-}
 
 func (s *BlockStatement) CanonicalCode() string {
 	length := len(s.Statements)
@@ -160,10 +120,6 @@ type ExpressionStatement struct {
 func (s *ExpressionStatement) statementNode()     {}
 func (s *ExpressionStatement) lineStatementNode() {}
 
-func (s *ExpressionStatement) Children() []Node {
-	return s.Expressions.Children()
-}
-
 func (s *ExpressionStatement) CanonicalCode() string {
 	return fmt.Sprintf("%s;", s.Expressions.CanonicalCode())
 }
@@ -184,10 +140,6 @@ type ImportStatement struct {
 
 func (s *ImportStatement) statementNode()     {}
 func (s *ImportStatement) lineStatementNode() {}
-
-func (s *ImportStatement) Children() []Node {
-	return nil
-}
 
 func (s *ImportStatement) CanonicalCode() string {
 	return "import;"

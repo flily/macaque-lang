@@ -13,15 +13,6 @@ type ExpressionList struct {
 
 func (l *ExpressionList) expressionNode() {}
 
-func (l *ExpressionList) Children() []Node {
-	nodes := make([]Node, len(l.Expressions))
-	for i, expr := range l.Expressions {
-		nodes[i] = expr
-	}
-
-	return nodes
-}
-
 func (l *ExpressionList) CanonicalCode() string {
 	elems := make([]string, len(l.Expressions))
 	for i, expr := range l.Expressions {
@@ -66,16 +57,6 @@ type IdentifierList struct {
 }
 
 func (l *IdentifierList) expressionNode() {}
-
-func (l *IdentifierList) Children() []Node {
-	nodes := make([]Node, len(l.Identifiers))
-
-	for i, id := range l.Identifiers {
-		nodes[i] = id
-	}
-
-	return nodes
-}
 
 func (l *IdentifierList) CanonicalCode() string {
 	elems := make([]string, len(l.Identifiers))
@@ -124,10 +105,6 @@ type PrefixExpression struct {
 
 func (e *PrefixExpression) expressionNode() {}
 
-func (e *PrefixExpression) Children() []Node {
-	return []Node{e.Operand}
-}
-
 func (e *PrefixExpression) CanonicalCode() string {
 	s := fmt.Sprintf("(%s %s)",
 		e.PrefixOperator.CodeName(),
@@ -155,10 +132,6 @@ type InfixExpression struct {
 }
 
 func (e *InfixExpression) expressionNode() {}
-
-func (e *InfixExpression) Children() []Node {
-	return []Node{e.LeftOperand, e.RightOperand}
-}
 
 func (e *InfixExpression) CanonicalCode() string {
 	s := fmt.Sprintf("(%s %s %s)",
@@ -191,10 +164,6 @@ type IndexExpression struct {
 
 func (e *IndexExpression) expressionNode() {}
 
-func (e *IndexExpression) Children() []Node {
-	return []Node{e.Base, e.Index}
-}
-
 func (e *IndexExpression) CanonicalCode() string {
 	s := fmt.Sprintf("(%s[%s])",
 		e.Base.CanonicalCode(),
@@ -222,22 +191,6 @@ type CallExpression struct {
 }
 
 func (e *CallExpression) expressionNode() {}
-
-func (e *CallExpression) Children() []Node {
-	elementCount := 2
-	if e.Member != nil {
-		elementCount = 3
-	}
-
-	nodes := make([]Node, elementCount)
-	nodes[0] = e.Callable
-	if e.Member != nil {
-		nodes[1] = e.Member
-	}
-
-	nodes[elementCount-1] = e.Args
-	return nodes
-}
 
 func (e *CallExpression) CanonicalCode() string {
 	var result string
@@ -279,15 +232,6 @@ type IfExpression struct {
 }
 
 func (e *IfExpression) expressionNode() {}
-
-func (e *IfExpression) Children() []Node {
-	nodes := []Node{e.Condition, e.Consequence}
-	if e.Alternative != nil {
-		nodes = append(nodes, e.Alternative)
-	}
-
-	return nodes
-}
 
 func (e *IfExpression) CanonicalCode() string {
 	result := fmt.Sprintf("if ( %s ) %s",

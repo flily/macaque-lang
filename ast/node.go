@@ -1,9 +1,10 @@
 package ast
 
-import "strings"
+import (
+	"strings"
+)
 
 type Node interface {
-	Children() []Node
 	CanonicalCode() string
 	EqualTo(Node) bool
 }
@@ -49,18 +50,26 @@ func (p *Program) AddStatement(stmt Statement) {
 	p.Statements = append(p.Statements, stmt)
 }
 
-func (p *Program) EqualTo(other *Program) bool {
-	if len(p.Statements) != len(other.Statements) {
-		return false
-	}
+func (p *Program) EqualTo(node Node) bool {
+	result := false
 
-	for i, stmt := range p.Statements {
-		if !stmt.EqualTo(other.Statements[i]) {
-			return false
+TypeSwitch:
+	switch n := node.(type) {
+	case *Program:
+		if len(p.Statements) != len(n.Statements) {
+			break
 		}
+
+		for i, stmt := range p.Statements {
+			if !stmt.EqualTo(n.Statements[i]) {
+				break TypeSwitch
+			}
+		}
+
+		result = true
 	}
 
-	return true
+	return result
 }
 
 func (p *Program) CanonicalCode() string {
