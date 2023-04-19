@@ -35,33 +35,67 @@ func testCompileCode(t *testing.T, code string) *NaiveVM {
 	return m
 }
 
-func TestVMSimpleAction(t *testing.T) {
-	code := `1 + 2`
-	m := testCompileCode(t, code)
-
-	err := m.Run(0)
-	if err != nil {
-		t.Fatalf("vm error: %s", err)
+func checkVMStackTop(t *testing.T, m *NaiveVM, expecteds []object.Object) {
+	if len(expecteds) == 0 {
+		return
 	}
 
-	result := m.Top()
-	if result.EqualTo(object.NewInteger(3)) == false {
-		t.Fatalf("vm error: expect 3, got %s", result)
+	for i, expected := range expecteds {
+		index := int(m.sp) - i - 1
+		if index >= int(m.sp) {
+			t.Fatalf("ERROR on %d: stack do not have enough elements", i)
+		}
+
+		got := m.Stack[index]
+		if got.EqualTo(expected) == false {
+			t.Fatalf("ERROR on %d: expect %s, got %s", i, expected, got)
+		}
 	}
 }
 
-func TestVMSimpleAction2(t *testing.T) {
-	code := `"hello" + " " + "world"`
-	m := testCompileCode(t, code)
+type registerAssertion struct {
+	register string
+	value    uint64
+}
 
-	err := m.Run(0)
-	if err != nil {
-		t.Fatalf("vm error: %s", err)
+type vmTest struct {
+	code      string
+	stack     []object.Object
+	registers []registerAssertion
+}
+
+func assertRegister(r ...registerAssertion) []registerAssertion {
+	return r
+}
+
+func stack(o ...object.Object) []object.Object {
+	return o
+}
+
+func sp(v uint64) registerAssertion {
+	return registerAssertion{"sp", v}
+}
+
+func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
+	for _, c := range cases {
+		switch c.register {
+		case "sp":
+			if m.sp != c.value {
+				t.Errorf("sp error: expect %d, got %d", c.value, m.sp)
+			}
+		}
 	}
+}
 
-	expected := object.NewString("hello world")
-	result := m.Top()
-	if result.EqualTo(expected) == false {
-		t.Fatalf("vm error: expect %s, got %s", expected, result)
+func runVMTest(t *testing.T, cases []vmTest) {
+	for _, c := range cases {
+		m := testCompileCode(t, c.code)
+		err := m.Run(0)
+		if err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+
+		checkVMStackTop(t, m, c.stack)
+		runVMRegisterCheck(t, m, c.registers)
 	}
 }
