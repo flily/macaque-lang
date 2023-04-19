@@ -31,6 +31,7 @@ func testCompileCode(t *testing.T, code string) *NaiveVM {
 
 	m := NewNaiveVM()
 	m.LoadCode(compiler)
+	m.LoadData(compiler)
 	return m
 }
 
@@ -46,5 +47,21 @@ func TestVMSimpleAction(t *testing.T) {
 	result := m.Top()
 	if result.EqualTo(object.NewInteger(3)) == false {
 		t.Fatalf("vm error: expect 3, got %s", result)
+	}
+}
+
+func TestVMSimpleAction2(t *testing.T) {
+	code := `"hello" + " " + "world"`
+	m := testCompileCode(t, code)
+
+	err := m.Run(0)
+	if err != nil {
+		t.Fatalf("vm error: %s", err)
+	}
+
+	expected := object.NewString("hello world")
+	result := m.Top()
+	if result.EqualTo(expected) == false {
+		t.Fatalf("vm error: expect %s, got %s", expected, result)
 	}
 }

@@ -1,13 +1,17 @@
 package opcode
 
+import "fmt"
+
 const (
 	IInvalid  = iota
 	INOP      // No operation.
 	ILoadInt  // Load an integer to the top of the stack.
+	ILoadStr  // Load a string to the top of the stack.
 	INeg      // Negate the top of the stack.
 	INot      // Logical not the top of the stack.
 	IInvert   // Bitwise not the top of the stack.
 	IBinOp    // Binary operation.
+	IUnaryOp  // Unary operation.
 	IHalt     // Halt the VM.
 	ILastInst // Last instruction, no use.
 )
@@ -16,10 +20,12 @@ var instNames = [...]string{
 	IInvalid:  "INVALID",
 	INOP:      "NOP",
 	ILoadInt:  "LOADINT",
+	ILoadStr:  "LOADSTR",
 	INeg:      "NEG",
 	INot:      "NOT",
 	IInvert:   "INVERT",
 	IBinOp:    "BINOP",
+	IUnaryOp:  "UNARYOP",
 	IHalt:     "HALT",
 	ILastInst: "LASTINST",
 }
@@ -64,4 +70,9 @@ func Inst(name int, ops ...int) Instruction {
 	}
 
 	return i
+}
+
+func (i Instruction) String() string {
+	name := InstName(i.Name)
+	return fmt.Sprintf("%s %d %d %d", name, i.Operand0, i.Operand1, i.Operand2)
 }

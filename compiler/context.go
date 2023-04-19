@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
 )
@@ -190,35 +191,35 @@ func (c *VariableContext) Reference(name string) (VariableInfo, int) {
 }
 
 type LiteralContext struct {
-	literals map[interface{}]int
-	counts   int
+	index  map[interface{}]uint64
+	Values []object.Object
+	counts int
 }
 
 func NewLiteralContext() *LiteralContext {
 	c := &LiteralContext{
-		literals: make(map[interface{}]int),
+		index:  make(map[interface{}]uint64),
+		Values: make([]object.Object, 0),
 	}
 
 	return c
 }
 
-func (c *LiteralContext) insert(v interface{}) int {
-	n := c.counts + 1
-	c.literals[c] = n
-	c.counts = n
-	return n
+func (c *LiteralContext) Add(v interface{}, o object.Object) uint64 {
+	n := c.counts
+	c.index[c] = uint64(n)
+	c.Values = append(c.Values, o)
+	c.counts = n + 1
+	return uint64(n)
 }
 
-func (c *LiteralContext) Add(literal interface{}) int {
-	r := 0
-	switch v := literal.(type) {
-	case int64, float64, string:
-		if _, ok := c.literals[v]; !ok {
-			r = c.insert(v)
-		}
+func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
+	n, ok := c.index[literal]
+	if ok {
+		return uint64(n), true
 	}
 
-	return r
+	return 0, false
 }
 
 type CompilerContext struct {

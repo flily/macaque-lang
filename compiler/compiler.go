@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/flily/macaque-lang/ast"
+	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 )
 
@@ -53,6 +54,15 @@ CompileSwitch:
 
 	case *ast.IntegerLiteral:
 		c.writeCode(opcode.ILoadInt, opcode.XLoadIntLiteral, int(n.Value))
+
+	case *ast.StringLiteral:
+		s := n.Value
+		i, ok := c.Context.Literal.Lookup(s)
+		if !ok {
+			i = c.Context.Literal.Add(s, object.NewString(s))
+		}
+
+		c.writeCode(opcode.ILoadStr, int(i))
 
 	case *ast.InfixExpression:
 		r, e = c.compileCode(n.LeftOperand)

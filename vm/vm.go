@@ -51,6 +51,10 @@ func (m *NaiveVM) fetchOp() opcode.Instruction {
 	return r
 }
 
+func (m *NaiveVM) refData(i uint64) object.Object {
+	return m.Data[i]
+}
+
 func (m *NaiveVM) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
@@ -60,6 +64,10 @@ func (m *NaiveVM) LoadCode(c *compiler.Compiler) {
 	m.Code = append(m.Code, opcode.Inst(opcode.IHalt))
 }
 
+func (m *NaiveVM) LoadData(c *compiler.Compiler) {
+	copy(m.Data, c.Context.Literal.Values)
+}
+
 func (m *NaiveVM) Run(ip uint64) error {
 	m.ip = ip
 
@@ -67,9 +75,15 @@ func (m *NaiveVM) Run(ip uint64) error {
 RunSwitch:
 	for {
 		op := m.fetchOp()
+
 		switch op.Name {
 		case opcode.ILoadInt:
-			m.stackPush(object.NewInteger(int64(op.Operand1)))
+			o := object.NewInteger(int64(op.Operand1))
+			m.stackPush(o)
+
+		case opcode.ILoadStr:
+			o := m.refData(uint64(op.Operand0))
+			m.stackPush(o)
 
 		case opcode.IBinOp:
 			operator := token.Token(op.Operand0)
