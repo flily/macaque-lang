@@ -120,8 +120,7 @@ RunSwitch:
 			m.stackPush(o)
 
 		case opcode.ILoad:
-			offset := op.Operand0
-			o := m.Data[offset]
+			o := m.refData(uint64(op.Operand0))
 			m.stackPush(o)
 
 		case opcode.IHalt:
