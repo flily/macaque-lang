@@ -72,6 +72,10 @@ func inst(name int, ops ...int) opcode.Opcode {
 	return opcode.Inst(name, ops...)
 }
 
+func text(lines ...string) string {
+	return strings.Join(lines, "\n")
+}
+
 func code(codes ...opcode.Opcode) []opcode.Opcode {
 	return codes
 }
@@ -99,21 +103,19 @@ func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
 }
 
 type testCompilerErrorCase struct {
-	codes   []string
-	message []string
+	code     string
+	expected string
 }
 
 func runCompilerErrorTestCases(t *testing.T, cases []testCompilerErrorCase) {
 	for _, c := range cases {
-		code := strings.Join(c.codes, "\n")
-		_, err := testCompileCode(t, code)
+		_, err := testCompileCode(t, c.code)
 		if err == nil {
 			t.Fatalf("compilation should fail:\n")
 		}
 
-		expected := strings.Join(c.message, "\n")
-		if err.Error() != expected {
-			t.Fatalf("incorrect error message:\n%s\nexpect:\n%s", err, expected)
+		if err.Error() != c.expected {
+			t.Fatalf("incorrect error message:\n%s\nexpect:\n%s", err, c.expected)
 		}
 	}
 }

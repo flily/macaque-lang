@@ -23,6 +23,16 @@ func (c *Compiler) Compile(p *ast.Program) (int, error) {
 	return c.compileCode(p)
 }
 
+func (c *Compiler) GetMain() *object.FunctionObject {
+	main := &object.FunctionObject{
+		StackSize: c.Context.Variable.CurrentFrameSize(),
+		IP:        0,
+		Bounds:    nil,
+	}
+
+	return main
+}
+
 func (c *Compiler) writeCode(name int, ops ...int) {
 	inst := opcode.Inst(name, ops...)
 	c.Context.Instructions = append(c.Context.Instructions, inst)
@@ -35,6 +45,7 @@ func (c *Compiler) compileCode(node ast.Node) (int, error) {
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
+		c.Context.Variable.EnterScope(VariableScopeFunction)
 		for _, stmt := range n.Statements {
 			r, e = c.compileCode(stmt)
 			if e != nil {

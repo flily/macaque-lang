@@ -78,14 +78,14 @@ func (m *NaiveVM) LoadData(c *compiler.Compiler) {
 	copy(m.Data, c.Context.Literal.Values)
 }
 
-func (m *NaiveVM) SetEntry(ip uint64) {
-	m.ip = ip
-	// Use a null as placeholder for current function
-	m.stackPush(object.NewNull())
+func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
+	m.ip = entry.IP
+	m.sp = uint64(entry.StackSize)
+	m.stackPush(entry)
 }
 
-func (m *NaiveVM) Run(ip uint64) error {
-	m.SetEntry(ip)
+func (m *NaiveVM) Run(entry *object.FunctionObject) error {
+	m.SetEntry(entry)
 
 	var e error
 RunSwitch:

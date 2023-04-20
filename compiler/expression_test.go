@@ -73,3 +73,29 @@ func TestCompileExpression(t *testing.T) {
 
 	runCompilerTestCases(t, tests)
 }
+
+func TestEvaluationExpressionWithVariables(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				`let answer = 30 + 6`,
+				`let final_anser = answer + 6`,
+			),
+			code(
+				inst(opcode.ILoadInt, 30),
+				inst(opcode.ILoadInt, 6),
+				inst(opcode.IBinOp, int(token.Plus)),
+				inst(opcode.ISetAX, 1),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ILoadInt, 6),
+				inst(opcode.IBinOp, int(token.Plus)),
+				inst(opcode.ISetAX, 1),
+				inst(opcode.ISStore, 2),
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}

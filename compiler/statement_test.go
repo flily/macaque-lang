@@ -40,15 +40,15 @@ func TestCompileLetStatement(t *testing.T) {
 func TestCompileLetStatementRedefined(t *testing.T) {
 	tests := []testCompilerErrorCase{
 		{
-			[]string{
+			text(
 				`let a = 42; let a = 43`,
-			},
-			[]string{
+			),
+			text(
 				`let a = 42; let a = 43`,
 				"                ^",
 				"                variable a redefined",
 				"  at testcase:1:17",
-			},
+			),
 		},
 	}
 

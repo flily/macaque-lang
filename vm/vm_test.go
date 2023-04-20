@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/flily/macaque-lang/compiler"
@@ -9,7 +10,7 @@ import (
 	"github.com/flily/macaque-lang/parser"
 )
 
-func testCompileCode(t *testing.T, code string) *NaiveVM {
+func testCompileCode(t *testing.T, code string) (*NaiveVM, *object.FunctionObject) {
 	scanner := lex.NewRecursiveScanner("testcase")
 	_ = scanner.SetContent([]byte(code))
 	parser := parser.NewLLParser(scanner)
@@ -29,10 +30,11 @@ func testCompileCode(t *testing.T, code string) *NaiveVM {
 		t.Fatalf("compiler error: %s", err)
 	}
 
+	main := compiler.GetMain()
 	m := NewNaiveVM()
 	m.LoadCode(compiler)
 	m.LoadData(compiler)
-	return m
+	return m, main
 }
 
 func checkVMStackTop(t *testing.T, m *NaiveVM, expecteds []object.Object) {
@@ -68,6 +70,10 @@ func assertRegister(r ...registerAssertion) []registerAssertion {
 	return r
 }
 
+func text(lines ...string) string {
+	return strings.Join(lines, "\n")
+}
+
 func stack(o ...object.Object) []object.Object {
 	return o
 }
@@ -98,8 +104,8 @@ func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
 
 func runVMTest(t *testing.T, cases []vmTest) {
 	for _, c := range cases {
-		m := testCompileCode(t, c.code)
-		err := m.Run(0)
+		m, main := testCompileCode(t, c.code)
+		err := m.Run(main)
 		if err != nil {
 			t.Fatalf("vm error: %s", err)
 		}

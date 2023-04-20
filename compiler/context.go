@@ -26,12 +26,12 @@ type VariableInfo struct {
 }
 
 type VariableScopeContext struct {
-	Scope           int
-	Variables       map[string]VariableInfo
-	outer           *VariableScopeContext
-	arguments       int
-	variables       int
-	lowerLevelShift int
+	Scope     int
+	Variables map[string]VariableInfo
+	outer     *VariableScopeContext
+	arguments int
+	variables int
+	FrameSize int
 }
 
 func NewVariableScopeContext() *VariableScopeContext {
@@ -140,8 +140,8 @@ func (c *VariableScopeContext) ReportShift(count int) int {
 
 	case VariableScopeFunction:
 		r = n
-		if n > c.lowerLevelShift {
-			c.lowerLevelShift = n
+		if n > c.FrameSize {
+			c.FrameSize = n
 		}
 	}
 
@@ -165,8 +165,8 @@ func NewVariableContext() *VariableContext {
 		top:  root,
 	}
 
-	c.EnterScope(VariableScopeModule)   // For current file module
-	c.EnterScope(VariableScopeFunction) // For main function
+	c.EnterScope(VariableScopeModule) // For current file module
+	// c.EnterScope(VariableScopeFunction) // For main function
 	return c
 }
 
@@ -188,6 +188,10 @@ func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int
 
 func (c *VariableContext) Reference(name string) (VariableInfo, int) {
 	return c.top.Reference(name)
+}
+
+func (c *VariableContext) CurrentFrameSize() int {
+	return c.top.ReportShift(0)
 }
 
 type LiteralContext struct {
