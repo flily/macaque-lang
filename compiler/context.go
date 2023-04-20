@@ -131,12 +131,12 @@ func (c *VariableScopeContext) EnterScope(scope int) *VariableScopeContext {
 	return s
 }
 
-func (c *VariableScopeContext) ReportShift(count int) int {
+func (c *VariableScopeContext) UpdateFrameSize(count int) int {
 	n := c.variables + count
 	r := 0
 	switch c.Scope {
 	case VariableScopeBlock:
-		r = c.outer.ReportShift(n)
+		r = c.outer.UpdateFrameSize(n)
 
 	case VariableScopeFunction:
 		r = n
@@ -149,7 +149,7 @@ func (c *VariableScopeContext) ReportShift(count int) int {
 }
 
 func (c *VariableScopeContext) LeaveScope() *VariableScopeContext {
-	c.ReportShift(0)
+	c.UpdateFrameSize(0)
 	return c.outer
 }
 
@@ -191,7 +191,7 @@ func (c *VariableContext) Reference(name string) (VariableInfo, int) {
 }
 
 func (c *VariableContext) CurrentFrameSize() int {
-	return c.top.ReportShift(0)
+	return c.top.UpdateFrameSize(0)
 }
 
 type LiteralContext struct {
