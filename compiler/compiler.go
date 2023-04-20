@@ -84,7 +84,7 @@ CompileSwitch:
 			i = c.Context.Literal.Add(s, object.NewString(s))
 		}
 
-		c.writeCode(opcode.ILoadStr, int(i))
+		c.writeCode(opcode.ILoad, int(i))
 
 	case *ast.InfixExpression:
 		r, e = c.compileCode(n.LeftOperand)

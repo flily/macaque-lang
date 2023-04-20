@@ -98,7 +98,6 @@ represents an unsigned integer, and lower case represents a signed integer.
 |:--------:|:--------:|:------------------------------------------------------|
 | NOP      |   NNN    | No operation
 | LOADINT  |   D      | Load an integer constant onto the stack
-| LOADSTR  |   D      | Load a string from data segment onto the stack
 | LOADNULL |   NNN    | Load a null object onto the stack
 | LOADBOOL |   B      | Load a boolean object onto the stack
 | LOADBIND |   D      | Load a bound variable onto the stack

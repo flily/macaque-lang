@@ -15,6 +15,7 @@ func TestCompileLetStatement(t *testing.T) {
 				inst(opcode.ISetAX, 1),
 				inst(opcode.ISStore, 1),
 			),
+			data(),
 		},
 		{
 			`let a, b, c, d = 42, 43, 44, 45`,
@@ -29,6 +30,7 @@ func TestCompileLetStatement(t *testing.T) {
 				inst(opcode.ISStore, 2),
 				inst(opcode.ISStore, 1),
 			),
+			data(),
 		},
 	}
 

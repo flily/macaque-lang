@@ -97,10 +97,6 @@ RunSwitch:
 			o := object.NewInteger(int64(op.Operand0))
 			m.stackPush(o)
 
-		case opcode.ILoadStr:
-			o := m.refData(uint64(op.Operand0))
-			m.stackPush(o)
-
 		case opcode.IBinOp:
 			operator := token.Token(op.Operand0)
 			right := m.stackPop()

@@ -8,7 +8,6 @@ const (
 	IInvalid  = iota
 	INOP      // No operation.
 	ILoadInt  // Load an integer to the top of the stack.
-	ILoadStr  // Load a string to the top of the stack.
 	ILoadNull // Load a NULL to the top of the stack.
 	ILoadBool // Load a boolean to the top of the stack.
 	ILoadBind // Load a variable from function bound varaible to the top of the stack.
@@ -31,7 +30,6 @@ var codeNames = [...]string{
 	IInvalid:  "INVALID",
 	INOP:      "NOP",
 	ILoadInt:  "LOADINT",
-	ILoadStr:  "LOADSTR",
 	ILoadNull: "LOADNULL",
 	ILoadBool: "LOADBOOL",
 	ILoadBind: "LOADBIND",

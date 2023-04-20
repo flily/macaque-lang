@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/flily/macaque-lang/lex"
+	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/parser"
 )
@@ -54,6 +55,19 @@ func checkInstructions(t *testing.T, compiler *Compiler, expecteds []opcode.Opco
 	}
 }
 
+func checkData(t *testing.T, compiler *Compiler, expecteds []object.Object) {
+	data := compiler.Context.Literal.Values
+	if len(data) != len(expecteds) {
+		t.Errorf("wrong data length. want=%d, got=%d", len(expecteds), len(data))
+	}
+
+	for i, d := range data {
+		if d.EqualTo(expecteds[i]) == false {
+			t.Errorf("wrong data at %d. want=%q, got=%q", i, expecteds[i], d)
+		}
+	}
+}
+
 func inst(name int, ops ...int) opcode.Opcode {
 	return opcode.Inst(name, ops...)
 }
@@ -62,9 +76,14 @@ func code(codes ...opcode.Opcode) []opcode.Opcode {
 	return codes
 }
 
+func data(o ...object.Object) []object.Object {
+	return o
+}
+
 type testCompilerCase struct {
 	code  string
 	codes []opcode.Opcode
+	data  []object.Object
 }
 
 func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
@@ -75,6 +94,7 @@ func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
 		}
 
 		checkInstructions(t, compiler, c.codes)
+		checkData(t, compiler, c.data)
 	}
 }
 
