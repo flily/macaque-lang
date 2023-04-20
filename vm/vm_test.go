@@ -76,12 +76,21 @@ func sp(v uint64) registerAssertion {
 	return registerAssertion{"sp", v}
 }
 
+func bp(v uint64) registerAssertion {
+	return registerAssertion{"bp", v}
+}
+
 func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
 	for _, c := range cases {
 		switch c.register {
 		case "sp":
 			if m.sp != c.value {
 				t.Errorf("sp error: expect %d, got %d", c.value, m.sp)
+			}
+
+		case "bp":
+			if m.bp != c.value {
+				t.Errorf("bp error: expect %d, got %d", c.value, m.bp)
 			}
 		}
 	}

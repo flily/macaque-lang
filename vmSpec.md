@@ -92,11 +92,23 @@ represents an unsigned integer, and lower case represents a signed integer.
   + `N`: nil, ALL-ZERO byte.
   + `B`, `b`: byte, an 8-bit integer.
   + `W`, `w`: word, a 16-bit integer.
-  + `D`, `W`: tri-byte word, a 24-bit integer.
+  + `D`, `d`: quad-byte word, a 32-bit integer.
 
 | Mnemonic | Operands | Description                                           |
 |:--------:|:--------:|:------------------------------------------------------|
 | NOP      |   NNN    | No operation
 | LOADINT  |   D      | Load an integer constant onto the stack
+| LOADSTR  |   D      | Load a string from data segment onto the stack
+| LOADNULL |   NNN    | Load a null object onto the stack
+| LOADBOOL |   B      | Load a boolean object onto the stack
+| LOADBIND |   D      | Load a bound variable onto the stack
+| LLOAD    |   D      | Load object from data segment onto the stack
+| LSTORE   |   D      | Store top of stack to local variable
 | BINOP    |   W      | Perform a binary operation to the top 2 values on the stack
+| UNIOP    |   W      | Perform a unary operation to the top value on the stack
+| MAKELIST |   D      | Make an array object with the top D values on the stack
+| MAKEMAP  |   D      | Make a map object with the top 2 * D values on the stack
+| MOVAX    |   d      | Set value of AX register
+| CALL     |   D      |
+| RETURN   |   D      |
 | HALT     |   NNN    | Halt the VM

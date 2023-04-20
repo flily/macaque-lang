@@ -225,14 +225,14 @@ func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
 type CompilerContext struct {
 	Variable     *VariableContext
 	Literal      *LiteralContext
-	Instructions []opcode.Instruction
+	Instructions []opcode.Opcode
 }
 
 func NewCompilerContext() *CompilerContext {
 	c := &CompilerContext{
 		Variable:     NewVariableContext(),
 		Literal:      NewLiteralContext(),
-		Instructions: make([]opcode.Instruction, 0),
+		Instructions: make([]opcode.Opcode, 0),
 	}
 
 	return c
