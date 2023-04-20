@@ -41,16 +41,16 @@ func testCompileCode(t *testing.T, code string) (*Compiler, error) {
 }
 
 func checkInstructions(t *testing.T, compiler *Compiler, expecteds []opcode.Opcode) {
-	instructions := compiler.Context.Instructions
-	if len(instructions) != len(expecteds) {
-		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(instructions))
-		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(instructions))
+	code := compiler.Context.Code
+	if len(code.Code) != len(expecteds) {
+		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(code.Code))
+		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
 	}
 
-	for i, ins := range instructions {
+	for i, ins := range code.Code {
 		if ins != expecteds[i] {
 			t.Errorf("wrong instruction at %d. want=%q, got=%q", i, expecteds[i], ins)
-			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(instructions))
+			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
 		}
 	}
 }
@@ -69,7 +69,7 @@ func checkData(t *testing.T, compiler *Compiler, expecteds []object.Object) {
 }
 
 func inst(name int, ops ...int) opcode.Opcode {
-	return opcode.Inst(name, ops...)
+	return opcode.Code(name, ops...)
 }
 
 func text(lines ...string) string {

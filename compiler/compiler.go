@@ -20,7 +20,13 @@ func NewCompiler() *Compiler {
 }
 
 func (c *Compiler) Compile(p *ast.Program) (int, error) {
-	return c.compileCode(p)
+	code, err := c.compileCode(p)
+	if err != nil {
+		return 0, err
+	}
+
+	c.Context.Code.Append(code)
+	return len(c.Context.Code.Code), nil
 }
 
 func (c *Compiler) GetMain() *object.FunctionObject {
@@ -33,13 +39,8 @@ func (c *Compiler) GetMain() *object.FunctionObject {
 	return main
 }
 
-func (c *Compiler) writeCode(name int, ops ...int) {
-	inst := opcode.Inst(name, ops...)
-	c.Context.Instructions = append(c.Context.Instructions, inst)
-}
-
-func (c *Compiler) compileCode(node ast.Node) (int, error) {
-	var r int
+func (c *Compiler) compileCode(node ast.Node) (*CodeBuffer, error) {
+	b := NewCodeBuffer()
 	var e error
 
 CompileSwitch:
@@ -47,37 +48,35 @@ CompileSwitch:
 	case *ast.Program:
 		c.Context.Variable.EnterScope(VariableScopeFunction)
 		for _, stmt := range n.Statements {
-			r, e = c.compileCode(stmt)
-			if e != nil {
+			if e = b.AppendCode(c.compileCode(stmt)); e != nil {
 				break CompileSwitch
 			}
 		}
 
 	case *ast.ExpressionStatement:
-		r, e = c.compileCode(n.Expressions)
+		e = b.AppendCode(c.compileCode(n.Expressions))
 
 	case *ast.ExpressionList:
 		l := len(n.Expressions)
 		for _, expr := range n.Expressions {
-			r, e = c.compileCode(expr)
-			if e != nil {
+			if e = b.AppendCode(c.compileCode(expr)); e != nil {
 				break CompileSwitch
 			}
 		}
 
-		c.writeCode(opcode.ISetAX, l)
+		b.Write(opcode.ISetAX, l)
 
 	case *ast.Identifier:
 		ref, kind := c.Context.Variable.Reference(n.Value)
 		switch kind {
 		case VariableKindGlobal, VariableKindModule:
-			c.writeCode(opcode.ILoad, ref.Offset)
+			b.Write(opcode.ILoad, ref.Offset)
 
 		case VariableKindBinding:
-			c.writeCode(opcode.ILoad, ref.Offset)
+			b.Write(opcode.ILoad, ref.Offset)
 
 		case VariableKindLocal:
-			c.writeCode(opcode.ISLoad, ref.Offset)
+			b.Write(opcode.ISLoad, ref.Offset)
 
 		default:
 			ctx := n.Position.MakeContext()
@@ -86,7 +85,7 @@ CompileSwitch:
 		}
 
 	case *ast.IntegerLiteral:
-		c.writeCode(opcode.ILoadInt, int(n.Value))
+		b.Write(opcode.ILoadInt, int(n.Value))
 
 	case *ast.StringLiteral:
 		s := n.Value
@@ -95,20 +94,18 @@ CompileSwitch:
 			i = c.Context.Literal.Add(s, object.NewString(s))
 		}
 
-		c.writeCode(opcode.ILoad, int(i))
+		b.Write(opcode.ILoad, int(i))
 
 	case *ast.InfixExpression:
-		r, e = c.compileCode(n.LeftOperand)
-		if e != nil {
+		if e = b.AppendCode(c.compileCode(n.LeftOperand)); e != nil {
 			break CompileSwitch
 		}
 
-		r, e = c.compileCode(n.RightOperand)
-		if e != nil {
+		if e = b.AppendCode(c.compileCode(n.RightOperand)); e != nil {
 			break CompileSwitch
 		}
 
-		c.writeCode(opcode.IBinOp, int(n.Operator))
+		b.Write(opcode.IBinOp, int(n.Operator))
 
 	case *ast.LetStatement:
 		index := make([]int, n.Identifiers.Length())
@@ -122,15 +119,14 @@ CompileSwitch:
 			index[i] = j
 		}
 
-		r, e = c.compileCode(n.Expressions)
-		if e != nil {
+		if e = b.AppendCode(c.compileCode(n.Expressions)); e != nil {
 			break CompileSwitch
 		}
 
 		for k := len(index) - 1; k >= 0; k-- {
-			c.writeCode(opcode.ISStore, index[k])
+			b.Write(opcode.ISStore, index[k])
 		}
 	}
 
-	return r, e
+	return b, e
 }

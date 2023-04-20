@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestInst(t *testing.T) {
-	i := Inst(IInvalid, 1, 2, 3)
+func TestCode(t *testing.T) {
+	i := Code(IInvalid, 1, 2, 3)
 	if i.Name != IInvalid {
 		t.Errorf("i.Name is not IInvalid, got %v", i.Name)
 	}

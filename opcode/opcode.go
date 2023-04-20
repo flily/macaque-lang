@@ -69,7 +69,7 @@ type Opcode struct {
 	Operand2 int
 }
 
-func Inst(name int, ops ...int) Opcode {
+func Code(name int, ops ...int) Opcode {
 	i := Opcode{
 		Name: name,
 	}

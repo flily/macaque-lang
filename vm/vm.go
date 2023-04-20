@@ -70,8 +70,8 @@ func (m *NaiveVM) Top() object.Object {
 }
 
 func (m *NaiveVM) LoadCode(c *compiler.Compiler) {
-	m.Code = append(m.Code, c.Context.Instructions...)
-	m.Code = append(m.Code, opcode.Inst(opcode.IHalt))
+	m.Code = append(m.Code, c.Context.Code.Code...)
+	m.Code = append(m.Code, opcode.Code(opcode.IHalt))
 }
 
 func (m *NaiveVM) LoadData(c *compiler.Compiler) {
