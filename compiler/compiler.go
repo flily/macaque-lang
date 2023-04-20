@@ -112,8 +112,13 @@ CompileSwitch:
 		for i, v := range n.Identifiers.Identifiers {
 			j, ok := c.Context.Variable.DefineVariable(v.Value, v.Position)
 			if !ok {
-				ctx := v.Position.MakeContext()
-				e = errors.NewSyntaxError(ctx, "variable %s redefined", v.Value)
+				ctx1, _ := c.Context.Variable.Reference(v.Value)
+				ctx2 := v.Position.MakeContext()
+
+				e = ctx2.NewCompilationError("variable %s redeclared", v.Value).
+					WithInfo(ctx1.Position.MakeContext(),
+						"variable %s is already declared here", v.Value)
+
 				break CompileSwitch
 			}
 			index[i] = j

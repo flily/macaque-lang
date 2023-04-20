@@ -397,7 +397,7 @@ func TestEOFHighlight(t *testing.T) {
 		t.Fatalf("Scan() should return a EOF element, but gotelem=%v err=%v", elem, err)
 	}
 
-	highlight := elem.Position.MakeContext().MakeLineHighlight()
+	highlight := elem.Position.MakeLineHighlight()
 	expected := strings.Join([]string{
 		`  bar`,
 		`     ^`,

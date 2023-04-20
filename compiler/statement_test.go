@@ -44,10 +44,14 @@ func TestCompileLetStatementRedefined(t *testing.T) {
 				`let a = 42; let a = 43`,
 			),
 			text(
-				`let a = 42; let a = 43`,
+				"let a = 42; let a = 43",
 				"                ^",
-				"                variable a redefined",
+				"                variable a redeclared",
 				"  at testcase:1:17",
+				"let a = 42; let a = 43",
+				"    ^",
+				"    variable a is already declared here",
+				"  at testcase:1:5",
 			),
 		},
 	}

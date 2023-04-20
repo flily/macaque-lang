@@ -2,6 +2,7 @@ package token
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/flily/macaque-lang/errors"
 )
@@ -95,4 +96,24 @@ func (t *TokenInfo) MakeContext() *errors.CodeContext {
 	}
 
 	return ctx
+}
+
+func (t *TokenInfo) MakeLineHighlight() string {
+	leadingSpaces := strings.Repeat(" ", t.Column-1)
+	highlight := leadingSpaces + strings.Repeat("^", t.Length)
+
+	return t.Line.Content + "\n" + highlight
+}
+
+func (t *TokenInfo) MakeMessage(format string, args ...interface{}) string {
+	leadingSpaces := strings.Repeat(" ", t.Column-1)
+	highlight := leadingSpaces + strings.Repeat("^", t.Length)
+	lines := []string{
+		t.Line.Content,
+		highlight,
+		leadingSpaces + fmt.Sprintf(format, args...),
+		fmt.Sprintf("  at %s:%d:%d", t.Line.File.Filename, t.Line.Line, t.Column),
+	}
+
+	return strings.Join(lines, "\n")
 }

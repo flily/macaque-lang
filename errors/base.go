@@ -3,19 +3,63 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 const (
-	UnknownError       = iota
-	ErrCodeSyntaxError = 1
-	ErrRuntimeError    = 2
-	ErrScannerError    = 100
+	UnknownError            = iota
+	ErrCodeSyntaxError      = 1
+	ErrCodeRuntimeError     = 2
+	ErrCodeCompilationError = 3
+	ErrScannerError         = 100
 )
+
+type CodeContext struct {
+	Filename  string
+	NumLine   int
+	NumColumn int
+	Line      string
+	Length    int
+}
+
+func (c *CodeContext) MakeHighlight() string {
+	leadingSpaces := strings.Repeat(" ", c.NumColumn-1)
+	highlight := strings.Repeat("^", c.Length)
+
+	return leadingSpaces + highlight
+}
+
+func (c *CodeContext) MakeLineHighlight() string {
+	highlight := c.MakeHighlight()
+	return c.Line + "\n" + highlight
+}
+
+func (c *CodeContext) MakeMessage(format string, args ...interface{}) string {
+	leadingSpaces := strings.Repeat(" ", c.NumColumn-1)
+	highlight := leadingSpaces + strings.Repeat("^", c.Length)
+	lines := []string{
+		c.Line,
+		highlight,
+		leadingSpaces + fmt.Sprintf(format, args...),
+		fmt.Sprintf("  at %s:%d:%d", c.Filename, c.NumLine, c.NumColumn),
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func (c *CodeContext) NewSyntaxError(format string, args ...interface{}) *SyntaxError {
+	return NewSyntaxError(c, format, args...)
+}
+
+func (c *CodeContext) NewCompilationError(format string, args ...interface{}) *CompilationError {
+	return NewCompilationError(c, format, args...)
+}
 
 type BaseError struct {
 	Kind    int
 	Message string
 	Base    *BaseError
+	Context *CodeContext
 }
 
 type HasKind interface {
@@ -23,7 +67,7 @@ type HasKind interface {
 }
 
 type CanDerive interface {
-	Derive(format string, args ...interface{}) error
+	Derive(format string, args ...interface{}) *BaseError
 }
 
 func NewRawError(kind int, format string, args ...interface{}) *BaseError {
@@ -76,8 +120,13 @@ func Derive(base error, format string, args ...interface{}) error {
 	return NewError(UnknownError, format, args...)
 }
 
-func (e *BaseError) Derive(format string, args ...interface{}) error {
+func (e *BaseError) Derive(format string, args ...interface{}) *BaseError {
 	err := NewRawError(e.Kind, format, args...)
 	err.Base = e
 	return err
+}
+
+func (e *BaseError) WithContext(c *CodeContext) *BaseError {
+	e.Context = c
+	return e
 }

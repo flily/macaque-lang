@@ -2,6 +2,8 @@ package token
 
 import (
 	"testing"
+
+	"strings"
 )
 
 func TestInfo(t *testing.T) {
@@ -71,5 +73,39 @@ func TestInfo(t *testing.T) {
 
 	if ctx1.Length != 3 {
 		t.Errorf("ctx1.Length is %d, expected %d", ctx1.Length, 3)
+	}
+}
+
+func TestTokenInfoMessage(t *testing.T) {
+	f := NewFileInfo("sample.txt")
+	l1 := f.NewLine("the quick brown fox")
+	t1 := l1.NewToken(5, 5, "quick")
+
+	expected := strings.Join([]string{
+		"the quick brown fox",
+		"    ^^^^^",
+		"    lorem ipsum",
+		"  at sample.txt:1:5",
+	}, "\n")
+
+	got := t1.MakeMessage("lorem ipsum")
+	if got != expected {
+		t.Errorf("got %v, expected %v", got, expected)
+	}
+}
+
+func TestTokenInfoHighlight(t *testing.T) {
+	f := NewFileInfo("sample.txt")
+	l1 := f.NewLine("the quick brown fox")
+	t1 := l1.NewToken(5, 5, "quick")
+
+	expected := strings.Join([]string{
+		"the quick brown fox",
+		"    ^^^^^",
+	}, "\n")
+
+	got := t1.MakeLineHighlight()
+	if got != expected {
+		t.Errorf("got %v, expected %v", got, expected)
 	}
 }

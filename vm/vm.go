@@ -103,7 +103,7 @@ RunSwitch:
 			left := m.stackPop()
 			o, ok := left.OnInfix(operator, right)
 			if !ok {
-				e = errors.NewError(errors.ErrRuntimeError,
+				e = errors.NewError(errors.ErrCodeRuntimeError,
 					"%s %s %s is not accepted", left.Type(), operator, right.Type())
 				break RunSwitch
 			}

@@ -86,14 +86,9 @@ func (p *LLParser) currentToken() token.Token {
 	return current.Token
 }
 
-func (p *LLParser) DebugLin() string {
+func (p *LLParser) DebugLine() string {
 	current := p.container.Current()
-	return current.Position.Line.Content
-}
-
-func (p *LLParser) DebugDbg() string {
-	current := p.container.Current()
-	return current.Position.MakeContext().MakeHighlight()
+	return current.Position.MakeLineHighlight()
 }
 
 // func (p *LLParser) peek(offset int) *lex.LexicalElement {
@@ -134,8 +129,7 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 	program := ast.NewEmptyProgram()
 	current := p.current()
 
-	p.DebugLin()
-	p.DebugDbg()
+	p.DebugLine()
 
 	for current != nil && current.Token != token.EOF {
 		stmt, err := p.parseStatement()

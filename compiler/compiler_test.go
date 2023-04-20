@@ -114,7 +114,8 @@ func runCompilerErrorTestCases(t *testing.T, cases []testCompilerErrorCase) {
 			t.Fatalf("compilation should fail:\n")
 		}
 
-		if err.Error() != c.expected {
+		got := err.Error()
+		if got != c.expected {
 			t.Fatalf("incorrect error message:\n%s\nexpect:\n%s", err, c.expected)
 		}
 	}
