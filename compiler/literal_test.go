@@ -86,6 +86,70 @@ func TestCompileFunctions(t *testing.T) {
 			),
 			data(),
 		},
+		{
+			text(
+				"let answer = 42;",
+				"let f = fn(a) {",
+				"    let b = 3;",
+				"    if (a > b) {",
+				"        let c = a + b;",
+				"        c",
+				"    } else {",
+				"        let d = a - b;",
+				"        let c = a + b;",
+				"        d + c + answer",
+				"    }",
+				"}",
+			),
+			code(
+				// let answer = 42
+				inst(opcode.ILoadInt, 42), // 0
+				inst(opcode.ISStore, 1),   // 1
+				// let f = fn(a)
+				inst(opcode.ISLoad, 1),       // 2
+				inst(opcode.IMakeFunc, 0, 1), // 3
+				inst(opcode.ISStore, 2),      // 4
+				inst(opcode.IHalt),           // 5
+
+				// fn(a) {
+				//     let b = 3;
+				inst(opcode.ILoadInt, 3), // 6
+				inst(opcode.ISStore, 1),  // 7
+				//     if (a > b) {
+				inst(opcode.ISLoad, -1),            // 8
+				inst(opcode.ISLoad, 1),             // 9
+				inst(opcode.IBinOp, int(token.GT)), // 10
+				inst(opcode.IJumpIf, 6),            // 11
+				//         let c = a + b;
+				inst(opcode.ISLoad, -1),              // 12
+				inst(opcode.ISLoad, 1),               // 13
+				inst(opcode.IBinOp, int(token.Plus)), // 14
+				inst(opcode.ISStore, 2),              // 15
+				//         c
+				inst(opcode.ISLoad, 2),    // 16
+				inst(opcode.IJumpFWD, 13), // 17
+				//    } else {
+				//         let d = a - b;
+				inst(opcode.ISLoad, -1),               // 18
+				inst(opcode.ISLoad, 1),                // 19
+				inst(opcode.IBinOp, int(token.Minus)), // 20
+				//         let e = a + b;
+				inst(opcode.ISStore, 2),              // 21
+				inst(opcode.ISLoad, -1),              // 22
+				inst(opcode.ISLoad, 1),               // 23
+				inst(opcode.IBinOp, int(token.Plus)), // 24
+				//         d + e + answer
+				inst(opcode.ISStore, 3),              // 25
+				inst(opcode.ISLoad, 2),               // 26
+				inst(opcode.ISLoad, 3),               // 27
+				inst(opcode.IBinOp, int(token.Plus)), // 28
+				inst(opcode.ILoadBind, 0),            // 29
+				inst(opcode.IBinOp, int(token.Plus)), // 30
+				inst(opcode.IReturn, 1),              // 31
+				inst(opcode.IHalt),                   // 32
+			),
+			data(),
+		},
 	}
 
 	runCompilerTestCases(t, tests)

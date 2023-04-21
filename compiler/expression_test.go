@@ -154,3 +154,24 @@ func TestCompileIfExpression(t *testing.T) {
 
 	runCompilerTestCases(t, tests)
 }
+
+func TestCompileIfExpressionError(t *testing.T) {
+	tests := []testCompilerErrorCase{
+		{
+			text(
+				"if (10 > 4) {",
+				"    let a = 5;",
+				"}",
+				"4 + a",
+			),
+			text(
+				"4 + a",
+				"    ^",
+				"    variable a undefined",
+				"  at testcase:4:5",
+			),
+		},
+	}
+
+	runCompilerErrorTestCases(t, tests)
+}

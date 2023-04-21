@@ -51,7 +51,7 @@ func (c *Compiler) compileCode(node ast.Node, flag uint64) (*CompileResult, erro
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
-		c.Context.Variable.EnterScope(VariableScopeFunction)
+		c.Context.Variable.EnterScope(FrameScopeFunction)
 		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
@@ -225,10 +225,12 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 		return nil, err
 	}
 
+	c.Context.Variable.EnterScope(FrameScopeBlock)
 	consequence, err := c.compileCode(n.Consequence, FlagNone)
 	if err != nil {
 		return nil, err
 	}
+	c.Context.Variable.LeaveScope()
 
 	if n.Alternative == nil {
 		code.Write(opcode.IJumpIf, consequence.Code.Length())
@@ -236,10 +238,12 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 		return code, nil
 	}
 
+	c.Context.Variable.EnterScope(FrameScopeBlock)
 	alternative, err := c.compileCode(n.Alternative, FlagNone)
 	if err != nil {
 		return nil, err
 	}
+	c.Context.Variable.LeaveScope()
 
 	consequence.Write(opcode.IJumpFWD, alternative.Code.Length())
 	code.Write(opcode.IJumpIf, consequence.Code.Length())
@@ -292,7 +296,7 @@ func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool
 
 func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResult, error) {
 	result := NewCompileResult()
-	c.Context.Variable.EnterScope(VariableScopeFunction)
+	c.Context.Variable.EnterScope(FrameScopeFunction)
 
 	for _, arg := range f.Arguments.Identifiers {
 		c.Context.Variable.DefineArgument(arg.Value, arg.Position)

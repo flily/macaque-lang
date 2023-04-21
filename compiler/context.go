@@ -7,26 +7,61 @@ import (
 )
 
 const (
-	VariableScopeGlobal   = 1
-	VariableScopeModule   = 2
-	VariableScopeFunction = 3
-	VariableScopeBlock    = 4
-
-	VariableKindNotFound = 0
-	VariableKindGlobal   = 1
-	VariableKindModule   = 2
-	VariableKindLocal    = 3
-	VariableKindBinding  = 4
+	FrameScopeGlobal    FrameScope = 1
+	FrameScopeModule    FrameScope = 2
+	FrameScopeFunction  FrameScope = 3
+	FrameScopeBlock     FrameScope = 4
+	VariableKindMiss    VarKind    = 0
+	VariableKindGlobal  VarKind    = 1
+	VariableKindModule  VarKind    = 2
+	VariableKindLocal   VarKind    = 3
+	VariableKindBinding VarKind    = 4
 )
+
+type FrameScope int
+
+var scopeNames = [...]string{
+	FrameScopeGlobal:   "global",
+	FrameScopeModule:   "module",
+	FrameScopeFunction: "function",
+	FrameScopeBlock:    "block",
+}
+
+func (s FrameScope) String() string {
+	if s >= 0 && s <= FrameScopeBlock {
+		return scopeNames[s]
+	}
+
+	return "unknown"
+}
+
+type VarKind int
+
+var kindNames = [...]string{
+	VariableKindMiss:    "miss",
+	VariableKindGlobal:  "global",
+	VariableKindModule:  "module",
+	VariableKindLocal:   "local",
+	VariableKindBinding: "binding",
+}
+
+func (k VarKind) String() string {
+	if k >= 0 && k <= VariableKindBinding {
+		return kindNames[k]
+	}
+
+	return "unknown"
+}
 
 type VariableInfo struct {
 	Name     string
 	Offset   int
+	Kind     VarKind
 	Position *token.TokenInfo
 }
 
 type VariableScopeContext struct {
-	Scope     int
+	Scope     FrameScope
 	Variables map[string]VariableInfo
 	Bindings  map[string]VariableInfo
 	outer     *VariableScopeContext
@@ -37,7 +72,7 @@ type VariableScopeContext struct {
 
 func NewVariableScopeContext() *VariableScopeContext {
 	c := &VariableScopeContext{
-		Scope:     VariableKindGlobal,
+		Scope:     FrameScopeGlobal,
 		Variables: make(map[string]VariableInfo),
 		Bindings:  make(map[string]VariableInfo),
 	}
@@ -54,6 +89,20 @@ func (c *VariableScopeContext) IsDefined(name string) bool {
 	return ok
 }
 
+func (c *VariableScopeContext) FrameOffset() int {
+	size := c.variables
+	switch c.Scope {
+	case FrameScopeFunction:
+		return size
+
+	case FrameScopeBlock:
+		return size + c.outer.FrameOffset()
+
+	default:
+		return 0
+	}
+}
+
 func (c *VariableScopeContext) DefineArgument(name string, pos *token.TokenInfo) (int, bool) {
 	if c.IsDefined(name) {
 		return 0, false
@@ -64,6 +113,7 @@ func (c *VariableScopeContext) DefineArgument(name string, pos *token.TokenInfo)
 	c.Variables[name] = VariableInfo{
 		Name:     name,
 		Offset:   -n,
+		Kind:     VariableKindLocal,
 		Position: pos,
 	}
 
@@ -75,11 +125,12 @@ func (c *VariableScopeContext) DefineVariable(name string, pos *token.TokenInfo)
 		return 0, false
 	}
 
-	n := c.variables + 1
-	c.variables = n
+	n := c.FrameOffset() + 1
+	c.variables += 1
 	c.Variables[name] = VariableInfo{
 		Name:     name,
 		Offset:   n,
+		Kind:     VariableKindLocal,
 		Position: pos,
 	}
 
@@ -97,22 +148,22 @@ func (c *VariableScopeContext) AddBinding(name string, info VariableInfo) Variab
 	return info
 }
 
-func (c *VariableScopeContext) currentVariableKind() int {
+func (c *VariableScopeContext) currentVariableKind() VarKind {
 	switch c.Scope {
-	case VariableScopeGlobal:
+	case FrameScopeGlobal:
 		return VariableKindGlobal
 
-	case VariableScopeModule:
+	case FrameScopeModule:
 		return VariableKindModule
 
-	case VariableScopeFunction, VariableScopeBlock:
+	case FrameScopeFunction, FrameScopeBlock:
 		return VariableKindLocal
 	}
 
 	return 0
 }
 
-func (c *VariableScopeContext) Reference(name string) (VariableInfo, int) {
+func (c *VariableScopeContext) Reference(name string) (VariableInfo, VarKind) {
 	v, ok := c.Variables[name]
 	if ok {
 		return v, c.currentVariableKind()
@@ -124,14 +175,14 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, int) {
 	}
 
 	if c.IsRoot() {
-		return VariableInfo{}, VariableKindNotFound
+		return VariableInfo{}, VariableKindMiss
 	}
 
 	info, kind := c.outer.Reference(name)
 	if kind != VariableKindLocal {
 		return info, kind
 	} else {
-		if c.Scope == VariableScopeFunction {
+		if c.Scope == FrameScopeFunction {
 			binding := c.AddBinding(name, info)
 			return binding, VariableKindBinding
 		} else {
@@ -140,7 +191,7 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, int) {
 	}
 }
 
-func (c *VariableScopeContext) EnterScope(scope int) *VariableScopeContext {
+func (c *VariableScopeContext) EnterScope(scope FrameScope) *VariableScopeContext {
 	s := &VariableScopeContext{
 		Scope:     scope,
 		Variables: make(map[string]VariableInfo),
@@ -155,10 +206,10 @@ func (c *VariableScopeContext) UpdateFrameSize(count int) int {
 	n := c.variables + count
 	r := 0
 	switch c.Scope {
-	case VariableScopeBlock:
+	case FrameScopeBlock:
 		r = c.outer.UpdateFrameSize(n)
 
-	case VariableScopeFunction:
+	case FrameScopeFunction:
 		r = n
 		if n > c.FrameSize {
 			c.FrameSize = n
@@ -185,7 +236,7 @@ func NewVariableContext() *VariableContext {
 		top:  root,
 	}
 
-	c.EnterScope(VariableScopeModule) // For current file module
+	c.EnterScope(FrameScopeModule) // For current file module
 	// c.EnterScope(VariableScopeFunction) // For main function
 	return c
 }
@@ -194,7 +245,7 @@ func (c *VariableContext) CurrentScope() *VariableScopeContext {
 	return c.top
 }
 
-func (c *VariableContext) EnterScope(scope int) {
+func (c *VariableContext) EnterScope(scope FrameScope) {
 	c.top = c.top.EnterScope(scope)
 }
 
@@ -210,7 +261,7 @@ func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int
 	return c.top.DefineVariable(name, pos)
 }
 
-func (c *VariableContext) Reference(name string) (VariableInfo, int) {
+func (c *VariableContext) Reference(name string) (VariableInfo, VarKind) {
 	info, kind := c.top.Reference(name)
 	return info, kind
 }
