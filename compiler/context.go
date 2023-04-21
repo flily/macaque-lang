@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -109,7 +111,7 @@ func (c *VariableScopeContext) DefineArgument(name string, pos *token.TokenInfo)
 	}
 
 	n := c.arguments + 1
-	c.arguments = -n
+	c.arguments = n
 	c.Variables[name] = VariableInfo{
 		Name:     name,
 		Offset:   -n,
@@ -263,6 +265,7 @@ func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int
 
 func (c *VariableContext) Reference(name string) (VariableInfo, VarKind) {
 	info, kind := c.top.Reference(name)
+	fmt.Printf("Reference %s: %+v, %v\n", name, info, kind)
 	return info, kind
 }
 

@@ -154,6 +154,11 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
+	case *ast.CallExpression:
+		if e = r.Append(c.compileCallExpression(n, flag)); e != nil {
+			break CompileSwitch
+		}
+
 	case *ast.LetStatement:
 		index := make([]int, n.Identifiers.Length())
 		for i, v := range n.Identifiers.Identifiers {
@@ -320,5 +325,24 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	}
 
 	result.Write(opcode.IMakeFunc, id, len(scope.Bindings))
+	return result, nil
+}
+
+func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) (*CompileResult, error) {
+	result := NewCompileResult()
+
+	argList, err := c.compileCode(expr.Args, flag)
+	if err != nil {
+		return nil, err
+	}
+	result.AppendCode(argList)
+
+	callable, err := c.compileCode(expr.Callable, flag)
+	if err != nil {
+		return nil, err
+	}
+	result.AppendCode(callable)
+
+	result.Write(opcode.ICall, argList.Values)
 	return result, nil
 }

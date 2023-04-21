@@ -175,3 +175,31 @@ func TestCompileIfExpressionError(t *testing.T) {
 
 	runCompilerErrorTestCases(t, tests)
 }
+
+func TestCallExpression(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"let add = fn(a, b) { a + b }",
+				"add(1, 2)",
+			),
+			code(
+				inst(opcode.IMakeFunc, 0),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ICall, 2),
+				inst(opcode.IHalt),
+				inst(opcode.ISLoad, -1),
+				inst(opcode.ISLoad, -2),
+				inst(opcode.IBinOp, int(token.Plus)),
+				inst(opcode.IReturn, 1),
+				inst(opcode.IHalt),
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}
