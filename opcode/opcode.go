@@ -18,7 +18,7 @@ const (
 	IBinOp    // Binary operation.
 	IUniOp    // Unary operation.
 	IMakeList // Make a list.
-	IMakeMap  // Make a map.
+	IMakeHash // Make a hash.
 	IMakeFunc // Make a function.
 	ISetAX    // Set value of AX.
 	IGetAX    // Get value of AX.
@@ -46,7 +46,7 @@ var codeNames = [...]string{
 	IBinOp:    "BINOP",
 	IUniOp:    "UNIOP",
 	IMakeList: "MAKELIST",
-	IMakeMap:  "MAKEMAP",
+	IMakeHash: "MAKEHASH",
 	IMakeFunc: "MAKEFUNC",
 	ISetAX:    "SETAX",
 	IGetAX:    "GETAX",

@@ -97,6 +97,21 @@ CompileSwitch:
 		r.Write(opcode.IMakeList, len(n.Elements))
 		r.Values = 1
 
+	case *ast.HashLiteral:
+		l := len(n.Pairs)
+		for _, pair := range n.Pairs {
+			if e = r.Append(c.compileCode(pair.Key, FlagNone)); e != nil {
+				break CompileSwitch
+			}
+
+			if e = r.Append(c.compileCode(pair.Value, FlagNone)); e != nil {
+				break CompileSwitch
+			}
+		}
+
+		r.Write(opcode.IMakeHash, l)
+		r.Values = 1
+
 	case *ast.Identifier:
 		p := c.compileIdentifierReference(n.Value, r)
 		if p <= 0 {

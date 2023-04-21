@@ -7,7 +7,7 @@ import (
 	"github.com/flily/macaque-lang/token"
 )
 
-func TestParseListLiteral(t *testing.T) {
+func TestCompileListLiteral(t *testing.T) {
 	tests := []testCompilerCase{
 		{
 			text(
@@ -42,6 +42,71 @@ func TestParseListLiteral(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)),
 				inst(opcode.ILoadInt, 4),
 				inst(opcode.IMakeList, 3),
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}
+
+func TestCompileHashLiteral(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"{}",
+			),
+			code(
+				inst(opcode.IMakeHash, 0),
+			),
+			data(),
+		},
+		{
+			text(
+				"{1: 2, 3: 4}",
+			),
+			code(
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ILoadInt, 3),
+				inst(opcode.ILoadInt, 4),
+				inst(opcode.IMakeHash, 2),
+			),
+			data(),
+		},
+		{
+			text(
+				"{1: 2 + 3, 4: 5 + 6}",
+			),
+			code(
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ILoadInt, 3),
+				inst(opcode.IBinOp, int(token.Plus)),
+				inst(opcode.ILoadInt, 4),
+				inst(opcode.ILoadInt, 5),
+				inst(opcode.ILoadInt, 6),
+				inst(opcode.IBinOp, int(token.Plus)),
+				inst(opcode.IMakeHash, 2),
+			),
+			data(),
+		},
+		{
+			text(
+				"let one = 1;",
+				"let two = 2;",
+				"{one: 10, 2: two}",
+			),
+			code(
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ISStore, 2),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ILoadInt, 10),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ISLoad, 2),
+				inst(opcode.IMakeHash, 2),
 			),
 			data(),
 		},
