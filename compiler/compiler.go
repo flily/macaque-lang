@@ -5,6 +5,7 @@ import (
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
+	"github.com/flily/macaque-lang/token"
 )
 
 const (
@@ -73,12 +74,7 @@ CompileSwitch:
 		r.Values = 1
 
 	case *ast.StringLiteral:
-		s := n.Value
-		i, ok := c.Context.Literal.Lookup(s)
-		if !ok {
-			i = c.Context.Literal.Add(s, object.NewString(s))
-		}
-
+		i := c.Context.Literal.ReferenceString(n.Value)
 		r.Write(opcode.ILoad, int(i))
 		r.Values = 1
 
@@ -166,6 +162,11 @@ CompileSwitch:
 
 	case *ast.IfExpression:
 		if e = r.Append(c.compileIfExpression(n)); e != nil {
+			break CompileSwitch
+		}
+
+	case *ast.IndexExpression:
+		if e = r.Append(c.compileIndexExpression(n)); e != nil {
 			break CompileSwitch
 		}
 
@@ -359,5 +360,35 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 	result.AppendCode(callable)
 
 	result.Write(opcode.ICall, argList.Values)
+	return result, nil
+}
+
+func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*CompileResult, error) {
+	result := NewCompileResult()
+
+	base, err := c.compileCode(expr.Base, FlagNone|FlagPackValue)
+	if err != nil {
+		return nil, err
+	}
+
+	var index *CompileResult
+
+	if expr.Operator == token.LBracket {
+		index, err = c.compileCode(expr.Index, FlagNone|FlagPackValue)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		key := expr.Index.(*ast.Identifier)
+		i := c.Context.Literal.ReferenceString(key.Value)
+		index = NewCompileResult()
+		index.Write(opcode.ILoad, int(i))
+		index.Values = 1
+	}
+
+	result.AppendCode(base)
+	result.AppendCode(index)
+	result.Write(opcode.IIndex)
+
 	return result, nil
 }

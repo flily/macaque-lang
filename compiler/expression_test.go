@@ -203,3 +203,48 @@ func TestCallExpression(t *testing.T) {
 
 	runCompilerTestCases(t, tests)
 }
+
+func TestIndexExpression(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"let arr = [1, 2, 3]",
+				"arr[3]",
+			),
+			code(
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ILoadInt, 3),
+				inst(opcode.IMakeList, 3),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ILoadInt, 3),
+				inst(opcode.IIndex),
+			),
+			data(),
+		},
+		{
+			text(
+				`let hash = {"one": 1, "two": 2}`,
+				`hash["one"]`,
+			),
+			code(
+				inst(opcode.ILoad, 0),
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoad, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.IMakeHash, 2),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ILoad, 0),
+				inst(opcode.IIndex),
+			),
+			data(
+				object.NewString("one"),
+				object.NewString("two"),
+			),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}

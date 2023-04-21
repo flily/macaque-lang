@@ -290,7 +290,7 @@ func NewLiteralContext() *LiteralContext {
 
 func (c *LiteralContext) Add(v interface{}, o object.Object) uint64 {
 	n := c.counts
-	c.index[c] = uint64(n)
+	c.index[v] = uint64(n)
 	c.Values = append(c.Values, o)
 	c.counts = n + 1
 	return uint64(n)
@@ -303,6 +303,15 @@ func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
 	}
 
 	return 0, false
+}
+
+func (c *LiteralContext) ReferenceString(s string) uint64 {
+	if n, ok := c.Lookup(s); ok {
+		return n
+	}
+
+	o := object.NewString(s)
+	return c.Add(s, o)
 }
 
 type FunctionContext struct {

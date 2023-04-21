@@ -20,6 +20,7 @@ const (
 	IMakeList // Make a list.
 	IMakeHash // Make a hash.
 	IMakeFunc // Make a function.
+	IIndex    // Get item of a list or a hash.
 	ISetAX    // Set value of AX.
 	IGetAX    // Get value of AX.
 	IJump     // Jump to a position.
@@ -48,6 +49,7 @@ var codeNames = [...]string{
 	IMakeList: "MAKELIST",
 	IMakeHash: "MAKEHASH",
 	IMakeFunc: "MAKEFUNC",
+	IIndex:    "INDEX",
 	ISetAX:    "SETAX",
 	IGetAX:    "GETAX",
 	IJump:     "JUMP",
