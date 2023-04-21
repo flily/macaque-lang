@@ -24,14 +24,14 @@ func NewCompiler() *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(p *ast.Program) (int, error) {
-	result, err := c.compileCode(p, FlagNone)
+func (c *Compiler) Compile(p *ast.Program) (*CodePage, error) {
+	r, err := c.compileCode(p, FlagNone)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	c.Context.Code.Append(result.Code)
-	return len(c.Context.Code.Code), nil
+	page := c.Context.LinkCode(r.Code)
+	return page, nil
 }
 
 func (c *Compiler) GetMain() *object.FunctionObject {

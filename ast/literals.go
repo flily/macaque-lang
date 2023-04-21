@@ -270,8 +270,9 @@ func (h *HashLiteral) AddPair(key Expression, value Expression) {
 }
 
 type FunctionLiteral struct {
-	Arguments *IdentifierList
-	Body      *BlockStatement
+	Arguments    *IdentifierList
+	Body         *BlockStatement
+	ReturnValues int
 }
 
 func (f *FunctionLiteral) expressionNode() {}

@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/flily/macaque-lang/object"
+	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -226,16 +227,38 @@ func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
 }
 
 type CompilerContext struct {
-	Variable *VariableContext
-	Literal  *LiteralContext
-	Code     *CodeBuffer
+	Variable  *VariableContext
+	Literal   *LiteralContext
+	Functions []*CodeBuffer
+}
+
+func (c *CompilerContext) LinkCode(main *CodeBuffer) *CodePage {
+	code := NewCodeBuffer()
+	links := make(map[int]uint64)
+
+	code.Append(main) // main
+	if len(c.Functions) > 0 {
+		code.Write(opcode.IHalt)
+		for i, f := range c.Functions {
+			offset := code.Length()
+			links[i+1] = uint64(offset)
+			code.Append(f)
+			code.Write(opcode.IHalt)
+		}
+	}
+
+	page := &CodePage{
+		Codes:       code.Code,
+		FunctionMap: links,
+	}
+
+	return page
 }
 
 func NewCompilerContext() *CompilerContext {
 	c := &CompilerContext{
 		Variable: NewVariableContext(),
 		Literal:  NewLiteralContext(),
-		Code:     NewCodeBuffer(),
 	}
 
 	return c

@@ -25,14 +25,14 @@ func testCompileCode(t *testing.T, code string) (*NaiveVM, *object.FunctionObjec
 	}
 
 	compiler := compiler.NewCompiler()
-	_, err = compiler.Compile(program)
+	page, err := compiler.Compile(program)
 	if err != nil {
 		t.Fatalf("compiler error: %s", err)
 	}
 
 	main := compiler.GetMain()
 	m := NewNaiveVM()
-	m.LoadCode(compiler)
+	m.LoadCode(page)
 	m.LoadData(compiler)
 	return m, main
 }

@@ -21,7 +21,7 @@ func makeCodePrint(codes []opcode.Opcode) string {
 	return strings.Join(parts, "\n")
 }
 
-func testCompileCode(t *testing.T, code string) (*Compiler, error) {
+func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
 	scanner := lex.NewRecursiveScanner("testcase")
 	_ = scanner.SetContent([]byte(code))
 	parser := parser.NewLLParser(scanner)
@@ -36,23 +36,23 @@ func testCompileCode(t *testing.T, code string) (*Compiler, error) {
 	}
 
 	compiler := NewCompiler()
-	_, err = compiler.Compile(program)
-	return compiler, err
+	page, err := compiler.Compile(program)
+	return compiler, page, err
 }
 
-func checkInstructions(t *testing.T, text string, compiler *Compiler, expecteds []opcode.Opcode) {
-	code := compiler.Context.Code
-	if len(code.Code) != len(expecteds) {
+func checkInstructions(t *testing.T, text string, page *CodePage, compiler *Compiler, expecteds []opcode.Opcode) {
+	codes := page.Codes
+	if len(codes) != len(expecteds) {
 		t.Errorf("wrong answer in code: %s", text)
-		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(code.Code))
-		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
+		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(codes))
+		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(codes))
 	}
 
-	for i, ins := range code.Code {
+	for i, ins := range codes {
 		if ins != expecteds[i] {
 			t.Errorf("wrong answer in code: %s", text)
 			t.Errorf("wrong instruction at %d. want=%q, got=%q", i, expecteds[i], ins)
-			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
+			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(codes))
 		}
 	}
 }
@@ -97,12 +97,12 @@ type testCompilerCase struct {
 func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
 	for _, c := range cases {
 		code := c.code
-		compiler, err := testCompileCode(t, c.code)
+		compiler, page, err := testCompileCode(t, c.code)
 		if err != nil {
 			t.Fatalf("compiler error:\n%s", err)
 		}
 
-		checkInstructions(t, code, compiler, c.codes)
+		checkInstructions(t, code, page, compiler, c.codes)
 		checkData(t, code, compiler, c.data)
 	}
 }
@@ -114,7 +114,7 @@ type testCompilerErrorCase struct {
 
 func runCompilerErrorTestCases(t *testing.T, cases []testCompilerErrorCase) {
 	for _, c := range cases {
-		_, err := testCompileCode(t, c.code)
+		_, _, err := testCompileCode(t, c.code)
 		if err == nil {
 			t.Fatalf("compilation should fail:\n")
 		}

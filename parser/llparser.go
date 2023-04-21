@@ -487,8 +487,9 @@ func (p *LLParser) parseFunctionLiteral() (*ast.FunctionLiteral, error) {
 	}
 
 	literal := &ast.FunctionLiteral{
-		Arguments: args,
-		Body:      body,
+		Arguments:    args,
+		Body:         body,
+		ReturnValues: -1,
 	}
 
 	return literal, nil

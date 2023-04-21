@@ -82,9 +82,11 @@ func (m *NaiveVM) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
 
-func (m *NaiveVM) LoadCode(c *compiler.Compiler) {
-	m.Code = append(m.Code, c.Context.Code.Code...)
-	m.Code = append(m.Code, opcode.Code(opcode.IHalt))
+func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
+	m.Code = append(m.Code, page.Codes...)
+	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
+		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
+	}
 }
 
 func (m *NaiveVM) LoadData(c *compiler.Compiler) {
