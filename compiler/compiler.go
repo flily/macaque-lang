@@ -347,11 +347,15 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) (*CompileResult, error) {
 	result := NewCompileResult()
 
-	argList, err := c.compileCode(expr.Args, flag)
-	if err != nil {
-		return nil, err
+	args := NewCompileResult()
+	l := expr.Args.Length()
+	for i := 0; i < l; i++ {
+		a := expr.Args.Expressions[l-i-1]
+		if e := args.Append(c.compileCode(a, FlagNone|FlagPackValue)); e != nil {
+			return nil, e
+		}
 	}
-	result.AppendCode(argList)
+	result.AppendCode(args)
 
 	callable, err := c.compileCode(expr.Callable, flag)
 	if err != nil {
@@ -359,7 +363,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 	}
 	result.AppendCode(callable)
 
-	result.Write(opcode.ICall, argList.Values)
+	result.Write(opcode.ICall, args.Values)
 	return result, nil
 }
 

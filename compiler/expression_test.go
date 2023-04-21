@@ -186,8 +186,8 @@ func TestCallExpression(t *testing.T) {
 			code(
 				inst(opcode.IMakeFunc, 0),
 				inst(opcode.ISStore, 1),
-				inst(opcode.ILoadInt, 1),
 				inst(opcode.ILoadInt, 2),
+				inst(opcode.ILoadInt, 1),
 				inst(opcode.ISLoad, 1),
 				inst(opcode.ICall, 2),
 				inst(opcode.IHalt),
