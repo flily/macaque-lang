@@ -12,10 +12,33 @@ import (
 	"github.com/flily/macaque-lang/parser"
 )
 
-func makeCodePrint(codes []opcode.Opcode) string {
-	parts := make([]string, len(codes))
-	for i, c := range codes {
-		parts[i] = fmt.Sprintf("%2d %s", i, c.String())
+func makeCodePrint(left []opcode.Opcode, right []opcode.Opcode) string {
+	length := len(left)
+	if len(right) > length {
+		length = len(right)
+	}
+
+	parts := make([]string, 0, length)
+
+	for i := 0; i < length; i++ {
+		l, r := "", ""
+		if i < len(left) {
+			l = left[i].String()
+		}
+
+		if i < len(right) {
+			r = right[i].String()
+		}
+
+		flag := "      "
+		if l != r {
+			flag = ">>>>>>"
+		}
+
+		parts = append(parts, fmt.Sprintf("%2d %s   %-40s %s", i, flag, l, r))
+		if l != r {
+			parts = append(parts, strings.Repeat("-", 80))
+		}
 	}
 
 	return strings.Join(parts, "\n")
@@ -45,14 +68,14 @@ func checkInstructions(t *testing.T, text string, page *CodePage, compiler *Comp
 	if len(codes) != len(expecteds) {
 		t.Errorf("wrong answer in code: %s", text)
 		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(codes))
-		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(codes))
+		t.Fatalf("want and got:\n%s", makeCodePrint(expecteds, codes))
 	}
 
 	for i, ins := range codes {
 		if ins != expecteds[i] {
 			t.Errorf("wrong answer in code: %s", text)
 			t.Errorf("wrong instruction at %d. want=%q, got=%q", i, expecteds[i], ins)
-			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(codes))
+			t.Fatalf("want and got:\n%s", makeCodePrint(expecteds, codes))
 		}
 	}
 }

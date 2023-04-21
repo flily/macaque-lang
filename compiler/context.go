@@ -28,6 +28,7 @@ type VariableInfo struct {
 type VariableScopeContext struct {
 	Scope     int
 	Variables map[string]VariableInfo
+	Bindings  map[string]VariableInfo
 	outer     *VariableScopeContext
 	arguments int
 	variables int
@@ -38,6 +39,7 @@ func NewVariableScopeContext() *VariableScopeContext {
 	c := &VariableScopeContext{
 		Scope:     VariableKindGlobal,
 		Variables: make(map[string]VariableInfo),
+		Bindings:  make(map[string]VariableInfo),
 	}
 
 	return c
@@ -84,6 +86,17 @@ func (c *VariableScopeContext) DefineVariable(name string, pos *token.TokenInfo)
 	return n, true
 }
 
+func (c *VariableScopeContext) AddBinding(name string, info VariableInfo) VariableInfo {
+	if v, ok := c.Bindings[name]; ok {
+		return v
+	}
+
+	offset := len(c.Bindings)
+	info.Offset = offset
+	c.Bindings[name] = info
+	return info
+}
+
 func (c *VariableScopeContext) currentVariableKind() int {
 	switch c.Scope {
 	case VariableScopeGlobal:
@@ -105,6 +118,11 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, int) {
 		return v, c.currentVariableKind()
 	}
 
+	v, ok = c.Bindings[name]
+	if ok {
+		return v, VariableKindBinding
+	}
+
 	if c.IsRoot() {
 		return VariableInfo{}, VariableKindNotFound
 	}
@@ -114,7 +132,8 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, int) {
 		return info, kind
 	} else {
 		if c.Scope == VariableScopeFunction {
-			return info, VariableKindBinding
+			binding := c.AddBinding(name, info)
+			return binding, VariableKindBinding
 		} else {
 			return info, VariableKindLocal
 		}
@@ -125,6 +144,7 @@ func (c *VariableScopeContext) EnterScope(scope int) *VariableScopeContext {
 	s := &VariableScopeContext{
 		Scope:     scope,
 		Variables: make(map[string]VariableInfo),
+		Bindings:  make(map[string]VariableInfo),
 		outer:     c,
 	}
 
@@ -170,6 +190,10 @@ func NewVariableContext() *VariableContext {
 	return c
 }
 
+func (c *VariableContext) CurrentScope() *VariableScopeContext {
+	return c.top
+}
+
 func (c *VariableContext) EnterScope(scope int) {
 	c.top = c.top.EnterScope(scope)
 }
@@ -187,7 +211,8 @@ func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int
 }
 
 func (c *VariableContext) Reference(name string) (VariableInfo, int) {
-	return c.top.Reference(name)
+	info, kind := c.top.Reference(name)
+	return info, kind
 }
 
 func (c *VariableContext) CurrentFrameSize() int {
@@ -226,10 +251,15 @@ func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
 	return 0, false
 }
 
+type FunctionContext struct {
+	Index int
+	Code  *CodeBuffer
+}
+
 type CompilerContext struct {
 	Variable  *VariableContext
 	Literal   *LiteralContext
-	Functions []*CodeBuffer
+	Functions []*FunctionContext
 }
 
 func (c *CompilerContext) LinkCode(main *CodeBuffer) *CodePage {
@@ -242,7 +272,7 @@ func (c *CompilerContext) LinkCode(main *CodeBuffer) *CodePage {
 		for i, f := range c.Functions {
 			offset := code.Length()
 			links[i+1] = uint64(offset)
-			code.Append(f)
+			code.Append(f.Code)
 			code.Write(opcode.IHalt)
 		}
 	}
@@ -255,10 +285,18 @@ func (c *CompilerContext) LinkCode(main *CodeBuffer) *CodePage {
 	return page
 }
 
+func (c *CompilerContext) AddFunction(f *FunctionContext) int {
+	n := len(c.Functions)
+	f.Index = n
+	c.Functions = append(c.Functions, f)
+	return n
+}
+
 func NewCompilerContext() *CompilerContext {
 	c := &CompilerContext{
-		Variable: NewVariableContext(),
-		Literal:  NewLiteralContext(),
+		Variable:  NewVariableContext(),
+		Literal:   NewLiteralContext(),
+		Functions: make([]*FunctionContext, 0),
 	}
 
 	return c

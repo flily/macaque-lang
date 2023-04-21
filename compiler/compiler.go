@@ -52,7 +52,7 @@ CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
 		c.Context.Variable.EnterScope(VariableScopeFunction)
-		if e = r.Append(c.compileStatements(n.Statements)); e != nil {
+		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
 
@@ -98,21 +98,17 @@ CompileSwitch:
 		r.Values = 1
 
 	case *ast.Identifier:
-		ref, kind := c.Context.Variable.Reference(n.Value)
-		r.Values = 1
-		switch kind {
-		case VariableKindGlobal, VariableKindModule:
-			r.Write(opcode.ILoad, ref.Offset)
-
-		case VariableKindBinding:
-			r.Write(opcode.ILoad, ref.Offset)
-
-		case VariableKindLocal:
-			r.Write(opcode.ISLoad, ref.Offset)
-
-		default:
+		p := c.compileIdentifierReference(n.Value, r)
+		if p <= 0 {
 			ctx := n.Position.MakeContext()
 			e = errors.NewSyntaxError(ctx, "variable %s undefined", n.Value)
+			break CompileSwitch
+		}
+
+		r.Values = 1
+
+	case *ast.FunctionLiteral:
+		if e = r.Append(c.compileFunctionLiteral(n)); e != nil {
 			break CompileSwitch
 		}
 
@@ -195,12 +191,32 @@ CompileSwitch:
 		}
 
 	case *ast.BlockStatement:
-		if e = r.Append(c.compileStatements(n.Statements)); e != nil {
+		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
 	}
 
 	return r, e
+}
+
+func (c *Compiler) compileIdentifierReference(name string, r *CompileResult) int {
+	ref, kind := c.Context.Variable.Reference(name)
+	n := 1
+	switch kind {
+	case VariableKindGlobal, VariableKindModule:
+		r.Write(opcode.ILoad, ref.Offset)
+
+	case VariableKindBinding:
+		r.Write(opcode.ILoadBind, ref.Offset)
+
+	case VariableKindLocal:
+		r.Write(opcode.ISLoad, ref.Offset)
+
+	default:
+		n = 0
+	}
+
+	return n
 }
 
 func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, error) {
@@ -233,7 +249,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 	return code, nil
 }
 
-func (c *Compiler) compileStatements(statements []ast.Statement) (*CompileResult, error) {
+func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool) (*CompileResult, error) {
 	r := NewCompileResult()
 	var e error
 
@@ -267,5 +283,38 @@ func (c *Compiler) compileStatements(statements []ast.Statement) (*CompileResult
 		r.Values = lastResult.Values
 	}
 
+	if withReturn {
+		r.Write(opcode.IReturn, r.Values)
+	}
+
 	return r, e
+}
+
+func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResult, error) {
+	result := NewCompileResult()
+	c.Context.Variable.EnterScope(VariableScopeFunction)
+
+	for _, arg := range f.Arguments.Identifiers {
+		c.Context.Variable.DefineArgument(arg.Value, arg.Position)
+	}
+
+	r, e := c.compileStatements(f.Body.Statements, true)
+	if e != nil {
+		return nil, e
+	}
+
+	functionContext := &FunctionContext{
+		Code: r.Code,
+	}
+
+	id := c.Context.AddFunction(functionContext)
+	scope := c.Context.Variable.CurrentScope()
+	c.Context.Variable.LeaveScope()
+
+	for _, arg := range scope.Bindings {
+		c.compileIdentifierReference(arg.Name, result)
+	}
+
+	result.Write(opcode.IMakeFunc, id, len(scope.Bindings))
+	return result, nil
 }

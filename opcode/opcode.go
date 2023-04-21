@@ -19,6 +19,7 @@ const (
 	IUniOp    // Unary operation.
 	IMakeList // Make a list.
 	IMakeMap  // Make a map.
+	IMakeFunc // Make a function.
 	ISetAX    // Set value of AX.
 	IGetAX    // Get value of AX.
 	IJump     // Jump to a position.
@@ -46,6 +47,7 @@ var codeNames = [...]string{
 	IUniOp:    "UNIOP",
 	IMakeList: "MAKELIST",
 	IMakeMap:  "MAKEMAP",
+	IMakeFunc: "MAKEFUNC",
 	ISetAX:    "SETAX",
 	IGetAX:    "GETAX",
 	IJump:     "JUMP",
