@@ -12,7 +12,6 @@ func TestCompileLetStatement(t *testing.T) {
 			`let a = 42`,
 			code(
 				inst(opcode.ILoadInt, 42),
-				inst(opcode.ISetAX, 1),
 				inst(opcode.ISStore, 1),
 			),
 			data(),
@@ -24,7 +23,6 @@ func TestCompileLetStatement(t *testing.T) {
 				inst(opcode.ILoadInt, 43),
 				inst(opcode.ILoadInt, 44),
 				inst(opcode.ILoadInt, 45),
-				inst(opcode.ISetAX, 4),
 				inst(opcode.ISStore, 4),
 				inst(opcode.ISStore, 3),
 				inst(opcode.ISStore, 2),

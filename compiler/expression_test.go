@@ -16,7 +16,6 @@ func TestCompileExpression(t *testing.T) {
 				inst(opcode.ILoadInt, 1),
 				inst(opcode.ILoadInt, 2),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.ISetAX, 1),
 			),
 			data(),
 		},
@@ -28,7 +27,6 @@ func TestCompileExpression(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)),
 				inst(opcode.ILoadInt, 3),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.ISetAX, 1),
 			),
 			data(),
 		},
@@ -42,7 +40,6 @@ func TestCompileExpression(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)),
 				inst(opcode.ILoadInt, 4),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.ISetAX, 1),
 			),
 			data(),
 		},
@@ -54,7 +51,6 @@ func TestCompileExpression(t *testing.T) {
 				inst(opcode.ILoadInt, 3),
 				inst(opcode.IBinOp, int(token.Plus)),
 				inst(opcode.ILoadInt, 4),
-				inst(opcode.ISetAX, 3),
 			),
 			data(),
 		},
@@ -63,7 +59,6 @@ func TestCompileExpression(t *testing.T) {
 			code(
 				inst(opcode.ILoadInt, 42),
 				inst(opcode.ILoad, 0),
-				inst(opcode.ISetAX, 2),
 			),
 			data(
 				object.NewString("answer"),
@@ -85,13 +80,47 @@ func TestEvaluationExpressionWithVariables(t *testing.T) {
 				inst(opcode.ILoadInt, 30),
 				inst(opcode.ILoadInt, 6),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.ISetAX, 1),
 				inst(opcode.ISStore, 1),
 				inst(opcode.ISLoad, 1),
 				inst(opcode.ILoadInt, 6),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.ISetAX, 1),
 				inst(opcode.ISStore, 2),
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}
+
+func TestCompileIfExpression(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"if (true) { 10 }",
+			),
+			code(
+				inst(opcode.ILoadBool, 1),
+				inst(opcode.IJumpIf, 1),
+				inst(opcode.ILoadInt, 10),
+			),
+			data(),
+		},
+		{
+			text(
+				"if (10 > 4) { 1, 2, 3, 4; 5 }",
+			),
+			code(
+				inst(opcode.ILoadInt, 10),
+				inst(opcode.ILoadInt, 4),
+				inst(opcode.IBinOp, int(token.GT)),
+				inst(opcode.IJumpIf, 6),
+				inst(opcode.ILoadInt, 1),
+				inst(opcode.ILoadInt, 2),
+				inst(opcode.ILoadInt, 3),
+				inst(opcode.ILoadInt, 4),
+				inst(opcode.IPop, 4),
+				inst(opcode.ILoadInt, 5),
 			),
 			data(),
 		},

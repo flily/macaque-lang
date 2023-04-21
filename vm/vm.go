@@ -18,9 +18,10 @@ type NaiveVM struct {
 	Stack []object.Object
 	Data  []object.Object
 
-	ip uint64
-	sp uint64
-	bp uint64
+	ip uint64 // instruction pointer
+	sp uint64 // stack pointer
+	sb uint64 // stack base pointer
+	bp uint64 // base pointer
 
 	AX int64
 }
@@ -45,6 +46,18 @@ func (m *NaiveVM) stackPop() object.Object {
 	r := m.Stack[m.sp]
 	m.Stack[m.sp] = nil
 	return r
+}
+
+func (m *NaiveVM) stackPopN(n uint64) {
+	for m.sp > 0 && n > 0 {
+		n--
+		m.sp--
+		m.Stack[m.sp] = nil
+	}
+}
+
+func (m *NaiveVM) incrIP(n uint64) {
+	m.ip += n
 }
 
 func (m *NaiveVM) localBind(i int64, o object.Object) {
@@ -81,6 +94,7 @@ func (m *NaiveVM) LoadData(c *compiler.Compiler) {
 func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
 	m.ip = entry.IP
 	m.sp = uint64(entry.StackSize)
+	m.sb = uint64(entry.StackSize)
 	m.stackPush(entry)
 }
 
@@ -93,6 +107,13 @@ RunSwitch:
 		op := m.fetchOp()
 
 		switch op.Name {
+		case opcode.ILoadNull:
+			m.stackPush(object.NewNull())
+
+		case opcode.ILoadBool:
+			o := object.NewBoolean(op.Operand0 != 0)
+			m.stackPush(o)
+
 		case opcode.ILoadInt:
 			o := object.NewInteger(int64(op.Operand0))
 			m.stackPush(o)
@@ -122,6 +143,27 @@ RunSwitch:
 		case opcode.ILoad:
 			o := m.refData(uint64(op.Operand0))
 			m.stackPush(o)
+
+		case opcode.IPop:
+			m.stackPopN(uint64(op.Operand0))
+
+		case opcode.IJumpFWD:
+			m.incrIP(uint64(op.Operand0))
+
+		case opcode.IJumpIf:
+			o := m.stackPop()
+			notJump := false
+			switch obj := o.(type) {
+			case *object.NullObject:
+				notJump = false
+			case *object.BooleanObject:
+				notJump = obj.Value
+			default:
+				notJump = true
+			}
+			if !notJump {
+				m.incrIP(uint64(op.Operand0))
+			}
 
 		case opcode.IHalt:
 			break RunSwitch

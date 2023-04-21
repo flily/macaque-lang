@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"github.com/flily/macaque-lang/object"
-	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -224,36 +223,6 @@ func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
 	}
 
 	return 0, false
-}
-
-type CodeBuffer struct {
-	Code []opcode.Opcode
-}
-
-func (b *CodeBuffer) Write(code int, operands ...int) {
-	c := opcode.Code(code, operands...)
-	b.Code = append(b.Code, c)
-}
-
-func (b *CodeBuffer) Append(buf *CodeBuffer) {
-	b.Code = append(b.Code, buf.Code...)
-}
-
-func (b *CodeBuffer) AppendCode(buf *CodeBuffer, err error) error {
-	if err != nil {
-		return err
-	}
-
-	b.Append(buf)
-	return nil
-}
-
-func NewCodeBuffer() *CodeBuffer {
-	b := &CodeBuffer{
-		Code: make([]opcode.Opcode, 0),
-	}
-
-	return b
 }
 
 type CompilerContext struct {

@@ -40,29 +40,33 @@ func testCompileCode(t *testing.T, code string) (*Compiler, error) {
 	return compiler, err
 }
 
-func checkInstructions(t *testing.T, compiler *Compiler, expecteds []opcode.Opcode) {
+func checkInstructions(t *testing.T, text string, compiler *Compiler, expecteds []opcode.Opcode) {
 	code := compiler.Context.Code
 	if len(code.Code) != len(expecteds) {
+		t.Errorf("wrong answer in code: %s", text)
 		t.Errorf("wrong instructions length. want=%d, got=%d", len(expecteds), len(code.Code))
 		t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
 	}
 
 	for i, ins := range code.Code {
 		if ins != expecteds[i] {
+			t.Errorf("wrong answer in code: %s", text)
 			t.Errorf("wrong instruction at %d. want=%q, got=%q", i, expecteds[i], ins)
 			t.Fatalf("want:\n%s\ngot:\n%s", makeCodePrint(expecteds), makeCodePrint(code.Code))
 		}
 	}
 }
 
-func checkData(t *testing.T, compiler *Compiler, expecteds []object.Object) {
+func checkData(t *testing.T, text string, compiler *Compiler, expecteds []object.Object) {
 	data := compiler.Context.Literal.Values
 	if len(data) != len(expecteds) {
+		t.Errorf("wrong answer in code: %s", text)
 		t.Errorf("wrong data length. want=%d, got=%d", len(expecteds), len(data))
 	}
 
 	for i, d := range data {
 		if d.EqualTo(expecteds[i]) == false {
+			t.Errorf("wrong answer in code: %s", text)
 			t.Errorf("wrong data at %d. want=%q, got=%q", i, expecteds[i], d)
 		}
 	}
@@ -92,13 +96,14 @@ type testCompilerCase struct {
 
 func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
 	for _, c := range cases {
+		code := c.code
 		compiler, err := testCompileCode(t, c.code)
 		if err != nil {
 			t.Fatalf("compiler error:\n%s", err)
 		}
 
-		checkInstructions(t, compiler, c.codes)
-		checkData(t, compiler, c.data)
+		checkInstructions(t, code, compiler, c.codes)
+		checkData(t, code, compiler, c.data)
 	}
 }
 

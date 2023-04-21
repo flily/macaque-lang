@@ -12,6 +12,7 @@ const (
 	ILoadBool // Load a boolean to the top of the stack.
 	ILoadBind // Load a variable from function bound varaible to the top of the stack.
 	ILoad     // Load a variable from data segment to the top of the stack.
+	IPop      // Pop the top of the stack.
 	ISLoad    // Load a variable from stack frame to the top of the stack.
 	ISStore   // Store TOS to a local variable
 	IBinOp    // Binary operation.
@@ -20,6 +21,10 @@ const (
 	IMakeMap  // Make a map.
 	ISetAX    // Set value of AX.
 	IGetAX    // Get value of AX.
+	IJump     // Jump to a position.
+	IJumpIf   // Jump to a position if TOS is false
+	IJumpFWD  // Jump forward.
+	IPack     // Pack a list of values to a list.
 	ICall     // Call a function.
 	IReturn   // Return from a function.
 	IHalt     // Halt the VM.
@@ -34,6 +39,7 @@ var codeNames = [...]string{
 	ILoadBool: "LOADBOOL",
 	ILoadBind: "LOADBIND",
 	ILoad:     "LOAD",
+	IPop:      "POP",
 	ISLoad:    "SLOAD",
 	ISStore:   "SSTORE",
 	IBinOp:    "BINOP",
@@ -42,17 +48,15 @@ var codeNames = [...]string{
 	IMakeMap:  "MAKEMAP",
 	ISetAX:    "SETAX",
 	IGetAX:    "GETAX",
+	IJump:     "JUMP",
+	IJumpFWD:  "JUMPFD",
+	IJumpIf:   "JUMPIF",
+	IPack:     "PACK",
 	ICall:     "CALL",
 	IReturn:   "RETURN",
 	IHalt:     "HALT",
 	ILastInst: "LASTINST",
 }
-
-const (
-	XInstInvalid    = iota
-	XLoadIntLiteral // Load integer from instruction.
-	XLoadIntData    // Load integer from data section.
-)
 
 func CodeName(code int) string {
 	if code < 0 || code >= len(codeNames) {

@@ -39,3 +39,15 @@ func TestExpressionList(t *testing.T) {
 
 	runVMTest(t, tests)
 }
+
+func TestIfExpression(t *testing.T) {
+	tests := []vmTest{
+		{
+			`if (true) { 10 }`,
+			stack(object.NewInteger(10)),
+			assertRegister(sp(2)),
+		},
+	}
+
+	runVMTest(t, tests)
+}
