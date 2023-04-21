@@ -226,8 +226,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 	}
 
 	consequence.Write(opcode.IJumpFWD, alternative.Code.Length())
-	code.Write(opcode.IJumpIf, consequence.Code.Length()+1)
-	code.Write(opcode.IJumpFWD, consequence.Code.Length())
+	code.Write(opcode.IJumpIf, consequence.Code.Length())
 	code.AppendCode(consequence)
 	code.AppendCode(alternative)
 

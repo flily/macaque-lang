@@ -124,6 +124,32 @@ func TestCompileIfExpression(t *testing.T) {
 			),
 			data(),
 		},
+		{
+			text(
+				"if (true) { 42 } else { 24 }",
+			),
+			code(
+				inst(opcode.ILoadBool, 1),
+				inst(opcode.IJumpIf, 2),
+				inst(opcode.ILoadInt, 42),
+				inst(opcode.IJumpFWD, 1),
+				inst(opcode.ILoadInt, 24),
+			),
+			data(),
+		},
+		{
+			text(
+				"if (false) { 42 } else { 24 }",
+			),
+			code(
+				inst(opcode.ILoadBool, 0),
+				inst(opcode.IJumpIf, 2),
+				inst(opcode.ILoadInt, 42),
+				inst(opcode.IJumpFWD, 1),
+				inst(opcode.ILoadInt, 24),
+			),
+			data(),
+		},
 	}
 
 	runCompilerTestCases(t, tests)

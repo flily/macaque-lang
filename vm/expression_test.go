@@ -47,6 +47,16 @@ func TestIfExpression(t *testing.T) {
 			stack(object.NewInteger(10)),
 			assertRegister(sp(2)),
 		},
+		{
+			`if (true) { 10 } else { 20 }`,
+			stack(object.NewInteger(10)),
+			assertRegister(sp(2)),
+		},
+		{
+			`if (false) { 10 } else { 20 }`,
+			stack(object.NewInteger(20)),
+			assertRegister(sp(2)),
+		},
 	}
 
 	runVMTest(t, tests)

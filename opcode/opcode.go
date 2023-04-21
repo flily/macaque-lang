@@ -49,7 +49,7 @@ var codeNames = [...]string{
 	ISetAX:    "SETAX",
 	IGetAX:    "GETAX",
 	IJump:     "JUMP",
-	IJumpFWD:  "JUMPFD",
+	IJumpFWD:  "JUMFWD",
 	IJumpIf:   "JUMPIF",
 	IPack:     "PACK",
 	ICall:     "CALL",
