@@ -5,15 +5,17 @@ import (
 )
 
 type FunctionObject struct {
-	StackSize int
+	FrameSize int
+	Arguments int
 	IP        uint64
 	Bounds    []Object
 	Position  *token.TokenInfo
 }
 
-func NewFunction(stackSize int, ip uint64, bounds []Object) *FunctionObject {
+func NewFunction(frameSize int, args int, ip uint64, bounds []Object) *FunctionObject {
 	f := &FunctionObject{
-		StackSize: stackSize,
+		FrameSize: frameSize,
+		Arguments: args,
 		IP:        ip,
 		Bounds:    bounds,
 	}

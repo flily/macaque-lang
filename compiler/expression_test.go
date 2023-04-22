@@ -188,7 +188,7 @@ func TestCallExpression(t *testing.T) {
 				"add(1, 2)",
 			),
 			code(
-				inst(opcode.IMakeFunc, 0),
+				inst(opcode.IMakeFunc, 1),
 				inst(opcode.ISStore, 1),
 				inst(opcode.ILoadInt, 2),
 				inst(opcode.ILoadInt, 1),

@@ -3,7 +3,6 @@ package compiler
 import (
 	"github.com/flily/macaque-lang/ast"
 	"github.com/flily/macaque-lang/errors"
-	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
 )
@@ -31,18 +30,8 @@ func (c *Compiler) Compile(p *ast.Program) (*CodePage, error) {
 		return nil, err
 	}
 
-	page := c.Context.LinkCode(r.Code)
+	page := c.Context.LinkCodePage(r.Code)
 	return page, nil
-}
-
-func (c *Compiler) GetMain() *object.FunctionObject {
-	main := &object.FunctionObject{
-		StackSize: c.Context.Variable.CurrentFrameSize(),
-		IP:        0,
-		Bounds:    nil,
-	}
-
-	return main
 }
 
 func (c *Compiler) compileCode(node ast.Node, flag uint64) (*CompileResult, error) {
@@ -332,6 +321,10 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	}
 
 	functionContext := &FunctionContext{
+		FunctionInfo: FunctionInfo{
+			Arguments: f.Arguments.Length(),
+			FrameSize: c.Context.Variable.CurrentScope().FrameSize,
+		},
 		Code: r.Code,
 	}
 

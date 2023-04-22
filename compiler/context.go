@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"fmt"
-
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -265,7 +263,6 @@ func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int
 
 func (c *VariableContext) Reference(name string) (VariableInfo, VarKind) {
 	info, kind := c.top.Reference(name)
-	fmt.Printf("Reference %s: %+v, %v\n", name, info, kind)
 	return info, kind
 }
 
@@ -315,8 +312,8 @@ func (c *LiteralContext) ReferenceString(s string) uint64 {
 }
 
 type FunctionContext struct {
-	Index int
-	Code  *CodeBuffer
+	FunctionInfo
+	Code *CodeBuffer
 }
 
 type CompilerContext struct {
@@ -325,24 +322,43 @@ type CompilerContext struct {
 	Functions []*FunctionContext
 }
 
-func (c *CompilerContext) LinkCode(main *CodeBuffer) *CodePage {
+func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *CodePage {
 	code := NewCodeBuffer()
-	links := make(map[int]uint64)
+	links := make([]FunctionInfo, len(c.Functions))
 
-	code.Append(main) // main
-	if len(c.Functions) > 0 {
+	mainInfo := FunctionInfo{
+		IP:        0,
+		FrameSize: c.Variable.CurrentFrameSize(),
+	}
+
+	code.Append(main)
+	links[0] = mainInfo
+
+	if len(c.Functions) > 1 {
 		code.Write(opcode.IHalt)
 		for i, f := range c.Functions {
+			if i == 0 {
+				continue
+			}
+
 			offset := code.Length()
-			links[i+1] = uint64(offset)
+
+			info := f.FunctionInfo
+			info.IP = uint64(offset)
+
 			code.Append(f.Code)
 			code.Write(opcode.IHalt)
+			links[i] = info
 		}
 	}
 
+	data := make([]object.Object, len(c.Literal.Values))
+	copy(data, c.Literal.Values)
+
 	page := &CodePage{
-		Codes:       code.Code,
-		FunctionMap: links,
+		Codes:     code.Code,
+		Functions: links,
+		Data:      data,
 	}
 
 	return page
@@ -357,9 +373,11 @@ func (c *CompilerContext) AddFunction(f *FunctionContext) int {
 
 func NewCompilerContext() *CompilerContext {
 	c := &CompilerContext{
-		Variable:  NewVariableContext(),
-		Literal:   NewLiteralContext(),
-		Functions: make([]*FunctionContext, 0),
+		Variable: NewVariableContext(),
+		Literal:  NewLiteralContext(),
+		Functions: []*FunctionContext{
+			nil, // reserve for main function
+		},
 	}
 
 	return c

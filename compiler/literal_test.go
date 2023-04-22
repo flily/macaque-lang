@@ -122,7 +122,7 @@ func TestCompileFunctions(t *testing.T) {
 				"let answer = fn() { 42; };",
 			),
 			code(
-				inst(opcode.IMakeFunc, 0, 0),
+				inst(opcode.IMakeFunc, 1, 0),
 				inst(opcode.ISStore, 1),
 				inst(opcode.IHalt),
 				inst(opcode.ILoadInt, 42),
@@ -141,7 +141,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.ILoadInt, 42),
 				inst(opcode.ISStore, 1),
 				inst(opcode.ISLoad, 1),
-				inst(opcode.IMakeFunc, 0, 1),
+				inst(opcode.IMakeFunc, 1, 1),
 				inst(opcode.ISStore, 2),
 				inst(opcode.ISLoad, 2),
 				inst(opcode.IHalt),
@@ -172,7 +172,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.ISStore, 1),   // 1
 				// let f = fn(a)
 				inst(opcode.ISLoad, 1),       // 2
-				inst(opcode.IMakeFunc, 0, 1), // 3
+				inst(opcode.IMakeFunc, 1, 1), // 3
 				inst(opcode.ISStore, 2),      // 4
 				inst(opcode.IHalt),           // 5
 

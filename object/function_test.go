@@ -5,7 +5,7 @@ import (
 )
 
 func TestFunctionObject(t *testing.T) {
-	f := NewFunction(0, 42, nil)
+	f := NewFunction(0, 0, 42, nil)
 
 	if f.Type() != ObjectTypeFunction {
 		t.Errorf("f.Type() is not ObjectTypeFunction. got=%T (%+v)", f.Type(), f.Type())

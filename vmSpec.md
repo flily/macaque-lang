@@ -101,13 +101,20 @@ represents an unsigned integer, and lower case represents a signed integer.
 | LOADNULL |   NNN    | Load a null object onto the stack
 | LOADBOOL |   B      | Load a boolean object onto the stack
 | LOADBIND |   D      | Load a bound variable onto the stack
-| LLOAD    |   D      | Load object from data segment onto the stack
-| LSTORE   |   D      | Store top of stack to local variable
+| LOAD     |   D      | Load object from data segment onto the stack
+| POP      |   D      | Pop D objects from the stack
+| SLOAD    |   D      | Load element of stack with Base to stack slot
+| SSTORE   |   D      | Store top of stack to local variable
 | BINOP    |   W      | Perform a binary operation to the top 2 values on the stack
 | UNIOP    |   W      | Perform a unary operation to the top value on the stack
 | MAKELIST |   D      | Make an array object with the top D values on the stack
-| MAKEMAP  |   D      | Make a map object with the top 2 * D values on the stack
-| MOVAX    |   d      | Set value of AX register
-| CALL     |   D      |
-| RETURN   |   D      |
+| MAKEHASH |   D      | Make a hash object with the top 2 * D values on the stack
+| MAKEFUNC |   DD     | Make a function object with the top D values on the stack
+| INDEX    |   NNN    | Get index item TOP from base object TOP-1
+| JUMP     |   D      | Jump to the instruction at the given address
+| JUMPFWD  |   D      | Jump forward D instructions
+| JUMPIF   |   D      | Jump forward D instructions if the top value on the stack is false
+| CALL     |   D      | Call the function with the top D values as arguments
+| TAILCALL |   D      | Tail call the function with the top D values as arguments
+| RETURN   |   D      | Return function call, pop D values from the stack as return values
 | HALT     |   NNN    | Halt the VM

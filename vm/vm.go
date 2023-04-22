@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"fmt"
+
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/object"
@@ -13,24 +15,34 @@ const (
 	DefaultDataSize  = 65536
 )
 
+type callStackInfo struct {
+	bp uint64
+	sp uint64
+	ip uint64
+}
+
 type NaiveVM struct {
-	Code  []opcode.Opcode
-	Stack []object.Object
-	Data  []object.Object
+	Code []opcode.Opcode
+	Data []object.Object
 
 	ip uint64 // instruction pointer
 	sp uint64 // stack pointer
-	sb uint64 // stack base pointer
 	bp uint64 // base pointer
+
+	Stack     []object.Object
+	callStack []callStackInfo
+	csi       uint64
+	Functions []compiler.FunctionInfo
 
 	AX int64
 }
 
 func NewNaiveVM() *NaiveVM {
 	m := &NaiveVM{
-		Code:  make([]opcode.Opcode, 0),
-		Stack: make([]object.Object, DefaultStackSize),
-		Data:  make([]object.Object, DefaultDataSize),
+		Code:      make([]opcode.Opcode, 0),
+		Data:      make([]object.Object, DefaultDataSize),
+		Stack:     make([]object.Object, DefaultStackSize),
+		callStack: make([]callStackInfo, DefaultStackSize),
 	}
 
 	return m
@@ -56,6 +68,21 @@ func (m *NaiveVM) stackPopN(n uint64) {
 	}
 }
 
+func (m *NaiveVM) stackPushN(objects []object.Object) {
+	for _, o := range objects {
+		m.stackPush(o)
+	}
+}
+
+func (m *NaiveVM) stackPopNWithValue(n int) []object.Object {
+	r := make([]object.Object, n)
+	for i := 0; i < n; i++ {
+		r[n-i-1] = m.stackPop()
+	}
+
+	return r
+}
+
 func (m *NaiveVM) incrIP(n uint64) {
 	m.ip += n
 }
@@ -78,35 +105,76 @@ func (m *NaiveVM) refData(i uint64) object.Object {
 	return m.Data[i]
 }
 
+func (m *NaiveVM) pushCallInfo() {
+	m.callStack[m.csi].bp = m.bp
+	m.callStack[m.csi].sp = m.sp
+	m.callStack[m.csi].ip = m.ip
+	m.csi++
+}
+
+func (m *NaiveVM) popCallInfo() {
+	m.csi--
+	m.bp = m.callStack[m.csi].bp
+	m.sp = m.callStack[m.csi].sp
+	m.ip = m.callStack[m.csi].ip
+}
+
+func (m *NaiveVM) initCallStack(frameSize int) {
+	m.bp = m.sp - 1
+	m.sp += uint64(frameSize)
+}
+
 func (m *NaiveVM) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
 
+func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
+	m.LoadFunctions(page)
+	m.LoadCode(page)
+	m.LoadData(page)
+}
+
+func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
+	m.Functions = make([]compiler.FunctionInfo, len(page.Functions))
+	copy(m.Functions, page.Functions)
+}
+
 func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
-	m.Code = append(m.Code, page.Codes...)
+	m.Code = make([]opcode.Opcode, len(page.Codes))
+	copy(m.Code, page.Codes)
 	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
 		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
 	}
 }
 
-func (m *NaiveVM) LoadData(c *compiler.Compiler) {
-	copy(m.Data, c.Context.Literal.Values)
+func (m *NaiveVM) LoadData(c *compiler.CodePage) {
+	m.Data = make([]object.Object, len(c.Data))
+	copy(m.Data, c.Data)
 }
 
 func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
-	m.ip = entry.IP
-	m.sp = uint64(entry.StackSize)
-	m.sb = uint64(entry.StackSize)
 	m.stackPush(entry)
+	m.ip = entry.IP
+	m.sp = 1 + uint64(entry.FrameSize)
+}
+
+func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
+	if i < 0 || i >= len(m.Functions) {
+		return compiler.FunctionInfo{}, false
+	}
+
+	return m.Functions[i], true
 }
 
 func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	m.SetEntry(entry)
 
+	codeSize := uint64(len(m.Code))
 	var e error
 RunSwitch:
-	for {
+	for m.ip < codeSize {
 		op := m.fetchOp()
+		fmt.Printf("ip %d op: %s\n", m.ip, op)
 
 		switch op.Name {
 		case opcode.ILoadNull:
@@ -192,14 +260,21 @@ RunSwitch:
 			m.stackPush(o)
 
 		case opcode.IMakeFunc:
-			ip := op.Operand0
+			index := op.Operand0
+			info, ok := m.GetFunctionInfo(index)
+			if !ok {
+				e = errors.NewError(errors.ErrCodeRuntimeError,
+					"function %d not found", index)
+				break RunSwitch
+			}
+
 			n := op.Operand1
 			bounds := make([]object.Object, n)
 			for i := 0; i < n; i++ {
 				bounds[n-1-i] = m.stackPop()
 			}
 
-			o := object.NewFunction(0, uint64(ip), bounds)
+			o := info.Func(bounds)
 			m.stackPush(o)
 
 		case opcode.IIndex:
@@ -230,6 +305,29 @@ RunSwitch:
 			if !notJump {
 				m.incrIP(uint64(op.Operand0))
 			}
+
+		case opcode.ICall:
+			f := m.Top()
+			if f.Type() != object.ObjectTypeFunction {
+				e = errors.NewError(errors.ErrCodeRuntimeError,
+					"%s is not callable", f.Type())
+				break RunSwitch
+			}
+
+			fn := f.(*object.FunctionObject)
+			m.pushCallInfo()
+			m.initCallStack(fn.FrameSize)
+			m.ip = fn.IP
+
+		case opcode.IReturn:
+			n := op.Operand0
+			returnValues := m.stackPopNWithValue(n)
+
+			m.popCallInfo()
+			fn := m.stackPop()
+			args := fn.(*object.FunctionObject).Arguments
+			m.stackPopN(uint64(args))
+			m.stackPushN(returnValues)
 
 		case opcode.IHalt:
 			break RunSwitch

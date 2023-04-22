@@ -1,13 +1,14 @@
 package vm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/flily/macaque-lang/object"
 )
 
 type monkeyTestCase struct {
-	code     string
+	input    string
 	expected interface{}
 }
 
@@ -46,6 +47,27 @@ TypeSwitch:
 
 		ok = string(e) == got.(*object.StringObject).Value
 
+	case []int:
+		if got.Type() != object.ObjectTypeArray {
+			t.Errorf("expect array, got %s", got.Type())
+			break TypeSwitch
+		}
+
+		array := got.(*object.ArrayObject).Elements
+		if len(array) != len(e) {
+			t.Errorf("expect array length %d, got %d", len(e), len(array))
+			break TypeSwitch
+		}
+
+		for i, v := range e {
+			if !monkeyExpectedValueCompare(t, v, array[i]) {
+				t.Errorf("expect array value at [%d] %d, got %s", i, v, array[i])
+				break TypeSwitch
+			}
+		}
+
+		ok = true
+
 	case map[interface{}]int64:
 		if got.Type() != object.ObjectTypeHash {
 			t.Errorf("expect hash, got %s", got.Type())
@@ -81,17 +103,23 @@ func runMonkeyCompatibleTest(t *testing.T, tests []monkeyTestCase) {
 	t.Helper()
 
 	for i, tt := range tests {
-		m, main := testCompileCode(t, tt.code)
+		m, page := testCompileCode(t, tt.input)
+		m.LoadCodePage(page)
+		main := page.Main().Func(nil)
 		err := m.Run(main)
 		if err != nil {
 			t.Fatalf("run error: %s", err)
+		}
+
+		for i := 0; i < len(page.Codes); i++ {
+			fmt.Printf("%d: %s\n", i, page.Codes[i].String())
 		}
 
 		got := m.Top()
 		result := monkeyExpectedValueCompare(t, tt.expected, got)
 		if !result {
 			t.Errorf("ERROR on %d: expect %v, got %s", i, tt.expected, got)
-			t.Errorf("  code: %s", tt.code)
+			t.Errorf("  code: %s", tt.input)
 		}
 	}
 }
@@ -235,6 +263,37 @@ func TestIndexExpressions(t *testing.T) {
 		{"{1: 1, 2: 2}[2]", 2},
 		{"{1: 1}[0]", nil},
 		{"{}[0]", nil},
+	}
+
+	runMonkeyCompatibleTest(t, tests)
+}
+
+func TestCallingFunctionsWithoutArguments(t *testing.T) {
+	tests := []monkeyTestCase{
+		{
+			input: `
+				let fivePlusTen = fn() { 5 + 10; };
+				fivePlusTen();
+			`,
+			expected: 15,
+		},
+		{
+			input: `
+				let one = fn() { 1; };
+				let two = fn() { 2; };
+				one() + two();
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+				let a = fn() { 1; };
+				let b = fn() { a() + 1; };
+				let c = fn() { b() + 1; };
+				c();
+			`,
+			expected: 3,
+		},
 	}
 
 	runMonkeyCompatibleTest(t, tests)

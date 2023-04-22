@@ -64,6 +64,8 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
 }
 
 func checkInstructions(t *testing.T, text string, page *CodePage, compiler *Compiler, expecteds []opcode.Opcode) {
+	t.Helper()
+
 	codes := page.Codes
 	if len(codes) != len(expecteds) {
 		t.Errorf("wrong answer in code: %s", text)
@@ -81,6 +83,8 @@ func checkInstructions(t *testing.T, text string, page *CodePage, compiler *Comp
 }
 
 func checkData(t *testing.T, text string, compiler *Compiler, expecteds []object.Object) {
+	t.Helper()
+
 	data := compiler.Context.Literal.Values
 	if len(data) != len(expecteds) {
 		t.Errorf("wrong answer in code: %s", text)
@@ -118,6 +122,8 @@ type testCompilerCase struct {
 }
 
 func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
+	t.Helper()
+
 	for _, c := range cases {
 		code := c.code
 		compiler, page, err := testCompileCode(t, c.code)
