@@ -61,6 +61,7 @@ type VariableInfo struct {
 }
 
 type VariableScopeContext struct {
+	Level     int
 	Scope     FrameScope
 	Variables map[string]VariableInfo
 	Bindings  map[string]VariableInfo
@@ -72,6 +73,7 @@ type VariableScopeContext struct {
 
 func NewVariableScopeContext() *VariableScopeContext {
 	c := &VariableScopeContext{
+		Level:     0,
 		Scope:     FrameScopeGlobal,
 		Variables: make(map[string]VariableInfo),
 		Bindings:  make(map[string]VariableInfo),
@@ -197,6 +199,7 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, VarKind) {
 
 func (c *VariableScopeContext) EnterScope(scope FrameScope) *VariableScopeContext {
 	s := &VariableScopeContext{
+		Level:     c.Level + 1,
 		Scope:     scope,
 		Variables: make(map[string]VariableInfo),
 		Bindings:  make(map[string]VariableInfo),

@@ -290,3 +290,55 @@ func TestCompileComplexFunctions(t *testing.T) {
 
 	runCompilerTestCases(t, tests)
 }
+
+func TestCompileRecursiveFunctions(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"let countDown = fn(x) {",
+				"    if (x == 0) {",
+				"        return 0;",
+				"    } else {",
+				"        countDown(x - 1);",
+				"    }",
+				"};",
+				"countDown(1);",
+			),
+			code(
+				// let countDown = fn(x)
+				inst(opcode.ISLoad, 1),       // 0
+				inst(opcode.IMakeFunc, 1, 1), // 1
+				inst(opcode.ISStore, 1),      // 2
+				// countDown(1)
+				inst(opcode.ILoadInt, 1), // 3
+				inst(opcode.ISLoad, 1),   // 4
+				inst(opcode.ICall, 1),    // 5
+				inst(opcode.IHalt),       // 6
+				// fn(x) {
+				//     if (x == 0) {
+				inst(opcode.ISLoad, -1),            // 7
+				inst(opcode.ILoadInt, 0),           // 8
+				inst(opcode.IBinOp, int(token.EQ)), // 9
+				inst(opcode.IJumpIf, 3),            // 10
+				//         return 0;
+				inst(opcode.ILoadInt, 0), // 11
+				inst(opcode.IReturn, 1),  // 12
+				inst(opcode.IJumpFWD, 5), // 13
+				//     } else {
+				//         countDown(x - 1);
+				inst(opcode.ISLoad, -1),               // 14
+				inst(opcode.ILoadInt, 1),              // 15
+				inst(opcode.IBinOp, int(token.Minus)), // 16
+				inst(opcode.ILoadBind, 0),             // 17
+				inst(opcode.ICall, 1),                 // 18
+				//    }
+				inst(opcode.IReturn, 1), // 19
+				inst(opcode.IHalt),      // 20
+
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}
