@@ -79,3 +79,7 @@ func (f *FunctionObject) OnInfix(t token.Token, o Object) (Object, bool) {
 
 	return nil, false
 }
+
+func (f *FunctionObject) OnIndex(o Object) (Object, bool) {
+	return nil, false
+}

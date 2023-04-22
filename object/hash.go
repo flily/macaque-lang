@@ -93,3 +93,15 @@ func (h *HashObject) OnInfix(t token.Token, o Object) (Object, bool) {
 
 	return r, ok
 }
+
+func (h *HashObject) OnIndex(o Object) (Object, bool) {
+	if !o.Hashable() {
+		return nil, false
+	}
+
+	if e, ok := h.Map[o.HashKey()]; ok {
+		return e.Value, true
+	}
+
+	return NewNull(), true
+}

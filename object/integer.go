@@ -78,6 +78,10 @@ func (i *IntegerObject) OnInfix(t token.Token, o Object) (Object, bool) {
 	return r, ok
 }
 
+func (i *IntegerObject) OnIndex(o Object) (Object, bool) {
+	return nil, false
+}
+
 func (i *IntegerObject) onIntegerInfix(t token.Token, o *IntegerObject) (Object, bool) {
 	var r Object
 	ok := false

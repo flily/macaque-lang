@@ -105,3 +105,15 @@ func TestIntegerObjectInfixOnIntegerEvaluation(t *testing.T) {
 
 	testObjectEvaluation(t, tests)
 }
+
+func TestIntegerObjectOnIndexEvaluation(t *testing.T) {
+	i := NewInteger(42)
+
+	tests := []testObjectEvaluationCase{
+		evalTest("INTEGER(42)[0]").
+			call(i.OnIndex(NewInteger(0))).
+			expect(nil, false),
+	}
+
+	testObjectEvaluation(t, tests)
+}

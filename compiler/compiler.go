@@ -129,6 +129,7 @@ CompileSwitch:
 		if isList {
 			f |= FlagPackValue
 		}
+
 		for _, expr := range n.Expressions {
 			if e = r.Append(c.compileCode(expr, f)); e != nil {
 				break CompileSwitch

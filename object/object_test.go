@@ -123,6 +123,9 @@ func TestNullObjectEvaluation(t *testing.T) {
 		evalTest("null != null").
 			call(null.OnInfix(token.NE, NewNull())).
 			expect(NewBoolean(false), true),
+		evalTest("null < null").
+			call(null.OnIndex(NewInteger(0))).
+			expect(nil, false),
 	}
 
 	testObjectEvaluation(t, tests)
@@ -179,6 +182,24 @@ func TestBooleanObjectEvaluation(t *testing.T) {
 			expect(objectTrue, true),
 		evalTest("true + true").
 			call(objectTrue.OnInfix(token.Plus, objectTrue)).
+			expect(nil, false),
+		evalTest("true == true").
+			call(objectTrue.OnInfix(token.EQ, objectTrue)).
+			expect(objectTrue, true),
+		evalTest("true != true").
+			call(objectTrue.OnInfix(token.NE, objectTrue)).
+			expect(objectFalse, true),
+		evalTest("true == false").
+			call(objectTrue.OnInfix(token.EQ, objectFalse)).
+			expect(objectFalse, true),
+		evalTest("true != false").
+			call(objectTrue.OnInfix(token.NE, objectFalse)).
+			expect(objectTrue, true),
+		evalTest("true < false").
+			call(objectTrue.OnInfix(token.LT, objectFalse)).
+			expect(nil, false),
+		evalTest("true[0]").
+			call(objectTrue.OnIndex(NewInteger(0))).
 			expect(nil, false),
 	}
 

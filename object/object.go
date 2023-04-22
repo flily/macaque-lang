@@ -44,6 +44,7 @@ type Object interface {
 	EqualTo(Object) bool
 	OnPrefix(token.Token) (Object, bool)
 	OnInfix(token.Token, Object) (Object, bool)
+	OnIndex(Object) (Object, bool)
 }
 
 type (
@@ -109,6 +110,10 @@ func (n *NullObject) OnInfix(t token.Token, o Object) (Object, bool) {
 	return nil, false
 }
 
+func (n *NullObject) OnIndex(o Object) (Object, bool) {
+	return nil, false
+}
+
 type BooleanObject struct {
 	Value bool
 }
@@ -166,6 +171,10 @@ func (b *BooleanObject) OnInfix(t token.Token, o Object) (Object, bool) {
 		return doEqualCompare(t, b.EqualTo(o))
 	}
 
+	return nil, false
+}
+
+func (b *BooleanObject) OnIndex(o Object) (Object, bool) {
 	return nil, false
 }
 

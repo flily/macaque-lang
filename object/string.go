@@ -70,3 +70,19 @@ func (s *StringObject) OnInfix(t token.Token, o Object) (Object, bool) {
 
 	return r, ok
 }
+
+func (s *StringObject) OnIndex(o Object) (Object, bool) {
+	var r Object
+	ok := false
+	switch v := o.(type) {
+	case *IntegerObject:
+		if v.Value < 0 || v.Value >= int64(len(s.Value)) {
+			r = NewNull()
+		} else {
+			r = NewString(string(s.Value[v.Value]))
+		}
+		ok = true
+	}
+
+	return r, ok
+}

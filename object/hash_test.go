@@ -81,3 +81,37 @@ func TestHashObjectEvaluation(t *testing.T) {
 
 	testObjectEvaluation(t, tests)
 }
+
+func TestHashOnIndexEvaluation(t *testing.T) {
+	h := NewHash([]HashPair{
+		{NewString("one"), NewInteger(1)},
+		{NewString("two"), NewInteger(2)},
+		{NewString("three"), NewNull()},
+	})
+
+	tests := []testObjectEvaluationCase{
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}["one"]`).
+			call(h.OnIndex(NewString("one"))).
+			expect(NewInteger(1), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}["two"]`).
+			call(h.OnIndex(NewString("two"))).
+			expect(NewInteger(2), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}["three"]`).
+			call(h.OnIndex(NewString("three"))).
+			expect(NewNull(), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}["four"]`).
+			call(h.OnIndex(NewString("four"))).
+			expect(NewNull(), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}[true]`).
+			call(h.OnIndex(NewBoolean(true))).
+			expect(NewNull(), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}[false]`).
+			call(h.OnIndex(NewBoolean(false))).
+			expect(NewNull(), true),
+		evalTest(`HASH{"one": 1, "two": 2, "three": null}[null]`).
+			call(h.OnIndex(NewNull())).
+			expect(nil, false),
+	}
+
+	testObjectEvaluation(t, tests)
+}

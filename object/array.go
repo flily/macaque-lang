@@ -82,3 +82,23 @@ func (a *ArrayObject) OnInfix(t token.Token, o Object) (Object, bool) {
 
 	return r, ok
 }
+
+func (a *ArrayObject) OnIndex(o Object) (Object, bool) {
+	var r Object
+	ok := false
+	switch v := o.(type) {
+	case *IntegerObject:
+		ok = true
+		l := int64(len(a.Elements))
+		switch {
+		case -l <= v.Value && v.Value < 0:
+			r = a.Elements[l+v.Value]
+		case 0 <= v.Value && v.Value < l:
+			r = a.Elements[v.Value]
+		default:
+			r = NewNull()
+		}
+	}
+
+	return r, ok
+}

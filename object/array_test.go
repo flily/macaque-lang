@@ -81,3 +81,37 @@ func TestArrayObjectEvaluation(t *testing.T) {
 
 	testObjectEvaluation(t, tests)
 }
+
+func TestArrayOnIndexEvalutation(t *testing.T) {
+	a := NewArray([]Object{
+		NewInteger(1),
+		NewInteger(2),
+		NewInteger(3),
+	})
+
+	tests := []testObjectEvaluationCase{
+		evalTest("ARRAY[1, 2, 3][0]").
+			call(a.OnIndex(NewInteger(0))).
+			expect(NewInteger(1), true),
+		evalTest("ARRAY[1, 2, 3][1]").
+			call(a.OnIndex(NewInteger(1))).
+			expect(NewInteger(2), true),
+		evalTest("ARRAY[1, 2, 3][2]").
+			call(a.OnIndex(NewInteger(2))).
+			expect(NewInteger(3), true),
+		evalTest("ARRAY[1, 2, 3][3]").
+			call(a.OnIndex(NewInteger(3))).
+			expect(NewNull(), true),
+		evalTest("ARRAY[1, 2, 3][-1]").
+			call(a.OnIndex(NewInteger(-1))).
+			expect(NewInteger(3), true),
+		evalTest("ARRAY[1, 2, 3][-3]").
+			call(a.OnIndex(NewInteger(-3))).
+			expect(NewInteger(1), true),
+		evalTest("ARRAY[1, 2, 3][-5]").
+			call(a.OnIndex(NewInteger(-5))).
+			expect(NewNull(), true),
+	}
+
+	testObjectEvaluation(t, tests)
+}

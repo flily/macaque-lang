@@ -60,3 +60,27 @@ func TestStringObjectEvalutation(t *testing.T) {
 
 	testObjectEvaluation(t, tests)
 }
+
+func TestStringObjectIndexEvaluation(t *testing.T) {
+	s := NewString("foobar")
+
+	tests := []testObjectEvaluationCase{
+		evalTest("STRING(foobar)[INTEGER(0)]").
+			call(s.OnIndex(NewInteger(0))).
+			expect(NewString("f"), true),
+		evalTest("STRING(foobar)[INTEGER(1)]").
+			call(s.OnIndex(NewInteger(1))).
+			expect(NewString("o"), true),
+		evalTest("STRING(foobar)[INTEGER(2)]").
+			call(s.OnIndex(NewInteger(2))).
+			expect(NewString("o"), true),
+		evalTest("STRING(foobar)[INTEGER(3)]").
+			call(s.OnIndex(NewInteger(3))).
+			expect(NewString("b"), true),
+		evalTest("STRING(foobar)[INTEGER(10)]").
+			call(s.OnIndex(NewInteger(10))).
+			expect(NewNull(), true),
+	}
+
+	testObjectEvaluation(t, tests)
+}

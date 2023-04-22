@@ -21,12 +21,9 @@ const (
 	IMakeHash // Make a hash.
 	IMakeFunc // Make a function.
 	IIndex    // Get item of a list or a hash.
-	ISetAX    // Set value of AX.
-	IGetAX    // Get value of AX.
 	IJump     // Jump to a position.
 	IJumpIf   // Jump to a position if TOS is false
 	IJumpFWD  // Jump forward.
-	IPack     // Pack a list of values to a list.
 	ICall     // Call a function.
 	IReturn   // Return from a function.
 	IHalt     // Halt the VM.
@@ -50,12 +47,9 @@ var codeNames = [...]string{
 	IMakeHash: "MAKEHASH",
 	IMakeFunc: "MAKEFUNC",
 	IIndex:    "INDEX",
-	ISetAX:    "SETAX",
-	IGetAX:    "GETAX",
 	IJump:     "JUMP",
 	IJumpFWD:  "JUMFWD",
 	IJumpIf:   "JUMPIF",
-	IPack:     "PACK",
 	ICall:     "CALL",
 	IReturn:   "RETURN",
 	IHalt:     "HALT",
