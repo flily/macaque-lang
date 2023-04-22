@@ -98,15 +98,31 @@ func (t *TokenInfo) MakeContext() *errors.CodeContext {
 	return ctx
 }
 
+func (t *TokenInfo) GetLeadingSpaces(index int) string {
+	line := t.Line.Content
+	spaces := make([]byte, 0, index)
+
+	for i := 0; i < index; i++ {
+		switch line[i] {
+		case '\t', '\v', '\f':
+			spaces = append(spaces, line[i])
+		default:
+			spaces = append(spaces, ' ')
+		}
+	}
+
+	return string(spaces)
+}
+
 func (t *TokenInfo) MakeLineHighlight() string {
-	leadingSpaces := strings.Repeat(" ", t.Column-1)
+	leadingSpaces := t.GetLeadingSpaces(t.Column - 1)
 	highlight := leadingSpaces + strings.Repeat("^", t.Length)
 
 	return t.Line.Content + "\n" + highlight
 }
 
 func (t *TokenInfo) MakeMessage(format string, args ...interface{}) string {
-	leadingSpaces := strings.Repeat(" ", t.Column-1)
+	leadingSpaces := t.GetLeadingSpaces(t.Column - 1)
 	highlight := leadingSpaces + strings.Repeat("^", t.Length)
 	lines := []string{
 		t.Line.Content,

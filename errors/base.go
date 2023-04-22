@@ -22,8 +22,24 @@ type CodeContext struct {
 	Length    int
 }
 
+func (t *CodeContext) GetLeadingSpaces(index int) string {
+	line := t.Line
+	spaces := make([]byte, 0, index)
+
+	for i := 0; i < index; i++ {
+		switch line[i] {
+		case '\t', '\v', '\f':
+			spaces = append(spaces, line[i])
+		default:
+			spaces = append(spaces, ' ')
+		}
+	}
+
+	return string(spaces)
+}
+
 func (c *CodeContext) MakeHighlight() string {
-	leadingSpaces := strings.Repeat(" ", c.NumColumn-1)
+	leadingSpaces := c.GetLeadingSpaces(c.NumColumn - 1)
 	highlight := strings.Repeat("^", c.Length)
 
 	return leadingSpaces + highlight
@@ -35,7 +51,7 @@ func (c *CodeContext) MakeLineHighlight() string {
 }
 
 func (c *CodeContext) MakeMessage(format string, args ...interface{}) string {
-	leadingSpaces := strings.Repeat(" ", c.NumColumn-1)
+	leadingSpaces := c.GetLeadingSpaces(c.NumColumn - 1)
 	highlight := leadingSpaces + strings.Repeat("^", c.Length)
 	lines := []string{
 		c.Line,

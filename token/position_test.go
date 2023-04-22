@@ -90,7 +90,25 @@ func TestTokenInfoMessage(t *testing.T) {
 
 	got := t1.MakeMessage("lorem ipsum")
 	if got != expected {
-		t.Errorf("got %v, expected %v", got, expected)
+		t.Errorf("got\n%v, expected\n%v", got, expected)
+	}
+}
+
+func TestTokenInfoMessageWithSpaces(t *testing.T) {
+	f := NewFileInfo("sample.txt")
+	l1 := f.NewLine("   the 	 quick brown fox")
+	t1 := l1.NewToken(10, 5, "quick")
+
+	expected := strings.Join([]string{
+		"   the 	 quick brown fox",
+		"       	 ^^^^^",
+		"       	 lorem ipsum",
+		"  at sample.txt:1:10",
+	}, "\n")
+
+	got := t1.MakeMessage("lorem ipsum")
+	if got != expected {
+		t.Errorf("got\n%v, expected\n%v", got, expected)
 	}
 }
 
