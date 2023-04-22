@@ -205,6 +205,14 @@ CompileSwitch:
 		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
+
+	case *ast.ReturnStatement:
+		l := n.Expressions.Length()
+		if e = r.Append(c.compileCode(n.Expressions, FlagNone)); e != nil {
+			break CompileSwitch
+		}
+
+		r.Write(opcode.IReturn, l)
 	}
 
 	return r, e
@@ -320,10 +328,11 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 		return nil, e
 	}
 
+	frameSize := c.Context.Variable.CurrentScope().UpdateFrameSize(0)
 	functionContext := &FunctionContext{
 		FunctionInfo: FunctionInfo{
 			Arguments: f.Arguments.Length(),
-			FrameSize: c.Context.Variable.CurrentScope().FrameSize,
+			FrameSize: frameSize,
 		},
 		Code: r.Code,
 	}
@@ -337,6 +346,7 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	}
 
 	result.Write(opcode.IMakeFunc, id, len(scope.Bindings))
+	result.Values = 1
 	return result, nil
 }
 

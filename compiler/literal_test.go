@@ -219,3 +219,74 @@ func TestCompileFunctions(t *testing.T) {
 
 	runCompilerTestCases(t, tests)
 }
+
+func TestCompileComplexFunctions(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			text(
+				"let a = 1;",                            // 1
+				"let newAdderOuter = fn(b) {",           // 2
+				"    fn(c) {",                           // 3
+				"        fn(d) { a + b + c + d };",      // 4
+				"    };",                                // 5
+				"};",                                    // 6
+				"let newAdderInner = newAdderOuter(2);", // 7
+				"let adder = newAdderInner(3);",         // 8
+				"adder(8);",                             // 9
+			),
+			code(
+				// let a = 1
+				inst(opcode.ILoadInt, 1), // 0
+				inst(opcode.ISStore, 1),  // 1
+				// let newAdderOuter = fn(b)
+				inst(opcode.ISLoad, 1),       // 2
+				inst(opcode.IMakeFunc, 3, 1), // 3
+				inst(opcode.ISStore, 2),      // 4
+				// let newAdderInner = newAdderOuter(2)
+				inst(opcode.ILoadInt, 2), // 5
+				inst(opcode.ISLoad, 2),   // 6
+				inst(opcode.ICall, 1),    // 7
+				inst(opcode.ISStore, 3),  // 8
+				// let adder = newAdderInner(3)
+				inst(opcode.ILoadInt, 3), // 9
+				inst(opcode.ISLoad, 3),   // 10
+				inst(opcode.ICall, 1),    // 11
+				inst(opcode.ISStore, 4),  // 12
+				// adder(8)
+				inst(opcode.ILoadInt, 8), // 13
+				inst(opcode.ISLoad, 4),   // 14
+				inst(opcode.ICall, 1),    // 15
+				inst(opcode.IHalt),       // 16
+				// fn(d) {
+				//     a + b + c + d }
+				inst(opcode.ILoadBind, 0),            // 17
+				inst(opcode.ILoadBind, 1),            // 18
+				inst(opcode.IBinOp, int(token.Plus)), // 19
+				inst(opcode.ILoadBind, 2),            // 20
+				inst(opcode.IBinOp, int(token.Plus)), // 21
+				inst(opcode.ISLoad, -1),              // 22
+				inst(opcode.IBinOp, int(token.Plus)), // 23
+				inst(opcode.IReturn, 1),              // 24
+				inst(opcode.IHalt),                   // 25
+				// fn(c) {
+				//     fn(d) { a + b + c + d } }
+				inst(opcode.ILoadBind, 0),    // 26
+				inst(opcode.ILoadBind, 1),    // 27
+				inst(opcode.ISLoad, -1),      // 28
+				inst(opcode.IMakeFunc, 1, 3), // 29
+				inst(opcode.IReturn, 1),      // 30
+				inst(opcode.IHalt),           // 31
+				// fn(b) {
+				//     fn(c) { fn(d) { a + b + c + d } } }
+				inst(opcode.ILoadBind, 0),    // 32
+				inst(opcode.ISLoad, -1),      // 33
+				inst(opcode.IMakeFunc, 2, 2), // 34
+				inst(opcode.IReturn, 1),      // 35
+				inst(opcode.IHalt),           // 36
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}

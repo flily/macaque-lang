@@ -1,8 +1,6 @@
 package vm
 
 import (
-	"fmt"
-
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/object"
@@ -174,7 +172,6 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 RunSwitch:
 	for m.ip < codeSize {
 		op := m.fetchOp()
-		fmt.Printf("ip %d op: %s\n", m.ip, op)
 
 		switch op.Name {
 		case opcode.ILoadNull:
@@ -322,10 +319,11 @@ RunSwitch:
 		case opcode.IReturn:
 			n := op.Operand0
 			returnValues := m.stackPopNWithValue(n)
-
 			m.popCallInfo()
-			fn := m.stackPop()
-			args := fn.(*object.FunctionObject).Arguments
+
+			f := m.stackPop()
+			fn := f.(*object.FunctionObject)
+			args := fn.Arguments
 			m.stackPopN(uint64(args))
 			m.stackPushN(returnValues)
 

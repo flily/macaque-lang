@@ -180,6 +180,10 @@ func (c *VariableScopeContext) Reference(name string) (VariableInfo, VarKind) {
 
 	info, kind := c.outer.Reference(name)
 	if kind != VariableKindLocal {
+		if kind == VariableKindBinding {
+			c.AddBinding(name, info)
+		}
+
 		return info, kind
 	} else {
 		if c.Scope == FrameScopeFunction {
