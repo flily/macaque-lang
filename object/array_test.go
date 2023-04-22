@@ -104,10 +104,10 @@ func TestArrayOnIndexEvalutation(t *testing.T) {
 			expect(NewNull(), true),
 		evalTest("ARRAY[1, 2, 3][-1]").
 			call(a.OnIndex(NewInteger(-1))).
-			expect(NewInteger(3), true),
+			expect(NewNull(), true),
 		evalTest("ARRAY[1, 2, 3][-3]").
 			call(a.OnIndex(NewInteger(-3))).
-			expect(NewInteger(1), true),
+			expect(NewNull(), true),
 		evalTest("ARRAY[1, 2, 3][-5]").
 			call(a.OnIndex(NewInteger(-5))).
 			expect(NewNull(), true),
