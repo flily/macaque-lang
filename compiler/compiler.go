@@ -254,16 +254,18 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 	}
 	c.Context.Variable.LeaveScope()
 
-	if n.Alternative == nil {
-		code.Write(opcode.IJumpIf, consequence.Code.Length())
-		code.AppendCode(consequence)
-		return code, nil
-	}
-
+	var alternative *CompileResult
 	c.Context.Variable.EnterScope(FrameScopeBlock)
-	alternative, err := c.compileCode(n.Alternative, FlagNone)
-	if err != nil {
-		return nil, err
+	if n.Alternative != nil {
+		alternative, err = c.compileCode(n.Alternative, FlagNone)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		alternative = NewCompileResult()
+		alternative.Write(opcode.ILoadNull)
+		alternative.Values = 1
 	}
 	c.Context.Variable.LeaveScope()
 

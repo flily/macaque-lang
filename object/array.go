@@ -91,8 +91,9 @@ func (a *ArrayObject) OnIndex(o Object) (Object, bool) {
 		ok = true
 		l := int64(len(a.Elements))
 		switch {
-		case -l <= v.Value && v.Value < 0:
-			r = a.Elements[l+v.Value]
+		// NOTE: Monkey does not support negative index, and has this case in test.
+		// case -l <= v.Value && v.Value < 0:
+		// 	r = a.Elements[l+v.Value]
 		case 0 <= v.Value && v.Value < l:
 			r = a.Elements[v.Value]
 		default:

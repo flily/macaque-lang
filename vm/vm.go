@@ -120,17 +120,11 @@ RunSwitch:
 			o := object.NewInteger(int64(op.Operand0))
 			m.stackPush(o)
 
-		case opcode.IBinOp:
-			operator := token.Token(op.Operand0)
-			right := m.stackPop()
-			left := m.stackPop()
-			o, ok := left.OnInfix(operator, right)
-			if !ok {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"%s %s %s is not accepted", left.Type(), operator, right.Type())
-				break RunSwitch
-			}
-			m.stackPush(o)
+		case opcode.ILoadBind:
+			o := m.localRead(0)
+			f := o.(*object.FunctionObject)
+			i := int64(op.Operand0)
+			m.stackPush(f.Bounds[i])
 
 		case opcode.ISStore:
 			o := m.stackPop()
@@ -148,6 +142,76 @@ RunSwitch:
 
 		case opcode.IPop:
 			m.stackPopN(uint64(op.Operand0))
+
+		case opcode.IBinOp:
+			operator := token.Token(op.Operand0)
+			right := m.stackPop()
+			left := m.stackPop()
+			o, ok := left.OnInfix(operator, right)
+			if !ok {
+				e = errors.NewError(errors.ErrCodeRuntimeError,
+					"%s %s %s is not accepted", left.Type(), operator, right.Type())
+				break RunSwitch
+			}
+			m.stackPush(o)
+
+		case opcode.IUniOp:
+			operator := token.Token(op.Operand0)
+			operand := m.stackPop()
+			o, ok := operand.OnPrefix(operator)
+			if !ok {
+				e = errors.NewError(errors.ErrCodeRuntimeError,
+					"%s %s is not accepted", operator, operand.Type())
+				break RunSwitch
+			}
+			m.stackPush(o)
+
+		case opcode.IMakeList:
+			n := op.Operand0
+			array := make([]object.Object, n)
+			for i := 0; i < n; i++ {
+				array[n-1-i] = m.stackPop()
+			}
+			o := object.NewArray(array)
+			m.stackPush(o)
+
+		case opcode.IMakeHash:
+			n := op.Operand0
+			hash := make([]object.HashPair, n)
+			for i := 0; i < n; i++ {
+				value := m.stackPop()
+				key := m.stackPop()
+				item := object.HashPair{
+					Key:   key,
+					Value: value,
+				}
+				hash[n-1-i] = item
+			}
+
+			o := object.NewHash(hash)
+			m.stackPush(o)
+
+		case opcode.IMakeFunc:
+			ip := op.Operand0
+			n := op.Operand1
+			bounds := make([]object.Object, n)
+			for i := 0; i < n; i++ {
+				bounds[n-1-i] = m.stackPop()
+			}
+
+			o := object.NewFunction(0, uint64(ip), bounds)
+			m.stackPush(o)
+
+		case opcode.IIndex:
+			index := m.stackPop()
+			base := m.stackPop()
+			o, ok := base.OnIndex(index)
+			if !ok {
+				e = errors.NewError(errors.ErrCodeRuntimeError,
+					"%s[%s] is not accepted", base.Type(), index.Type())
+				break RunSwitch
+			}
+			m.stackPush(o)
 
 		case opcode.IJumpFWD:
 			m.incrIP(uint64(op.Operand0))
