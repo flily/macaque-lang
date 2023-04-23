@@ -97,7 +97,7 @@ func (a *ArrayObject) OnIndex(o Object) (Object, bool) {
 		case 0 <= v.Value && v.Value < l:
 			r = a.Elements[v.Value]
 		default:
-			r = NewNull()
+			r = objectNull
 		}
 	}
 

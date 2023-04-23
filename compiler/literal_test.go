@@ -126,7 +126,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.ISStore, 1),
 				inst(opcode.IHalt),
 				inst(opcode.ILoadInt, 42),
-				inst(opcode.IReturn, 1),
+				inst(opcode.IReturn),
 				inst(opcode.IHalt),
 			),
 			data(),
@@ -146,7 +146,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.ISLoad, 2),
 				inst(opcode.IHalt),
 				inst(opcode.ILoadBind, 0),
-				inst(opcode.IReturn, 1),
+				inst(opcode.IReturn),
 				inst(opcode.IHalt),
 			),
 			data(),
@@ -210,7 +210,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)), // 28
 				inst(opcode.ILoadBind, 0),            // 29
 				inst(opcode.IBinOp, int(token.Plus)), // 30
-				inst(opcode.IReturn, 1),              // 31
+				inst(opcode.IReturn),                 // 31
 				inst(opcode.IHalt),                   // 32
 			),
 			data(),
@@ -266,7 +266,7 @@ func TestCompileComplexFunctions(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)), // 21
 				inst(opcode.ISLoad, -1),              // 22
 				inst(opcode.IBinOp, int(token.Plus)), // 23
-				inst(opcode.IReturn, 1),              // 24
+				inst(opcode.IReturn),                 // 24
 				inst(opcode.IHalt),                   // 25
 				// fn(c) {
 				//     fn(d) { a + b + c + d } }
@@ -274,14 +274,14 @@ func TestCompileComplexFunctions(t *testing.T) {
 				inst(opcode.ILoadBind, 1),    // 27
 				inst(opcode.ISLoad, -1),      // 28
 				inst(opcode.IMakeFunc, 1, 3), // 29
-				inst(opcode.IReturn, 1),      // 30
+				inst(opcode.IReturn),         // 30
 				inst(opcode.IHalt),           // 31
 				// fn(b) {
 				//     fn(c) { fn(d) { a + b + c + d } } }
 				inst(opcode.ILoadBind, 0),    // 32
 				inst(opcode.ISLoad, -1),      // 33
 				inst(opcode.IMakeFunc, 2, 2), // 34
-				inst(opcode.IReturn, 1),      // 35
+				inst(opcode.IReturn),         // 35
 				inst(opcode.IHalt),           // 36
 			),
 			data(),
@@ -321,7 +321,7 @@ func TestCompileRecursiveFunctions(t *testing.T) {
 				inst(opcode.IJumpIf, 3),            // 9
 				//         return 0;
 				inst(opcode.ILoadInt, 0), // 10
-				inst(opcode.IReturn, 1),  // 11
+				inst(opcode.IReturn),  // 11
 				inst(opcode.IJumpFWD, 5), // 12
 				//     } else {
 				//         fn(x - 1);
@@ -331,7 +331,7 @@ func TestCompileRecursiveFunctions(t *testing.T) {
 				inst(opcode.ISLoad, 0),                // 16
 				inst(opcode.ICall, 1),                 // 17
 				//    }
-				inst(opcode.IReturn, 1), // 18
+				inst(opcode.IReturn), // 18
 				inst(opcode.IHalt),      // 19
 			),
 			data(),
@@ -370,7 +370,7 @@ func TestCompileRecursiveFunctions(t *testing.T) {
 				inst(opcode.IJumpIf, 3),            // 11
 				//         return 0;
 				inst(opcode.ILoadInt, 0), // 12
-				inst(opcode.IReturn, 1),  // 13
+				inst(opcode.IReturn),  // 13
 				inst(opcode.IJumpFWD, 5), // 14
 				//     } else {
 				//         fn(x - 1);
@@ -380,14 +380,14 @@ func TestCompileRecursiveFunctions(t *testing.T) {
 				inst(opcode.ISLoad, 0),                // 18
 				inst(opcode.ICall, 1),                 // 19
 				//    }
-				inst(opcode.IReturn, 1), // 20
+				inst(opcode.IReturn), // 20
 				inst(opcode.IHalt),      // 21
 				// fn()
 				//    countDown(1);
 				inst(opcode.ILoadInt, 1),  // 22
 				inst(opcode.ILoadBind, 0), // 23
 				inst(opcode.ICall, 1),     // 24
-				inst(opcode.IReturn, 1),   // 25
+				inst(opcode.IReturn),   // 25
 				inst(opcode.IHalt),        // 26
 			),
 			data(),

@@ -56,3 +56,27 @@ func TestCompileLetStatementRedefined(t *testing.T) {
 
 	runCompilerErrorTestCases(t, tests)
 }
+
+func TestCompileFunctionsWithoutReturnValue(t *testing.T) {
+	tests := []testCompilerCase{
+		{
+			`
+				let noReturn = fn() { };
+				noReturn();
+			`,
+			code(
+				inst(opcode.IMakeFunc, 1, 0),
+				inst(opcode.ISStore, 1),
+				inst(opcode.ISLoad, 1),
+				inst(opcode.ICall, 0),
+				inst(opcode.IHalt),
+				inst(opcode.ILoadNull),
+				inst(opcode.IReturn),
+				inst(opcode.IHalt),
+			),
+			data(),
+		},
+	}
+
+	runCompilerTestCases(t, tests)
+}

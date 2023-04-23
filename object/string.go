@@ -77,7 +77,7 @@ func (s *StringObject) OnIndex(o Object) (Object, bool) {
 	switch v := o.(type) {
 	case *IntegerObject:
 		if v.Value < 0 || v.Value >= int64(len(s.Value)) {
-			r = NewNull()
+			r = objectNull
 		} else {
 			r = NewString(string(s.Value[v.Value]))
 		}

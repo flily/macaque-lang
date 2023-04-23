@@ -116,5 +116,6 @@ represents an unsigned integer, and lower case represents a signed integer.
 | JUMPIF   |   D      | Jump forward D instructions if the top value on the stack is false
 | CALL     |   D      | Call the function with the top D values as arguments
 | TAILCALL |   D      | Tail call the function with the top D values as arguments
-| RETURN   |   D      | Return function call, pop D values from the stack as return values
+| CLEAN    |   NNN    | Clean the stack, pop all values from the stack
+| RETURN   |   NNN    | Return function call, pop all values from the stack as return values
 | HALT     |   NNN    | Halt the VM

@@ -23,13 +23,13 @@ func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
 
 	program, err := parser.Parse()
 	if err != nil {
-		t.Fatalf("parser error: %s", err)
+		t.Fatalf("parser error:\n%s", err)
 	}
 
 	compiler := compiler.NewCompiler()
 	page, err := compiler.Compile(program)
 	if err != nil {
-		t.Fatalf("compiler error: %s", err)
+		t.Fatalf("compiler error:\n%s", err)
 	}
 
 	m := NewNaiveVM()
@@ -88,6 +88,8 @@ func bp(v uint64) registerAssertion {
 }
 
 func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
+	t.Helper()
+
 	for _, c := range cases {
 		switch c.register {
 		case "sp":
@@ -104,6 +106,8 @@ func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
 }
 
 func runVMTest(t *testing.T, cases []vmTest) {
+	t.Helper()
+
 	for _, c := range cases {
 		m, page := testCompileCode(t, c.code)
 		m.LoadCodePage(page)

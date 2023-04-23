@@ -207,12 +207,11 @@ CompileSwitch:
 		}
 
 	case *ast.ReturnStatement:
-		l := n.Expressions.Length()
 		if e = r.Append(c.compileCode(n.Expressions, FlagNone)); e != nil {
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IReturn, l)
+		r.Write(opcode.IReturn)
 	}
 
 	return r, e
@@ -296,7 +295,8 @@ func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool
 	} else {
 		count := r.Values
 		if count > 0 {
-			r.Write(opcode.IPop, count)
+			// r.Write(opcode.IPop, count)
+			r.Write(opcode.IClean)
 		}
 
 		lastResult, err := c.compileCode(last, FlagNone)
@@ -309,7 +309,7 @@ func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool
 	}
 
 	if withReturn {
-		r.Write(opcode.IReturn, r.Values)
+		r.Write(opcode.IReturn)
 	}
 
 	return r, e

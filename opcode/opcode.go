@@ -26,6 +26,7 @@ const (
 	IJumpFWD  // Jump forward.
 	ISDUP     // Duplicate the top of the stack.
 	ICall     // Call a function.
+	IClean    // Clean the stack.
 	IReturn   // Return from a function.
 	IHalt     // Halt the VM.
 	ILastInst // Last instruction, no use.
@@ -53,6 +54,7 @@ var codeNames = [...]string{
 	IJumpIf:   "JUMPIF",
 	ISDUP:     "SDUP",
 	ICall:     "CALL",
+	IClean:    "CLEAN",
 	IReturn:   "RETURN",
 	IHalt:     "HALT",
 	ILastInst: "LASTINST",

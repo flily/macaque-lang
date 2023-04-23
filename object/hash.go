@@ -103,5 +103,5 @@ func (h *HashObject) OnIndex(o Object) (Object, bool) {
 		return e.Value, true
 	}
 
-	return NewNull(), true
+	return objectNull, true
 }

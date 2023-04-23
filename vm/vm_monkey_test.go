@@ -15,7 +15,7 @@ func monkeyExpectedValueCompare(t *testing.T, expected interface{}, got object.O
 	t.Helper()
 
 	if expected == nil {
-		return got.EqualTo(object.NewNull())
+		return got.EqualTo(null)
 	}
 
 	ok := false

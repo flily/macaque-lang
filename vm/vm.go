@@ -1,6 +1,9 @@
 package vm
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/object"
@@ -13,9 +16,14 @@ const (
 	DefaultDataSize  = 65536
 )
 
+var (
+	null = object.NewNull()
+)
+
 type callStackInfo struct {
 	bp uint64
 	sp uint64
+	sb uint64
 	ip uint64
 }
 
@@ -25,6 +33,7 @@ type NaiveVM struct {
 
 	ip uint64 // instruction pointer
 	sp uint64 // stack pointer
+	sb uint64 // stack base pointer
 	bp uint64 // base pointer
 
 	Stack     []object.Object
@@ -52,9 +61,14 @@ func (m *NaiveVM) stackPush(o object.Object) {
 }
 
 func (m *NaiveVM) stackPop() object.Object {
-	m.sp--
-	r := m.Stack[m.sp]
-	m.Stack[m.sp] = nil
+	var r object.Object
+	if m.sp > m.sb {
+		m.sp--
+		r = m.Stack[m.sp]
+		m.Stack[m.sp] = nil
+	} else {
+		r = null
+	}
 	return r
 }
 
@@ -106,6 +120,7 @@ func (m *NaiveVM) refData(i uint64) object.Object {
 func (m *NaiveVM) pushCallInfo() {
 	m.callStack[m.csi].bp = m.bp
 	m.callStack[m.csi].sp = m.sp
+	m.callStack[m.csi].sb = m.sb
 	m.callStack[m.csi].ip = m.ip
 	m.csi++
 }
@@ -114,12 +129,16 @@ func (m *NaiveVM) popCallInfo() {
 	m.csi--
 	m.bp = m.callStack[m.csi].bp
 	m.sp = m.callStack[m.csi].sp
+	m.sb = m.callStack[m.csi].sb
 	m.ip = m.callStack[m.csi].ip
 }
 
 func (m *NaiveVM) initCallStack(frameSize int) {
 	m.bp = m.sp - 1
-	m.sp += uint64(frameSize)
+	for i := 0; i < frameSize; i++ {
+		m.stackPush(null)
+	}
+	m.sb = m.sp
 }
 
 func (m *NaiveVM) Top() object.Object {
@@ -153,7 +172,10 @@ func (m *NaiveVM) LoadData(c *compiler.CodePage) {
 func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
 	m.ip = entry.IP
-	m.sp = 1 + uint64(entry.FrameSize)
+	for i := 0; i < entry.FrameSize; i++ {
+		m.stackPush(null)
+	}
+	m.sb = m.sp
 }
 
 func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
@@ -172,10 +194,14 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 RunSwitch:
 	for m.ip < codeSize {
 		op := m.fetchOp()
+		// fmt.Printf("OP %s\n", op)
+		// vs, vv := m.InspectStack()
+		// fmt.Printf("STACK %s\n", vs)
+		// fmt.Printf("      %s\n", vv)
 
 		switch op.Name {
 		case opcode.ILoadNull:
-			m.stackPush(object.NewNull())
+			m.stackPush(null)
 
 		case opcode.ILoadBool:
 			o := object.NewBoolean(op.Operand0 != 0)
@@ -320,8 +346,12 @@ RunSwitch:
 			m.initCallStack(fn.FrameSize)
 			m.ip = fn.IP
 
+		case opcode.IClean:
+			n := m.sp - m.sb
+			m.stackPopN(n)
+
 		case opcode.IReturn:
-			n := op.Operand0
+			n := int(m.sp - m.sb)
 			returnValues := m.stackPopNWithValue(n)
 			m.popCallInfo()
 
@@ -337,4 +367,37 @@ RunSwitch:
 	}
 
 	return e
+}
+
+func (m *NaiveVM) GetAllStack() []object.Object {
+	return m.Stack[:m.sp]
+}
+
+func (m *NaiveVM) InspectStack() (string, string) {
+	items := m.GetAllStack()
+	data := make([]string, len(items))
+	view := make([]string, len(items))
+	for i, item := range items {
+		o := fmt.Sprintf("%-6s", item.Inspect())
+		data[i] = "| " + o + " "
+
+		var p string
+		switch uint64(i) {
+		case m.sp:
+			p = "SP"
+
+		case m.sb:
+			p = "SB"
+
+		case m.bp:
+			p = "BP"
+
+		default:
+			p = fmt.Sprintf("%d", i)
+		}
+
+		view[i] = "| " + p + strings.Repeat(" ", len(o)-len(p)) + " "
+	}
+
+	return strings.Join(data, ""), strings.Join(view, "")
 }
