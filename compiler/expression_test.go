@@ -184,7 +184,7 @@ func TestCallExpression(t *testing.T) {
 	tests := []testCompilerCase{
 		{
 			text(
-				"let add = fn(a, b) { a + b }",
+				"let add = fn(a, b) { a + b };",
 				"add(1, 2)",
 			),
 			code(

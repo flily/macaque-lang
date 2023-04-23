@@ -52,12 +52,12 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
 	parser := parser.NewLLParser(scanner)
 	err := parser.ReadTokens()
 	if err != nil {
-		t.Fatalf("parser error: %s", err)
+		t.Fatalf("parser error:\n%s", err)
 	}
 
 	program, err := parser.Parse()
 	if err != nil {
-		t.Fatalf("parser error: %s", err)
+		t.Fatalf("parser error:\n%s", err)
 	}
 
 	compiler := NewCompiler()

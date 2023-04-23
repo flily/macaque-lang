@@ -52,6 +52,36 @@ func (l *ExpressionList) AddExpression(expr Expression) {
 	l.Expressions = append(l.Expressions, expr)
 }
 
+func (l *ExpressionList) IsIdentifierList() bool {
+	result := true
+	for _, expr := range l.Expressions {
+		if _, ok := expr.(*Identifier); !ok {
+			result = false
+			break
+		}
+	}
+
+	return result
+}
+
+func (l *ExpressionList) ToIdentifierList() *IdentifierList {
+	ids := make([]*Identifier, len(l.Expressions))
+	for i, expr := range l.Expressions {
+		id, ok := expr.(*Identifier)
+		if !ok {
+			return nil
+		}
+
+		ids[i] = id
+	}
+
+	list := &IdentifierList{
+		Identifiers: ids,
+	}
+
+	return list
+}
+
 type IdentifierList struct {
 	Identifiers []*Identifier
 }
@@ -184,10 +214,11 @@ func (e *IndexExpression) EqualTo(node Node) bool {
 }
 
 type CallExpression struct {
-	Callable Expression
-	Colon    token.Token
-	Member   *Identifier
-	Args     *ExpressionList
+	Callable  Expression
+	Token     token.Token
+	Member    *Identifier
+	Args      *ExpressionList
+	Recursion bool
 }
 
 func (e *CallExpression) expressionNode() {}
@@ -195,15 +226,22 @@ func (e *CallExpression) expressionNode() {}
 func (e *CallExpression) CanonicalCode() string {
 	var result string
 
-	if e.Member != nil {
+	switch e.Token {
+	case token.LParen:
+		result = fmt.Sprintf("%s(%s)",
+			e.Callable.CanonicalCode(),
+			e.Args.CanonicalCode(),
+		)
+
+	case token.DualColon:
 		result = fmt.Sprintf("%s::%s(%s)",
 			e.Callable.CanonicalCode(),
 			e.Member.CanonicalCode(),
 			e.Args.CanonicalCode(),
 		)
-	} else {
-		result = fmt.Sprintf("%s(%s)",
-			e.Callable.CanonicalCode(),
+
+	case token.Fn:
+		result = fmt.Sprintf("fn(%s)",
 			e.Args.CanonicalCode(),
 		)
 	}
@@ -215,8 +253,15 @@ func (e *CallExpression) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
 	case *CallExpression:
-		result = e.Callable.EqualTo(n.Callable) &&
-			e.Args.EqualTo(n.Args)
+		if e.Callable == nil {
+			result = e.Callable == nil
+		} else {
+			result = e.Callable.EqualTo(n.Callable)
+		}
+
+		result = result && e.Args.EqualTo(n.Args)
+		result = result && e.Token == n.Token && e.Recursion == n.Recursion
+
 		if e.Member != nil {
 			result = result && e.Member.EqualTo(n.Member)
 		}

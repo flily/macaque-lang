@@ -6,6 +6,7 @@ import (
 
 	"github.com/flily/macaque-lang/ast"
 	"github.com/flily/macaque-lang/lex"
+	"github.com/flily/macaque-lang/token"
 )
 
 func testLLParseCode(code string) (*ast.Program, error) {
@@ -26,6 +27,8 @@ type parserTestCase struct {
 }
 
 func runParserTestCase(t *testing.T, cases []parserTestCase) {
+	t.Helper()
+
 	for _, c := range cases {
 		program, err := testLLParseCode(c.code)
 		if err != nil {
@@ -538,7 +541,7 @@ func TestFunctionLiteral(t *testing.T) {
 			),
 		},
 		{
-			`let add = fn(x) { fn(y) { x + y } }`,
+			`let add = fn(x) { fn(y) { x + y } };`,
 			program(
 				let(
 					idList("add"),
@@ -562,9 +565,82 @@ func TestFunctionLiteral(t *testing.T) {
 				),
 			),
 		},
+		{
+			`let add = fn(x) { fn(x - 1) };`,
+			program(
+				let(
+					idList("add"),
+					exprList(
+						fn(
+							idList("x"),
+							block(
+								expr(
+									&ast.CallExpression{
+										Callable: nil,
+										Token:    token.Fn,
+										Args: exprList(
+											infix("-", id("x"), l(1)),
+										),
+										Recursion: true,
+									},
+								),
+							),
+						),
+					),
+				),
+			),
+		},
+		{
+			`let add = fn(x) { fn(x) };`,
+			program(
+				let(
+					idList("add"),
+					exprList(
+						fn(
+							idList("x"),
+							block(
+								expr(
+									&ast.CallExpression{
+										Callable: nil,
+										Token:    token.Fn,
+										Args: exprList(
+											id("x"),
+										),
+										Recursion: true,
+									},
+								),
+							),
+						),
+					),
+				),
+			),
+		},
 	}
 
 	runParserTestCase(t, tests)
+}
+
+func TestParseFunctionLiteralError(t *testing.T) {
+	tests := []parserErrorTestCase{
+		{
+			[]string{
+				`let a = 1 { x }`,
+				"          ^",
+				"          expect token SEMICOLON(;) IN let statement, but got LBRACE('{')",
+				"  at testcase:1:11",
+			},
+		},
+		{
+			[]string{
+				`let a = fn(x - 1) { x + 1 }`,
+				"                  ^",
+				"                  recursion function call MUST NOT follow by a block statement",
+				"  at testcase:1:19",
+			},
+		},
+	}
+
+	runParserErrorTestCase(t, tests)
 }
 
 func TestParseIfExpression(t *testing.T) {
@@ -648,7 +724,7 @@ func TestParseIfExpression(t *testing.T) {
 			),
 		},
 		{
-			`let x = if (10 > 1) { 10 }`,
+			`let x = if (10 > 1) { 10 };`,
 			program(
 				let(
 					idList("x"),
@@ -665,7 +741,7 @@ func TestParseIfExpression(t *testing.T) {
 			),
 		},
 		{
-			`let x = 3 + if (10 > 1) { 9 } * 5 + 8`,
+			`let x = 3 + if (10 > 1) { 9 } * 5 + 8;`,
 			program(
 				let(
 					idList("x"),
@@ -835,5 +911,13 @@ func TestOperatorPrecedence(t *testing.T) {
 			t.Errorf("Wrong precedence, got:\n%s\nexpected:\n%s",
 				program.CanonicalCode(), tt.expected)
 		}
+	}
+}
+
+func TestParseExpressionListToIdentifierList(t *testing.T) {
+	el := exprList(id("a"), id("b"), id("c"))
+
+	if !el.IsIdentifierList() {
+		t.Errorf("Expression list should be identifier list")
 	}
 }

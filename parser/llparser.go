@@ -202,7 +202,9 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, err
 	}
 
-	_ = p.skipToken(token.Semicolon, RuleLetStatement)
+	if err := p.skipToken(token.Semicolon, RuleLetStatement); err != nil {
+		return nil, err
+	}
 
 	stmt := &ast.LetStatement{
 		Identifiers: idList,
@@ -456,24 +458,39 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 	return hash, nil
 }
 
-func (p *LLParser) parseFunctionLiteral() (*ast.FunctionLiteral, error) {
+func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 	_ = p.skipToken(token.Fn, RuleFunctionLiteral)
 
 	if err := p.skipToken(token.LParen, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
-	args := idList()
-	var err error
-
-	if p.currentToken() != token.RParen {
-		args, err = p.parseIdentifierList()
-		if err != nil {
-			return nil, err
-		}
+	args, err := p.parseExpressionList(ExprListCanBeEmpty)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := p.skipToken(token.RParen, RuleFunctionLiteral); err != nil {
+		return nil, err
+	}
+
+	current := p.current()
+
+	if p.currentToken() != token.LBrace {
+		callExpr := &ast.CallExpression{
+			Callable:  nil,
+			Token:     token.Fn,
+			Args:      args,
+			Recursion: true,
+		}
+
+		return callExpr, nil
+	}
+
+	if !args.IsIdentifierList() {
+		err := current.Position.MakeContext().NewSyntaxError(
+			"recursion function call MUST NOT follow by a block statement",
+		)
 		return nil, err
 	}
 
@@ -487,7 +504,7 @@ func (p *LLParser) parseFunctionLiteral() (*ast.FunctionLiteral, error) {
 	}
 
 	literal := &ast.FunctionLiteral{
-		Arguments:    args,
+		Arguments:    args.ToIdentifierList(),
 		Body:         body,
 		ReturnValues: -1,
 	}
@@ -647,9 +664,11 @@ func (p *LLParser) parseInfixExpression(left ast.Expression, precedence int) (as
 func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool) (ast.Expression, error) {
 	var err error
 	var member *ast.Identifier
+	var t token.Token
 
 	if findMethod {
 		_ = p.skipToken(token.DualColon, RuleCallExpression)
+		t = token.DualColon
 		member, err = p.parseIdentifier()
 		if err != nil {
 			return nil, err
@@ -660,6 +679,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 		}
 
 	} else {
+		t = token.LParen
 		_ = p.skipToken(token.LParen, RuleCallExpression)
 	}
 
@@ -674,6 +694,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 
 	expr := &ast.CallExpression{
 		Callable: callable,
+		Token:    t,
 		Member:   member,
 		Args:     arguments,
 	}

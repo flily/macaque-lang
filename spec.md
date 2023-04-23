@@ -365,6 +365,7 @@ index-expression = ( expression "[" expression "]" )
                  / ( expression "." identifier )
 
 call-expression = expression [ "::" identifier ] "(" [expression-list] ")"
+                / fn "(" [expression-list] ")"  ; recursive call expression
 
 prefix-expression = prefix-operator expression
 
