@@ -407,3 +407,14 @@ func TestEOFHighlight(t *testing.T) {
 			highlight, expected)
 	}
 }
+
+func TestSplitLines(t *testing.T) {
+	code := "foo\nbar\n"
+
+	lex := NewRecursiveScanner("testcase")
+	_ = lex.SetContent([]byte(code))
+
+	if len(lex.FileInfo.Lines) != 3 {
+		t.Fatalf("got wrong number of lines, got: %d", len(lex.FileInfo.Lines))
+	}
+}

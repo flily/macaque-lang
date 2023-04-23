@@ -39,7 +39,7 @@ func (s *RecursiveScanner) splitToLines(data []byte) []string {
 		}
 	}
 
-	if start < len(data) {
+	if start <= len(data) {
 		line := string(data[start:])
 		lines = append(lines, line)
 	}
