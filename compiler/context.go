@@ -61,14 +61,15 @@ type VariableInfo struct {
 }
 
 type VariableScopeContext struct {
-	Level     int
-	Scope     FrameScope
-	Variables map[string]VariableInfo
-	Bindings  map[string]VariableInfo
-	outer     *VariableScopeContext
-	arguments int
-	variables int
-	FrameSize int
+	Level        int
+	outer        *VariableScopeContext
+	Scope        FrameScope
+	Variables    map[string]VariableInfo
+	Bindings     map[string]VariableInfo
+	BindingOrder []VariableInfo
+	arguments    int
+	variables    int
+	FrameSize    int
 }
 
 func NewVariableScopeContext() *VariableScopeContext {
@@ -147,6 +148,7 @@ func (c *VariableScopeContext) AddBinding(name string, info VariableInfo) Variab
 	offset := len(c.Bindings)
 	info.Offset = offset
 	c.Bindings[name] = info
+	c.BindingOrder = append(c.BindingOrder, info)
 	return info
 }
 

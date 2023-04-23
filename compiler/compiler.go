@@ -341,7 +341,7 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	scope := c.Context.Variable.CurrentScope()
 	c.Context.Variable.LeaveScope()
 
-	for _, arg := range scope.Bindings {
+	for _, arg := range scope.BindingOrder {
 		c.compileIdentifierReference(arg.Name, result)
 	}
 

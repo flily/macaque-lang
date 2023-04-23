@@ -45,6 +45,8 @@ func makeCodePrint(left []opcode.Opcode, right []opcode.Opcode) string {
 }
 
 func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
+	t.Helper()
+
 	scanner := lex.NewRecursiveScanner("testcase")
 	_ = scanner.SetContent([]byte(code))
 	parser := parser.NewLLParser(scanner)
@@ -142,6 +144,8 @@ type testCompilerErrorCase struct {
 }
 
 func runCompilerErrorTestCases(t *testing.T, cases []testCompilerErrorCase) {
+	t.Helper()
+
 	for _, c := range cases {
 		_, _, err := testCompileCode(t, c.code)
 		if err == nil {
