@@ -9,7 +9,7 @@ import (
 func TestCompileLetStatement(t *testing.T) {
 	tests := []testCompilerCase{
 		{
-			`let a = 42`,
+			`let a = 42;`,
 			code(
 				inst(opcode.ILoadInt, 42),
 				inst(opcode.ISStore, 1),
@@ -17,7 +17,7 @@ func TestCompileLetStatement(t *testing.T) {
 			data(),
 		},
 		{
-			`let a, b, c, d = 42, 43, 44, 45`,
+			`let a, b, c, d = 42, 43, 44, 45;`,
 			code(
 				inst(opcode.ILoadInt, 42),
 				inst(opcode.ILoadInt, 43),
@@ -39,14 +39,14 @@ func TestCompileLetStatementRedefined(t *testing.T) {
 	tests := []testCompilerErrorCase{
 		{
 			text(
-				`let a = 42; let a = 43`,
+				`let a = 42; let a = 43;`,
 			),
 			text(
-				"let a = 42; let a = 43",
+				"let a = 42; let a = 43;",
 				"                ^",
 				"                variable a redeclared",
 				"  at testcase:1:17",
-				"let a = 42; let a = 43",
+				"let a = 42; let a = 43;",
 				"    ^",
 				"    variable a is already declared here",
 				"  at testcase:1:5",
