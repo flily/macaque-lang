@@ -73,8 +73,8 @@ func TestEvaluationExpressionWithVariables(t *testing.T) {
 	tests := []testCompilerCase{
 		{
 			text(
-				`let answer = 30 + 6`,
-				`let final_anser = answer + 6`,
+				`let answer = 30 + 6;`,
+				`let final_anser = answer + 6;`,
 			),
 			code(
 				inst(opcode.ILoadInt, 30),
@@ -212,7 +212,7 @@ func TestIndexExpression(t *testing.T) {
 	tests := []testCompilerCase{
 		{
 			text(
-				"let arr = [1, 2, 3]",
+				"let arr = [1, 2, 3];",
 				"arr[3]",
 			),
 			code(
@@ -229,7 +229,7 @@ func TestIndexExpression(t *testing.T) {
 		},
 		{
 			text(
-				`let hash = {"one": 1, "two": 2}`,
+				`let hash = {"one": 1, "two": 2};`,
 				`hash["one"]`,
 			),
 			code(

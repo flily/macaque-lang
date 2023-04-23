@@ -164,7 +164,7 @@ func TestCompileFunctions(t *testing.T) {
 				"        let c = a + b;",
 				"        d + c + answer",
 				"    }",
-				"}",
+				"};",
 			),
 			code(
 				// let answer = 42
