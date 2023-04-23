@@ -363,13 +363,32 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 	}
 	result.AppendCode(args)
 
-	callable, err := c.compileCode(expr.Callable, flag)
-	if err != nil {
-		return nil, err
+	switch expr.Token {
+	case token.LParen:
+		callable, err := c.compileCode(expr.Callable, flag)
+		if err != nil {
+			return nil, err
+		}
+		result.AppendCode(callable)
+
+	case token.DualColon:
+		callable, err := c.compileCode(expr.Callable, flag)
+		if err != nil {
+			return nil, err
+		}
+
+		memberIndex := c.Context.Literal.ReferenceString(expr.Member.Value)
+		callable.Write(opcode.ILoad, int(memberIndex))
+		callable.Write(opcode.ISDUP)
+		callable.Write(opcode.IIndex)
+		result.AppendCode(callable)
+
+	case token.Fn:
+		result.Write(opcode.ISLoad, 0)
 	}
-	result.AppendCode(callable)
 
 	result.Write(opcode.ICall, args.Values)
+	result.Values = 1
 	return result, nil
 }
 

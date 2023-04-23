@@ -24,6 +24,7 @@ const (
 	IJump     // Jump to a position.
 	IJumpIf   // Jump to a position if TOS is false
 	IJumpFWD  // Jump forward.
+	ISDUP     // Duplicate the top of the stack.
 	ICall     // Call a function.
 	IReturn   // Return from a function.
 	IHalt     // Halt the VM.
@@ -50,6 +51,7 @@ var codeNames = [...]string{
 	IJump:     "JUMP",
 	IJumpFWD:  "JUMFWD",
 	IJumpIf:   "JUMPIF",
+	ISDUP:     "SDUP",
 	ICall:     "CALL",
 	IReturn:   "RETURN",
 	IHalt:     "HALT",

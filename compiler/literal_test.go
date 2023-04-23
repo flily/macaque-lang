@@ -299,42 +299,96 @@ func TestCompileRecursiveFunctions(t *testing.T) {
 				"    if (x == 0) {",
 				"        return 0;",
 				"    } else {",
-				"        countDown(x - 1);",
+				"        fn(x - 1);",
 				"    }",
 				"};",
 				"countDown(1);",
 			),
 			code(
 				// let countDown = fn(x)
-				inst(opcode.ISLoad, 1),       // 0
-				inst(opcode.IMakeFunc, 1, 1), // 1
-				inst(opcode.ISStore, 1),      // 2
+				inst(opcode.IMakeFunc, 1, 0), // 0
+				inst(opcode.ISStore, 1),      // 1
 				// countDown(1)
-				inst(opcode.ILoadInt, 1), // 3
-				inst(opcode.ISLoad, 1),   // 4
-				inst(opcode.ICall, 1),    // 5
-				inst(opcode.IHalt),       // 6
+				inst(opcode.ILoadInt, 1), // 2
+				inst(opcode.ISLoad, 1),   // 3
+				inst(opcode.ICall, 1),    // 4
+				inst(opcode.IHalt),       // 5
 				// fn(x) {
 				//     if (x == 0) {
-				inst(opcode.ISLoad, -1),            // 7
-				inst(opcode.ILoadInt, 0),           // 8
-				inst(opcode.IBinOp, int(token.EQ)), // 9
-				inst(opcode.IJumpIf, 3),            // 10
+				inst(opcode.ISLoad, -1),            // 6
+				inst(opcode.ILoadInt, 0),           // 7
+				inst(opcode.IBinOp, int(token.EQ)), // 8
+				inst(opcode.IJumpIf, 3),            // 9
 				//         return 0;
-				inst(opcode.ILoadInt, 0), // 11
-				inst(opcode.IReturn, 1),  // 12
-				inst(opcode.IJumpFWD, 5), // 13
+				inst(opcode.ILoadInt, 0), // 10
+				inst(opcode.IReturn, 1),  // 11
+				inst(opcode.IJumpFWD, 5), // 12
 				//     } else {
-				//         countDown(x - 1);
-				inst(opcode.ISLoad, -1),               // 14
-				inst(opcode.ILoadInt, 1),              // 15
-				inst(opcode.IBinOp, int(token.Minus)), // 16
-				inst(opcode.ILoadBind, 0),             // 17
-				inst(opcode.ICall, 1),                 // 18
+				//         fn(x - 1);
+				inst(opcode.ISLoad, -1),               // 13
+				inst(opcode.ILoadInt, 1),              // 14
+				inst(opcode.IBinOp, int(token.Minus)), // 15
+				inst(opcode.ISLoad, 0),                // 16
+				inst(opcode.ICall, 1),                 // 17
 				//    }
-				inst(opcode.IReturn, 1), // 19
-				inst(opcode.IHalt),      // 20
-
+				inst(opcode.IReturn, 1), // 18
+				inst(opcode.IHalt),      // 19
+			),
+			data(),
+		},
+		{
+			text(
+				"let countDown = fn(x) {",
+				"    if (x == 0) {",
+				"        return 0;",
+				"    } else {",
+				"        fn(x - 1);",
+				"    }",
+				"};",
+				"let wrapper = fn() {",
+				"    countDown(1);",
+				"};",
+				"wrapper();",
+			),
+			code(
+				// let countDown = fn(x)
+				inst(opcode.IMakeFunc, 1, 0), // 0
+				inst(opcode.ISStore, 1),      // 1
+				// let wrapper = fn()
+				inst(opcode.ISLoad, 1),       // 2
+				inst(opcode.IMakeFunc, 2, 1), // 3
+				inst(opcode.ISStore, 2),      // 4
+				// wrapper()
+				inst(opcode.ISLoad, 2), // 5
+				inst(opcode.ICall, 0),  // 6
+				inst(opcode.IHalt),     // 7
+				// fn(x) {
+				//     if (x == 0) {
+				inst(opcode.ISLoad, -1),            // 8
+				inst(opcode.ILoadInt, 0),           // 9
+				inst(opcode.IBinOp, int(token.EQ)), // 10
+				inst(opcode.IJumpIf, 3),            // 11
+				//         return 0;
+				inst(opcode.ILoadInt, 0), // 12
+				inst(opcode.IReturn, 1),  // 13
+				inst(opcode.IJumpFWD, 5), // 14
+				//     } else {
+				//         fn(x - 1);
+				inst(opcode.ISLoad, -1),               // 15
+				inst(opcode.ILoadInt, 1),              // 16
+				inst(opcode.IBinOp, int(token.Minus)), // 17
+				inst(opcode.ISLoad, 0),                // 18
+				inst(opcode.ICall, 1),                 // 19
+				//    }
+				inst(opcode.IReturn, 1), // 20
+				inst(opcode.IHalt),      // 21
+				// fn()
+				//    countDown(1);
+				inst(opcode.ILoadInt, 1),  // 22
+				inst(opcode.ILoadBind, 0), // 23
+				inst(opcode.ICall, 1),     // 24
+				inst(opcode.IReturn, 1),   // 25
+				inst(opcode.IHalt),        // 26
 			),
 			data(),
 		},

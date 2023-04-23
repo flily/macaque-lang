@@ -571,3 +571,55 @@ func TestClosure(t *testing.T) {
 
 	runMonkeyCompatibleTest(t, tests)
 }
+
+func TestRecursiveFunctions(t *testing.T) {
+	tests := []monkeyTestCase{
+		{
+			input: `
+				let countDown = fn(x) {
+					if (x == 0) {
+						return 0;
+					} else {
+						fn(x - 1);
+					}
+				};
+				countDown(1);
+			`,
+			expected: 0,
+		},
+		{
+			input: `
+				let countDown = fn(x) {
+					if (x == 0) {
+						return 0;
+					} else {
+						fn(x - 1);
+					}
+				};
+				let wrapper = fn() {
+					countDown(1);
+				};
+				wrapper();
+			`,
+			expected: 0,
+		},
+		{
+			input: `
+				let wrapper = fn() {
+					let countDown = fn(x) {
+						if (x == 0) {
+							return 0;
+						} else {
+							fn(x - 1);
+						}
+					};
+					countDown(1);
+				};
+				wrapper();
+			`,
+			expected: 0,
+		},
+	}
+
+	runMonkeyCompatibleTest(t, tests)
+}

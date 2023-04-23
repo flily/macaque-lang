@@ -541,6 +541,20 @@ func TestFunctionLiteral(t *testing.T) {
 			),
 		},
 		{
+			`let do = fn() { };`,
+			program(
+				let(
+					idList("do"),
+					exprList(
+						fn(
+							idList(),
+							block(),
+						),
+					),
+				),
+			),
+		},
+		{
 			`let add = fn(x) { fn(y) { x + y } };`,
 			program(
 				let(
