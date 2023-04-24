@@ -68,11 +68,12 @@ func CodeName(code int) string {
 	return codeNames[code]
 }
 
+// A temporary struct to hold the opcode and operands.
+// It should be replaced by a more efficient type, may be uint64.
 type Opcode struct {
 	Name     int
 	Operand0 int
 	Operand1 int
-	Operand2 int
 }
 
 func Code(name int, ops ...int) Opcode {
@@ -81,10 +82,6 @@ func Code(name int, ops ...int) Opcode {
 	}
 
 	switch len(ops) {
-	case 3:
-		i.Operand2 = ops[2]
-		fallthrough
-
 	case 2:
 		i.Operand1 = ops[1]
 		fallthrough
@@ -98,5 +95,5 @@ func Code(name int, ops ...int) Opcode {
 
 func (i Opcode) String() string {
 	name := CodeName(i.Name)
-	return fmt.Sprintf("%s %d %d %d", name, i.Operand0, i.Operand1, i.Operand2)
+	return fmt.Sprintf("%s %d %d", name, i.Operand0, i.Operand1)
 }
