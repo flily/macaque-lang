@@ -50,6 +50,7 @@ Macaque makes some improvements from Monkey:
     + Reference item key with identifier, like `hash.key`;
     + Use `hash::key()` to call a member function of a object, like this-call, with the object
       itself as the first parameter.
+  - `return` statement can return multiple values.
   - `return` statement will act differently in following situations:
     + In top-level scope, it will return the value as a module for importing.
     + In IF-statements in top-level scope, it will return the value as the result of the out most
@@ -66,6 +67,7 @@ Missing features in Monkey, but not decided to add in Macaque yet:
     + For global variables is harmful, make all variables are local variables may be better.
     + Use naming convention to distinguish local and global variables, variables start with `_` is
       local.
+    + Add module level variables, for imported modules.
   - Make all types object.
     + Use `::function()` to make class-call, like lua.
     + `int` is object, has native methods and can be called on literals, `5::times()` like ruby.
@@ -85,7 +87,6 @@ Missing features in Monkey, but not decided to add in Macaque yet:
       * Use type type like `int`, `string` to represent type.
       * Use string like `"INT"`, `"STRING"` to represent type, like lua.
       * Use type variable like `Int` or `std.Int` to represent type, like Java.
-  - `return` statement can return multiple values.
   - Detect variable redeclaration.
     + May be not a bug. Perhaps the author use let statement to modify variable.
       * But, the code `let a = 1; let a = a + 1;` may crush in compiler but not in interpreter.
