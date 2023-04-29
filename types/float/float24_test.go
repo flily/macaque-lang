@@ -1,6 +1,7 @@
 package float
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -172,6 +173,36 @@ func TestFloat24String(t *testing.T) {
 		f24 := NewFloat24(test.number)
 		if f24.String() != test.expected {
 			t.Errorf("%v.String() = %v, want %v", test.number, f24.String(), test.expected)
+		}
+	}
+}
+
+func TestFloatString(t *testing.T) {
+	tests := []struct {
+		number   float64
+		expected string
+	}{
+		{math.NaN(), "NaN"},
+		{math.Inf(1), "+Inf"},
+		{math.Inf(-1), "-Inf"},
+		{0.0, "0.000000"},
+		{NegativeZero64, "-0.000000"},
+		{1.0, "1.000000"},
+		{99.5, "99.500000"},
+
+		// Cases which lose precision.
+		{3.3, "3.299988"},
+		{99.2, "99.199707"},
+		{9.80665, "9.806641"},
+		{3.1415926, "3.141586"},
+		{299792458, "299792384.000000"},
+		{9.80665, "9.806641"},
+	}
+
+	for _, test := range tests {
+		got := fmt.Sprintf("%f", test.number)
+		if got != test.expected {
+			t.Errorf("%v.String() = %v, want %v", test.number, got, test.expected)
 		}
 	}
 }
