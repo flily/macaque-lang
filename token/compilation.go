@@ -1,22 +1,22 @@
-package errors
+package token
 
 import (
 	"strings"
 )
 
 var (
-	ErrCompilationError = NewRawError(ErrCodeCompilationError, "compilation error")
+	ErrCompilationError = NewPositionError(ErrCodeCompilationError, "compilation error")
 )
 
 type CompilationError struct {
-	BaseError
+	PositionError
 	Info []string
 }
 
 func NewCompilationError(context *CodeContext, format string, args ...interface{}) *CompilationError {
 	base := ErrCompilationError.Derive(format, args...).WithContext(context)
 	e := &CompilationError{
-		BaseError: *base,
+		PositionError: *base,
 	}
 
 	return e

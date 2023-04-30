@@ -2,9 +2,6 @@ package token
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/flily/macaque-lang/errors"
 )
 
 type FileInfo struct {
@@ -86,8 +83,8 @@ func (t *TokenInfo) String() string {
 	)
 }
 
-func (t *TokenInfo) MakeContext() *errors.CodeContext {
-	ctx := &errors.CodeContext{
+func (t *TokenInfo) MakeContext() *CodeContext {
+	ctx := &CodeContext{
 		Filename:  t.Line.File.Filename,
 		NumLine:   t.GetLineNumber(),
 		NumColumn: t.GetColumnNumber(),
@@ -98,38 +95,10 @@ func (t *TokenInfo) MakeContext() *errors.CodeContext {
 	return ctx
 }
 
-func (t *TokenInfo) GetLeadingSpaces(index int) string {
-	line := t.Line.Content
-	spaces := make([]byte, 0, index)
-
-	for i := 0; i < index; i++ {
-		switch line[i] {
-		case '\t', '\v', '\f':
-			spaces = append(spaces, line[i])
-		default:
-			spaces = append(spaces, ' ')
-		}
-	}
-
-	return string(spaces)
-}
-
 func (t *TokenInfo) MakeLineHighlight() string {
-	leadingSpaces := t.GetLeadingSpaces(t.Column - 1)
-	highlight := leadingSpaces + strings.Repeat("^", t.Length)
-
-	return t.Line.Content + "\n" + highlight
+	return t.MakeContext().MakeLineHighlight()
 }
 
 func (t *TokenInfo) MakeMessage(format string, args ...interface{}) string {
-	leadingSpaces := t.GetLeadingSpaces(t.Column - 1)
-	highlight := leadingSpaces + strings.Repeat("^", t.Length)
-	lines := []string{
-		t.Line.Content,
-		highlight,
-		leadingSpaces + fmt.Sprintf(format, args...),
-		fmt.Sprintf("  at %s:%d:%d", t.Line.File.Filename, t.Line.Line, t.Column),
-	}
-
-	return strings.Join(lines, "\n")
+	return t.MakeContext().MakeMessage(format, args...)
 }

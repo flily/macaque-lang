@@ -1,7 +1,6 @@
 package lex
 
 import (
-	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -102,9 +101,9 @@ func (s *RecursiveScanner) EOF() bool {
 	return s.index >= len(s.source)
 }
 
-func (s *RecursiveScanner) makeCurrentCodeContext(length int) *errors.CodeContext {
+func (s *RecursiveScanner) makeCurrentCodeContext(length int) *token.CodeContext {
 	line := s.FileInfo.Lines[s.line-1]
-	ctx := &errors.CodeContext{
+	ctx := &token.CodeContext{
 		Filename:  s.FileInfo.Filename,
 		Line:      line.Content,
 		NumLine:   s.line,

@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"github.com/flily/macaque-lang/ast"
-	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
 )
@@ -101,7 +100,7 @@ CompileSwitch:
 		p := c.compileIdentifierReference(n.Value, r)
 		if p <= 0 {
 			ctx := n.Position.MakeContext()
-			e = errors.NewSyntaxError(ctx, "variable %s undefined", n.Value)
+			e = token.NewSyntaxError(ctx, "variable %s undefined", n.Value)
 			break CompileSwitch
 		}
 

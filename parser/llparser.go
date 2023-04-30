@@ -2,7 +2,6 @@ package parser
 
 import (
 	"github.com/flily/macaque-lang/ast"
-	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/token"
 )
@@ -119,7 +118,7 @@ func (p *LLParser) skipComment() {
 	}
 }
 
-func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *errors.SyntaxError {
+func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxError {
 	current := p.container.Current()
 	ctx := current.Position.MakeContext()
 	return ctx.NewSyntaxError(format, args...)
