@@ -6,6 +6,8 @@ type FileReader struct {
 	Line     int
 	Column   int
 	Index    int
+
+	start int
 }
 
 func NewFileReader(filename string) *FileReader {
@@ -51,8 +53,14 @@ func (r *FileReader) Shift(count int) {
 	}
 }
 
-func (r *FileReader) FinishToken(token Token, length int) *TokenContext {
-	start := r.Index - length
+func (r *FileReader) StartToken() int {
+	r.start = r.Index
+	return r.start
+}
+
+func (r *FileReader) FinishToken(token Token) *TokenContext {
+	start := r.start
+	length := r.Index - r.start
 	content := string(r.Source[start:r.Index])
 	lineInfo := r.FileInfo.Lines[r.Line-1]
 	tokenInfo := lineInfo.NewToken(r.Column-length, length, content)

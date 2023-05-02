@@ -28,7 +28,7 @@ func (s *SimpleTokenizer) skipSpace() {
 func (s *SimpleTokenizer) ScanToken() *TokenContext {
 	s.skipSpace()
 
-	start := s.Index
+	s.StartToken()
 	for !s.EOF() {
 		c := s.Current()
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
@@ -38,7 +38,7 @@ func (s *SimpleTokenizer) ScanToken() *TokenContext {
 		s.Shift(1)
 	}
 
-	t := s.FinishToken(String, start)
+	t := s.FinishToken(String)
 	return t
 }
 

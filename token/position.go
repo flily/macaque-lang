@@ -4,11 +4,13 @@ import (
 	"fmt"
 )
 
+// FileInfo is the root node of all positions.
 type FileInfo struct {
 	Filename string
 	Lines    []*LineInfo
 }
 
+// LineInfo holds the information of a line, and tokens in this line.
 type LineInfo struct {
 	Line    int
 	Content string
@@ -16,6 +18,8 @@ type LineInfo struct {
 	Tokens  []*TokenInfo
 }
 
+// TokenInfo represents a token in source file, it can be a lexical token parsed
+// by lexer or parser, or an invalid token which is not accepted by lexer.
 type TokenInfo struct {
 	Column  int
 	Length  int
@@ -44,9 +48,9 @@ func (f *FileInfo) NewLine(content string) *LineInfo {
 	return info
 }
 
-func (l *LineInfo) NewToken(start int, length int, content string) *TokenInfo {
+func (l *LineInfo) NewToken(startColumn int, length int, content string) *TokenInfo {
 	info := &TokenInfo{
-		Column:  start,
+		Column:  startColumn,
 		Length:  length,
 		Content: content,
 		Line:    l,
