@@ -18,7 +18,7 @@ func (s *SimpleTokenizer) skipSpace() {
 		c := s.Current()
 		switch c {
 		case ' ', '\t', '\n', '\r':
-			s.Shift()
+			s.Shift(1)
 		default:
 			return
 		}
@@ -35,7 +35,7 @@ func (s *SimpleTokenizer) ScanToken() *TokenContext {
 			break
 		}
 
-		s.Shift()
+		s.Shift(1)
 	}
 
 	t := s.FinishToken(String, start)

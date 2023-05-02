@@ -35,13 +35,19 @@ func (r *FileReader) Current() byte {
 	return r.Source[r.Index]
 }
 
-func (r *FileReader) Shift() {
+func (r *FileReader) shiftChar() {
 	c := r.Current()
 	r.Index++
 	r.Column++
 	if c == '\n' {
 		r.Line++
 		r.Column = 1
+	}
+}
+
+func (r *FileReader) Shift(count int) {
+	for i := 0; i < count; i++ {
+		r.shiftChar()
 	}
 }
 
