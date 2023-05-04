@@ -27,32 +27,13 @@ func NewRecursiveScanner(filename string) *RecursiveScanner {
 	return s
 }
 
-func (s *RecursiveScanner) splitToLines(data []byte) []string {
-	lines := make([]string, 0)
-	start := 0
-	for i := 0; i < len(data); i++ {
-		if data[i] == '\n' {
-			line := string(data[start:i])
-			start = i + 1
-			lines = append(lines, line)
-		}
-	}
-
-	if start <= len(data) {
-		line := string(data[start:])
-		lines = append(lines, line)
-	}
-
-	return lines
-}
-
 func (s *RecursiveScanner) SetContent(data []byte) error {
 	if s.source != nil {
 		return ErrScannerHasContentAlready
 	}
 
 	s.source = data
-	lines := s.splitToLines(data)
+	lines := token.SplitToLines(data)
 	for _, line := range lines {
 		s.FileInfo.NewLine(line)
 	}
@@ -66,7 +47,7 @@ func (s *RecursiveScanner) ReadContentSlice(start int) string {
 
 func (s *RecursiveScanner) Append(data []byte) {
 	// FIXME: lines count is wrong
-	lines := s.splitToLines(data)
+	lines := token.SplitToLines(data)
 	for _, line := range lines {
 		s.FileInfo.NewLine(line)
 	}
