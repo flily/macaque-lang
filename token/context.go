@@ -58,7 +58,7 @@ func (c *Context) makeLineTokenMap() [][]*TokenContext {
 	return result
 }
 
-func (c *Context) makeSeperatedLineHighlight(content string, tokens []*TokenContext) (string, string) {
+func (c *Context) makeLineHighlight(content string, tokens []*TokenContext) (string, string) {
 	parts := make([]string, 0)
 	last := 1
 	lead := ""
@@ -84,7 +84,7 @@ func (c *Context) HighLight() string {
 	for i, tokens := range lineTokens {
 		first := tokens[0]
 		content := first.Position.Line.Content
-		highlight, _ := c.makeSeperatedLineHighlight(content, tokens)
+		highlight, _ := c.makeLineHighlight(content, tokens)
 		results[2*i] = content
 		results[2*i+1] = highlight
 	}
@@ -100,7 +100,7 @@ func (c *Context) Message(format string, args ...interface{}) string {
 	for i, tokens := range lineTokens {
 		first := tokens[0]
 		content := first.Position.Line.Content
-		highlight, l := c.makeSeperatedLineHighlight(content, tokens)
+		highlight, l := c.makeLineHighlight(content, tokens)
 		lead = l
 		results[2*i] = content
 		results[2*i+1] = highlight
