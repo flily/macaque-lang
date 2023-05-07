@@ -27,7 +27,6 @@ Principles to design:
   - Only add necessary keywords.
   - Main purpose is to be a lightweight scripting language.
   - Try to add some modern features without too big changes.
-  - Bad design in original Monkey language SHOULD be kept if it is well defined.
 
 Macaque makes some improvements from Monkey:
   - Add `null` type and keyword.
@@ -46,6 +45,7 @@ Macaque makes some improvements from Monkey:
     + add `&`, `|` and `^` for bitwise AND, OR and XOR.
   - Add one-line comments, leading with `//`.
   - Recursive call in closure by call `fn(a, b, c)` without function body.
+    + Recursive call with function name is deprecated, because the original design makes bugs.
   - Add support for object-like use of hash, with following features:
     + Reference item key with identifier, like `hash.key`;
     + Use `hash::key()` to call a member function of a object, like this-call, with the object
