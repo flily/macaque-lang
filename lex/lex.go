@@ -9,12 +9,6 @@ var (
 	ErrScannerHasContentAlready = errors.NewError(token.ErrScannerError, "scanner has content already")
 )
 
-type LexicalElement struct {
-	Token    token.Token
-	Content  string
-	Position *token.TokenInfo
-}
-
 type Scanner interface {
-	Scan() (*LexicalElement, error)
+	Scan() (*token.TokenContext, error)
 }

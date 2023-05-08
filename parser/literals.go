@@ -2,7 +2,6 @@ package parser
 
 import (
 	"github.com/flily/macaque-lang/ast"
-	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -11,7 +10,7 @@ const (
 	BooleanFalse = token.False
 )
 
-func newInteger(token *lex.LexicalElement) *ast.IntegerLiteral {
+func newInteger(token *token.TokenContext) *ast.IntegerLiteral {
 	content := token.Content
 
 	literal := &ast.IntegerLiteral{
@@ -23,7 +22,7 @@ func newInteger(token *lex.LexicalElement) *ast.IntegerLiteral {
 	return literal
 }
 
-func newFloat(token *lex.LexicalElement) *ast.FloatLiteral {
+func newFloat(token *token.TokenContext) *ast.FloatLiteral {
 	content := token.Content
 
 	literal := &ast.FloatLiteral{
@@ -45,11 +44,11 @@ func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
 	return literal
 }
 
-func newString(token *lex.LexicalElement) *ast.StringLiteral {
+func newString(token *token.TokenContext) *ast.StringLiteral {
 	return makeString(token.Content, token.Position)
 }
 
-func newNull(token *lex.LexicalElement) *ast.NullLiteral {
+func newNull(token *token.TokenContext) *ast.NullLiteral {
 	literal := &ast.NullLiteral{
 		Position: token.Position,
 	}
@@ -57,7 +56,7 @@ func newNull(token *lex.LexicalElement) *ast.NullLiteral {
 	return literal
 }
 
-func newBoolean(token *lex.LexicalElement) *ast.BooleanLiteral {
+func newBoolean(token *token.TokenContext) *ast.BooleanLiteral {
 	literal := &ast.BooleanLiteral{
 		Value:    token.Token == BooleanTrue,
 		Position: token.Position,

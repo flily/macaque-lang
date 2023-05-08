@@ -76,7 +76,7 @@ func (p *LLParser) expect(token token.Token, rule string) error {
 	return nil
 }
 
-func (p *LLParser) current() *lex.LexicalElement {
+func (p *LLParser) current() *token.TokenContext {
 	return p.container.Current()
 }
 
@@ -94,7 +94,7 @@ func (p *LLParser) DebugLine() string {
 // 	return p.container.Peek(offset)
 // }
 
-func (p *LLParser) nextToken() *lex.LexicalElement {
+func (p *LLParser) nextToken() *token.TokenContext {
 	return p.container.Next()
 }
 

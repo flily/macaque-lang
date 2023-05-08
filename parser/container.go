@@ -6,7 +6,7 @@ import (
 )
 
 type CodeContainer struct {
-	Elements []*lex.LexicalElement
+	Elements []*token.TokenContext
 	Index    int
 
 	scanner lex.Scanner
@@ -14,7 +14,7 @@ type CodeContainer struct {
 
 func NewContainer(scanner lex.Scanner) *CodeContainer {
 	c := &CodeContainer{
-		Elements: make([]*lex.LexicalElement, 0),
+		Elements: make([]*token.TokenContext, 0),
 		scanner:  scanner,
 	}
 
@@ -25,7 +25,7 @@ func (c *CodeContainer) ReadTokens() error {
 	var err error
 
 	for {
-		var elem *lex.LexicalElement
+		var elem *token.TokenContext
 		elem, err = c.scanner.Scan()
 		if err != nil {
 			break
@@ -40,11 +40,11 @@ func (c *CodeContainer) ReadTokens() error {
 	return err
 }
 
-func (c *CodeContainer) current() *lex.LexicalElement {
+func (c *CodeContainer) current() *token.TokenContext {
 	return c.Elements[c.Index]
 }
 
-func (c *CodeContainer) Current() *lex.LexicalElement {
+func (c *CodeContainer) Current() *token.TokenContext {
 	if c.Index < len(c.Elements) {
 		return c.current()
 	}
@@ -52,7 +52,7 @@ func (c *CodeContainer) Current() *lex.LexicalElement {
 	return nil
 }
 
-func (c *CodeContainer) Peek(offset int) *lex.LexicalElement {
+func (c *CodeContainer) Peek(offset int) *token.TokenContext {
 	index := c.Index + offset
 	if 0 < index && index < len(c.Elements) {
 		return c.Elements[index]
@@ -61,7 +61,7 @@ func (c *CodeContainer) Peek(offset int) *lex.LexicalElement {
 	return nil
 }
 
-func (c *CodeContainer) Next() *lex.LexicalElement {
+func (c *CodeContainer) Next() *token.TokenContext {
 	if c.Index < len(c.Elements) {
 		c.Index++
 	}

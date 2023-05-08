@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/flily/macaque-lang/lex"
+	"github.com/flily/macaque-lang/token"
 )
 
 func LexicalAnalysis(filename string) {
@@ -22,7 +23,7 @@ func LexicalAnalysis(filename string) {
 	scanner := lex.NewRecursiveScanner(filename)
 	_ = scanner.SetContent(code)
 
-	elementList := make([]*lex.LexicalElement, 0)
+	elementList := make([]*token.TokenContext, 0)
 	for {
 		elem, err := scanner.Scan()
 		if err != nil {

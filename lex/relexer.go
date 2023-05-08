@@ -70,7 +70,7 @@ func (s *RecursiveScanner) makeEOFPosition() *token.TokenInfo {
 	return s.FileInfo.Lines[s.line-1].NewToken(column, length, "")
 }
 
-func (s *RecursiveScanner) Scan() (*LexicalElement, error) {
+func (s *RecursiveScanner) Scan() (*token.TokenContext, error) {
 	return s.scanStateInit()
 }
 
@@ -157,8 +157,8 @@ func (s *RecursiveScanner) peek(content string) bool {
 	return true
 }
 
-func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
-	var elem *LexicalElement
+func (s *RecursiveScanner) scanStateInit() (*token.TokenContext, error) {
+	var elem *token.TokenContext
 	var err error
 
 	s.skipWhitespace()
@@ -184,7 +184,7 @@ func (s *RecursiveScanner) scanStateInit() (*LexicalElement, error) {
 	return elem, err
 }
 
-func (s *RecursiveScanner) scanElementNumber() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementNumber() (*token.TokenContext, error) {
 	if s.peek("0x") {
 		return s.scanElementHexdecimal()
 	}
@@ -192,7 +192,7 @@ func (s *RecursiveScanner) scanElementNumber() (*LexicalElement, error) {
 	return s.scanElementDecimal()
 }
 
-func (s *RecursiveScanner) scanElementHexdecimal() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementHexdecimal() (*token.TokenContext, error) {
 	start := s.index
 	// ensure the first two characters are "0x"
 	s.shift(2)
@@ -208,7 +208,7 @@ func (s *RecursiveScanner) scanElementHexdecimal() (*LexicalElement, error) {
 	}
 
 	content := s.ReadContentSlice(start)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    token.Integer,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -217,7 +217,7 @@ func (s *RecursiveScanner) scanElementHexdecimal() (*LexicalElement, error) {
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scanElementDecimal() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementDecimal() (*token.TokenContext, error) {
 	start := s.index
 	for !s.EOF() {
 		c := s.currentChar()
@@ -235,7 +235,7 @@ func (s *RecursiveScanner) scanElementDecimal() (*LexicalElement, error) {
 	}
 
 	content := s.ReadContentSlice(start)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    token.Integer,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -243,7 +243,7 @@ func (s *RecursiveScanner) scanElementDecimal() (*LexicalElement, error) {
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scanElementFloat(start int) (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementFloat(start int) (*token.TokenContext, error) {
 	for !s.EOF() {
 		c := s.currentChar()
 		if IsDigit(c) || c == '_' {
@@ -255,7 +255,7 @@ func (s *RecursiveScanner) scanElementFloat(start int) (*LexicalElement, error) 
 	}
 
 	content := s.ReadContentSlice(start)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    token.Float,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -263,7 +263,7 @@ func (s *RecursiveScanner) scanElementFloat(start int) (*LexicalElement, error) 
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*token.TokenContext, error) {
 	start := s.index
 	for !s.EOF() {
 		c := s.currentChar()
@@ -278,7 +278,7 @@ func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, er
 	content := s.ReadContentSlice(start)
 	tokenType := token.CheckKeywordToken(content)
 
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    tokenType,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -287,7 +287,7 @@ func (s *RecursiveScanner) scanElementIdentifierOrKeyword() (*LexicalElement, er
 	return elem, nil
 }
 
-func (s *RecursiveScanner) scanStateString() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanStateString() (*token.TokenContext, error) {
 	start := s.index
 	s.shift(1) // include the first '"'
 
@@ -336,7 +336,7 @@ StringLoop:
 	}
 
 	content := s.ReadContentSlice(start)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    token.String,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -345,13 +345,13 @@ StringLoop:
 	return elem, nil
 }
 
-func (s *RecursiveScanner) makeForwardLexicalElement(length int) *LexicalElement {
+func (s *RecursiveScanner) makeForwardLexicalElement(length int) *token.TokenContext {
 	start := s.index
 	s.shift(length)
 
 	content := s.ReadContentSlice(start)
 	tokenType := token.CheckOperatorToken(content)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    tokenType,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -360,7 +360,7 @@ func (s *RecursiveScanner) makeForwardLexicalElement(length int) *LexicalElement
 	return elem
 }
 
-func (s *RecursiveScanner) tryScanPunctuations(ps ...string) *LexicalElement {
+func (s *RecursiveScanner) tryScanPunctuations(ps ...string) *token.TokenContext {
 	for _, p := range ps {
 		if s.peek(p) {
 			return s.makeForwardLexicalElement(len(p))
@@ -378,8 +378,8 @@ var multiBytesPunctutations = []string{
 	token.SDualColon, token.SColon,
 }
 
-func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {
-	var elem *LexicalElement
+func (s *RecursiveScanner) scanStatePunctuation() (*token.TokenContext, error) {
+	var elem *token.TokenContext
 	var err error
 
 	if s.peek("//") {
@@ -404,7 +404,7 @@ func (s *RecursiveScanner) scanStatePunctuation() (*LexicalElement, error) {
 	return elem, err
 }
 
-func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
+func (s *RecursiveScanner) scanStateComment() (*token.TokenContext, error) {
 	start := s.index
 	s.shift(2) // shift the first '//'
 
@@ -418,7 +418,7 @@ func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
 	}
 
 	content := s.ReadContentSlice(start)
-	elem := &LexicalElement{
+	elem := &token.TokenContext{
 		Token:    token.Comment,
 		Content:  content,
 		Position: s.makeCurrentPosition(content),
@@ -427,8 +427,8 @@ func (s *RecursiveScanner) scanStateComment() (*LexicalElement, error) {
 	return elem, nil
 }
 
-func (s *RecursiveScanner) ScanEOF() *LexicalElement {
-	elem := &LexicalElement{
+func (s *RecursiveScanner) ScanEOF() *token.TokenContext {
+	elem := &token.TokenContext{
 		Token:    token.EOF,
 		Position: s.makeEOFPosition(),
 	}
