@@ -21,7 +21,7 @@ func LexicalAnalysis(filename string) {
 	}
 
 	scanner := lex.NewRecursiveScanner(filename)
-	_ = scanner.SetContent(code)
+	scanner.SetContent(code)
 
 	elementList := make([]*token.TokenContext, 0)
 	for {

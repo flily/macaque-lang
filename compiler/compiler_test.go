@@ -48,7 +48,7 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
 	t.Helper()
 
 	scanner := lex.NewRecursiveScanner("testcase")
-	_ = scanner.SetContent([]byte(code))
+	scanner.SetContent([]byte(code))
 	parser := parser.NewLLParser(scanner)
 	err := parser.ReadTokens()
 	if err != nil {

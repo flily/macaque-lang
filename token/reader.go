@@ -37,6 +37,29 @@ func (r *FileReader) Current() byte {
 	return r.Source[r.Index]
 }
 
+func (r *FileReader) PeekChar(offset int) byte {
+	return r.Source[r.Index+offset]
+}
+
+func (r *FileReader) Peek(content string) bool {
+	length := len(content)
+	if r.Index+length > len(r.Source) {
+		return false
+	}
+
+	for i := 0; i < length; i++ {
+		if r.Source[r.Index+i] != content[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (r *FileReader) CharsLeft() int {
+	return len(r.Source) - r.Index
+}
+
 func (r *FileReader) shiftChar() {
 	c := r.Current()
 	r.Index++
@@ -67,6 +90,22 @@ func (r *FileReader) FinishToken(token Token) *TokenContext {
 
 	context := &TokenContext{
 		Token:    token,
+		Position: tokenInfo,
+		Content:  content,
+	}
+
+	return context
+}
+
+// Reject token starts from current position
+func (r *FileReader) RejectToken(length int) *TokenContext {
+	start := r.Index
+	content := string(r.Source[start : start+length])
+	lineInfo := r.FileInfo.Lines[r.Line-1]
+	tokenInfo := lineInfo.NewToken(r.Column, length, content)
+
+	context := &TokenContext{
+		Token:    Illegal,
 		Position: tokenInfo,
 		Content:  content,
 	}

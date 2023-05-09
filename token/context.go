@@ -31,6 +31,10 @@ func (c *TokenContext) ColumnEnd() int {
 	return c.Position.Column + c.Position.Length
 }
 
+func (c *TokenContext) NewSyntaxError(format string, args ...interface{}) *SyntaxNError {
+	return MakeSyntaxError(c, format, args...)
+}
+
 type Context struct {
 	Tokens []*TokenContext
 }

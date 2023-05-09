@@ -46,26 +46,14 @@ func TestRelexerSetContent(t *testing.T) {
 	0xdeadbeef`
 
 	lex := NewRecursiveScanner("testcase")
-	err := lex.SetContent([]byte(code))
-	if err != nil {
-		t.Fatalf("SetContent() failed: %v", err)
-	}
+	lex.SetContent([]byte(code))
 
-	if lex.source == nil {
+	if lex.Source == nil {
 		t.Fatal("lex.source is nil")
 	}
 
 	if len(lex.FileInfo.Lines) != 3 {
 		t.Fatalf("len(lex.FileInfo.Lines) is %d, expected %d", len(lex.FileInfo.Lines), 3)
-	}
-
-	err = lex.SetContent([]byte(code))
-	if err == nil {
-		t.Fatal("SetContent() twice should fail")
-	}
-
-	if err != ErrScannerHasContentAlready {
-		t.Errorf("SetContent() twice should return ErrScannerHasContentAlready, got: %v", err)
 	}
 }
 
@@ -75,7 +63,7 @@ func TestScanNumber(t *testing.T) {
 		0xdeadbeef  `
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.Integer, "42", 1, 1},
@@ -92,7 +80,7 @@ func TestReadEOF(t *testing.T) {
 		0xdeadbeef  `
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.Integer, "42", 1, 1},
@@ -119,7 +107,7 @@ func TestReadTokenAtTheEnd(t *testing.T) {
 		0xdeadbeef`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.Integer, "42", 1, 1},
@@ -137,7 +125,7 @@ func TestScanIdentifierAndKeyworkd(t *testing.T) {
 	`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.Identifier, "foobar", 1, 1},
@@ -152,18 +140,18 @@ func TestScanIdentifierAndKeyworkd(t *testing.T) {
 	checkTokenScan(t, lex, expected)
 }
 
-func TestScannerAppend(t *testing.T) {
-	lex := NewRecursiveScanner("testcase")
-	lex.Append([]byte("foobar"))
-	lex.Append([]byte("  42"))
+// func TestScannerAppend(t *testing.T) {
+// 	lex := NewRecursiveScanner("testcase")
+// 	lex.Append([]byte("foobar"))
+// 	lex.Append([]byte("  42"))
 
-	expected := []expectedTokenInfo{
-		{token.Identifier, "foobar", 1, 1},
-		{token.Integer, "42", 2, 3},
-	}
+// 	expected := []expectedTokenInfo{
+// 		{token.Identifier, "foobar", 1, 1},
+// 		{token.Integer, "42", 2, 3},
+// 	}
 
-	checkTokenScan(t, lex, expected)
-}
+// 	checkTokenScan(t, lex, expected)
+// }
 
 func TestScanStrings(t *testing.T) {
 	code := ` "foobar"
@@ -178,7 +166,7 @@ func TestScanStrings(t *testing.T) {
 	}
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	checkTokenScan(t, lex, expected)
 }
@@ -187,7 +175,7 @@ func TestScanStringErrorOnInvalidHexdecimalEscape(t *testing.T) {
 	code := `"foo\x2"`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
 	if elem != nil {
@@ -214,7 +202,7 @@ func TestScanStringErrorOnInvalidEscape(t *testing.T) {
 	code := `"foo\z"`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
 	if elem != nil {
@@ -241,7 +229,7 @@ func TestStringEscapeAtTheEnd1(t *testing.T) {
 	code := `"the quick brown fox\`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
 	if elem != nil {
@@ -268,7 +256,7 @@ func TestStringEscapeAtTheEnd2(t *testing.T) {
 	code := `"the quick brown fox\x2`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
 	if elem != nil {
@@ -297,7 +285,7 @@ func TestScanPunctuations(t *testing.T) {
 	/-*+`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.LParen, "(", 1, 1},
@@ -329,7 +317,7 @@ func TestScanPunctuationError(t *testing.T) {
 	code := ` =#`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem1, err := lex.Scan()
 	if elem1 == nil || err != nil {
@@ -362,7 +350,7 @@ func TestScanComment(t *testing.T) {
 	+`
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	expected := []expectedTokenInfo{
 		{token.Identifier, "foorbar", 1, 1},
@@ -380,7 +368,7 @@ func TestEOFHighlight(t *testing.T) {
 	}, "\n")
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	elem, err := lex.Scan()
 	if elem == nil || err != nil {
@@ -394,7 +382,7 @@ func TestEOFHighlight(t *testing.T) {
 
 	elem, err = lex.Scan()
 	if elem == nil || err != nil {
-		t.Fatalf("Scan() should return a EOF element, but gotelem=%v err=%v", elem, err)
+		t.Fatalf("Scan() should return a EOF element, but got elem=%v err=%v", elem, err)
 	}
 
 	highlight := elem.Position.MakeLineHighlight()
@@ -412,7 +400,7 @@ func TestSplitLines(t *testing.T) {
 	code := "foo\nbar\n"
 
 	lex := NewRecursiveScanner("testcase")
-	_ = lex.SetContent([]byte(code))
+	lex.SetContent([]byte(code))
 
 	if len(lex.FileInfo.Lines) != 3 {
 		t.Fatalf("got wrong number of lines, got: %d", len(lex.FileInfo.Lines))

@@ -36,7 +36,7 @@ func execFile(filename string) {
 	content := readFile(filename)
 
 	scanner := lex.NewRecursiveScanner(filename)
-	_ = scanner.SetContent(content)
+	scanner.SetContent(content)
 	parser := parser.NewLLParser(scanner)
 	err := parser.ReadTokens()
 	if err != nil {

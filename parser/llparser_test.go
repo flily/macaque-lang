@@ -11,7 +11,7 @@ import (
 
 func testLLParseCode(code string) (*ast.Program, error) {
 	scanner := lex.NewRecursiveScanner("testcase")
-	_ = scanner.SetContent([]byte(code))
+	scanner.SetContent([]byte(code))
 
 	parser := NewLLParser(scanner)
 	if err := parser.ReadTokens(); err != nil {
