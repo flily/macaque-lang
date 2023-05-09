@@ -33,6 +33,8 @@ func (s *SimpleTokenizer) ScanToken() *TokenContext {
 		c := s.Current()
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
 			break
+		} else if c == '~' {
+			return s.RejectToken(1)
 		}
 
 		s.Shift(1)
@@ -47,6 +49,9 @@ func (s *SimpleTokenizer) TokenList() []*TokenContext {
 	for !s.EOF() {
 		token := s.ScanToken()
 		tokens = append(tokens, token)
+		if token.Token == Illegal {
+			break
+		}
 	}
 
 	return tokens
