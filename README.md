@@ -29,6 +29,7 @@ Principles to design:
   - Try to add some modern features without too big changes.
 
 Macaque makes some improvements from Monkey:
+  - More human readable error messages.
   - Add `null` type and keyword.
   - Add `float` type for calculation.
   - Add `import` statement, to write more complex program with multiple modules files.
