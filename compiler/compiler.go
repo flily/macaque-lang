@@ -68,17 +68,17 @@ CompileSwitch:
 
 	case *ast.ArrayLiteral:
 		f := flag
-		if len(n.Elements) > 1 {
+		if n.Length() > 1 {
 			f |= FlagPackValue
 		}
 
-		for _, expr := range n.Elements {
-			if e = r.Append(c.compileCode(expr, uint64(f))); e != nil {
+		for _, expr := range n.Expressions.Expressions {
+			if e = r.Append(c.compileCode(expr.Expression, uint64(f))); e != nil {
 				break CompileSwitch
 			}
 		}
 
-		r.Write(opcode.IMakeList, len(n.Elements))
+		r.Write(opcode.IMakeList, n.Length())
 		r.Values = 1
 
 	case *ast.HashLiteral:
@@ -99,8 +99,8 @@ CompileSwitch:
 	case *ast.Identifier:
 		p := c.compileIdentifierReference(n.Value, r)
 		if p <= 0 {
-			ctx := n.Position.MakeContext()
-			e = token.NewSyntaxError(ctx, "variable %s undefined", n.Value)
+			ctx := n.GetContext()
+			e = token.MakeSyntaxError(ctx.Tokens[0], "variable %s undefined", n.Value)
 			break CompileSwitch
 		}
 
@@ -119,7 +119,7 @@ CompileSwitch:
 		}
 
 		for _, expr := range n.Expressions {
-			if e = r.Append(c.compileCode(expr, f)); e != nil {
+			if e = r.Append(c.compileCode(expr.Expression, f)); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -138,7 +138,7 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IBinOp, int(n.Operator))
+		r.Write(opcode.IBinOp, int(n.Operator.Token))
 		r.Values = 1
 
 	case *ast.PrefixExpression:
@@ -146,7 +146,7 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IUniOp, int(n.PrefixOperator))
+		r.Write(opcode.IUniOp, int(n.Prefix.Token))
 		r.Values = 1
 
 	case *ast.IfExpression:
@@ -166,14 +166,15 @@ CompileSwitch:
 
 	case *ast.LetStatement:
 		index := make([]int, n.Identifiers.Length())
-		for i, v := range n.Identifiers.Identifiers {
-			j, ok := c.Context.Variable.DefineVariable(v.Value, v.Position)
+		for i, item := range n.Identifiers.Identifiers {
+			v := item.Identifier
+			j, ok := c.Context.Variable.DefineVariable(v.Value, v.Context)
 			if !ok {
 				ctx1, _ := c.Context.Variable.Reference(v.Value)
-				ctx2 := v.Position.MakeContext()
+				ctx2 := v.Context.Tokens[0]
 
 				e = ctx2.NewCompilationError("variable %s redeclared", v.Value).
-					WithInfo(ctx1.Position.MakeContext(),
+					WithInfo(ctx1.Context.Tokens[0],
 						"variable %s is already declared here", v.Value)
 
 				break CompileSwitch
@@ -318,8 +319,8 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	result := NewCompileResult()
 	c.Context.Variable.EnterScope(FrameScopeFunction)
 
-	for _, arg := range f.Arguments.Identifiers {
-		c.Context.Variable.DefineArgument(arg.Value, arg.Position)
+	for _, item := range f.Arguments.Identifiers {
+		c.Context.Variable.DefineArgument(item.Identifier.Value, item.Identifier.GetContext())
 	}
 
 	r, e := c.compileStatements(f.Body.Statements, true)
@@ -356,22 +357,22 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 	l := expr.Args.Length()
 	for i := 0; i < l; i++ {
 		a := expr.Args.Expressions[l-i-1]
-		if e := args.Append(c.compileCode(a, FlagNone|FlagPackValue)); e != nil {
+		if e := args.Append(c.compileCode(a.Expression, FlagNone|FlagPackValue)); e != nil {
 			return nil, e
 		}
 	}
 	result.AppendCode(args)
 
-	switch expr.Token {
-	case token.LParen:
-		callable, err := c.compileCode(expr.Callable, flag)
+	switch expr.Token.GetToken() {
+	case token.Nil:
+		callable, err := c.compileCode(expr.Base, flag)
 		if err != nil {
 			return nil, err
 		}
 		result.AppendCode(callable)
 
 	case token.DualColon:
-		callable, err := c.compileCode(expr.Callable, flag)
+		callable, err := c.compileCode(expr.Base, flag)
 		if err != nil {
 			return nil, err
 		}
@@ -401,7 +402,7 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*CompileRe
 
 	var index *CompileResult
 
-	if expr.Operator == token.LBracket {
+	if expr.Operator.Token == token.LBracket {
 		index, err = c.compileCode(expr.Index, FlagNone|FlagPackValue)
 		if err != nil {
 			return nil, err

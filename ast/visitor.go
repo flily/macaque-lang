@@ -50,10 +50,10 @@ func doWalk(node Node, v Visitor) {
 		walkOnStatements(n.Statements, v)
 
 	case *Identifier, *IntegerLiteral, *FloatLiteral, *StringLiteral, *BooleanLiteral, *NullLiteral:
-	// do nothing, node has already sent to visitor
+		// do nothing, node has already sent to visitor
 
 	case *ArrayLiteral:
-		walkOnExpressions(n.Elements, v)
+		walkOnExpressions(n.Expressions, v)
 
 	case *HashLiteral:
 		for _, pair := range n.Pairs {
@@ -63,12 +63,12 @@ func doWalk(node Node, v Visitor) {
 
 	case *ExpressionList:
 		for _, expr := range n.Expressions {
-			doWalk(expr, v)
+			doWalk(expr.Expression, v)
 		}
 
 	case *IdentifierList:
 		for _, id := range n.Identifiers {
-			doWalk(id, v)
+			doWalk(id.Identifier, v)
 		}
 
 	case *PrefixExpression:
@@ -83,7 +83,7 @@ func doWalk(node Node, v Visitor) {
 		doWalk(n.Index, v)
 
 	case *CallExpression:
-		doWalk(n.Callable, v)
+		doWalk(n.Base, v)
 		doWalk(n.Member, v) // it is safe to call doWalk with nil
 		doWalk(n.Args, v)
 
@@ -113,9 +113,9 @@ func doWalk(node Node, v Visitor) {
 	}
 }
 
-func walkOnExpressions(list []Expression, v Visitor) {
-	for _, expr := range list {
-		doWalk(expr, v)
+func walkOnExpressions(list *ExpressionList, v Visitor) {
+	for _, expr := range list.Expressions {
+		doWalk(expr.Expression, v)
 	}
 }
 

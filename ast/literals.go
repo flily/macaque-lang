@@ -8,14 +8,14 @@ import (
 )
 
 type Identifier struct {
-	Value    string
-	Position *token.TokenInfo
+	Value   string
+	Context *token.Context
 }
 
-func NewIdentifier(value string, position *token.TokenInfo) *Identifier {
+func NewIdentifier(value string, ctx *token.TokenContext) *Identifier {
 	i := &Identifier{
-		Value:    value,
-		Position: position,
+		Value:   value,
+		Context: ctx.ToContext(),
 	}
 
 	return i
@@ -26,6 +26,10 @@ func (i *Identifier) literalValue()   {}
 
 func (i *Identifier) CanonicalCode() string {
 	return i.Value
+}
+
+func (i *Identifier) GetContext() *token.Context {
+	return i.Context
 }
 
 func (i *Identifier) EqualTo(node Node) bool {
@@ -39,20 +43,20 @@ func (i *Identifier) EqualTo(node Node) bool {
 }
 
 type IntegerLiteral struct {
-	Value    int64
-	Content  string
-	Position *token.TokenInfo
+	Value   int64
+	Content string
+	Context *token.Context
 }
 
 func (i *IntegerLiteral) expressionNode() {}
 func (i *IntegerLiteral) literalValue()   {}
 
-func (i *IntegerLiteral) Walk(v Visitor) int {
-	return v.Visit(i)
-}
-
 func (i *IntegerLiteral) CanonicalCode() string {
 	return fmt.Sprintf("%d", i.Value)
+}
+
+func (i *IntegerLiteral) GetContext() *token.Context {
+	return i.Context
 }
 
 func (i *IntegerLiteral) EqualTo(node Node) bool {
@@ -66,20 +70,20 @@ func (i *IntegerLiteral) EqualTo(node Node) bool {
 }
 
 type FloatLiteral struct {
-	Value    float64
-	Content  string
-	Position *token.TokenInfo
+	Value   float64
+	Content string
+	Context *token.Context
 }
 
 func (f *FloatLiteral) expressionNode() {}
 func (f *FloatLiteral) literalValue()   {}
 
-func (f *FloatLiteral) Walk(v Visitor) int {
-	return v.Visit(f)
-}
-
 func (f *FloatLiteral) CanonicalCode() string {
 	return fmt.Sprintf("%f", f.Value)
+}
+
+func (f *FloatLiteral) GetContext() *token.Context {
+	return f.Context
 }
 
 func (f *FloatLiteral) EqualTo(node Node) bool {
@@ -93,20 +97,20 @@ func (f *FloatLiteral) EqualTo(node Node) bool {
 }
 
 type StringLiteral struct {
-	Value    string
-	Content  string
-	Position *token.TokenInfo
+	Value   string
+	Content string
+	Context *token.Context
 }
 
 func (s *StringLiteral) expressionNode() {}
 func (s *StringLiteral) literalValue()   {}
 
-func (s *StringLiteral) Walk(v Visitor) int {
-	return v.Visit(s)
-}
-
 func (s *StringLiteral) CanonicalCode() string {
 	return s.Content
+}
+
+func (s *StringLiteral) GetContext() *token.Context {
+	return s.Context
 }
 
 func (s *StringLiteral) EqualTo(node Node) bool {
@@ -120,16 +124,12 @@ func (s *StringLiteral) EqualTo(node Node) bool {
 }
 
 type BooleanLiteral struct {
-	Value    bool
-	Position *token.TokenInfo
+	Value   bool
+	Context *token.Context
 }
 
 func (b *BooleanLiteral) expressionNode() {}
 func (b *BooleanLiteral) literalValue()   {}
-
-func (b *BooleanLiteral) Walk(v Visitor) int {
-	return v.Visit(b)
-}
 
 func (b *BooleanLiteral) CanonicalCode() string {
 	if b.Value {
@@ -137,6 +137,10 @@ func (b *BooleanLiteral) CanonicalCode() string {
 	}
 
 	return token.SFalse
+}
+
+func (b *BooleanLiteral) GetContext() *token.Context {
+	return b.Context
 }
 
 func (b *BooleanLiteral) EqualTo(node Node) bool {
@@ -150,7 +154,7 @@ func (b *BooleanLiteral) EqualTo(node Node) bool {
 }
 
 type NullLiteral struct {
-	Position *token.TokenInfo
+	Context *token.Context
 }
 
 func (n *NullLiteral) expressionNode() {}
@@ -164,6 +168,10 @@ func (n *NullLiteral) CanonicalCode() string {
 	return token.SNull
 }
 
+func (n *NullLiteral) GetContext() *token.Context {
+	return n.Context
+}
+
 func (n *NullLiteral) EqualTo(node Node) bool {
 	result := false
 	switch node.(type) {
@@ -175,43 +183,48 @@ func (n *NullLiteral) EqualTo(node Node) bool {
 }
 
 type ArrayLiteral struct {
-	Elements []Expression
-	Position *token.TokenInfo
+	LBracket    *token.TokenContext
+	Expressions *ExpressionList
+	RBracket    *token.TokenContext
 }
 
 func (a *ArrayLiteral) expressionNode() {}
 func (a *ArrayLiteral) literalValue()   {}
 
 func (a *ArrayLiteral) CanonicalCode() string {
-	elements := make([]string, len(a.Elements))
-	for i, e := range a.Elements {
-		elements[i] = e.CanonicalCode()
-	}
+	code := a.Expressions.CanonicalCode()
+	return fmt.Sprintf("[%s]", code)
+}
 
-	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+func (a *ArrayLiteral) GetContext() *token.Context {
+	c := token.JoinContext(
+		a.LBracket.ToContext(),
+		a.Expressions.GetContext(),
+		a.RBracket.ToContext(),
+	)
+
+	return c
 }
 
 func (a *ArrayLiteral) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
 	case *ArrayLiteral:
-		if len(n.Elements) == len(a.Elements) {
-			result = true
-			for i, e := range a.Elements {
-				if !e.EqualTo(n.Elements[i]) {
-					result = false
-					break
-				}
-			}
-		}
+		return a.Expressions.EqualTo(n.Expressions)
 	}
 
 	return result
 }
 
+func (a *ArrayLiteral) Length() int {
+	return a.Expressions.Length()
+}
+
 type HashItem struct {
 	Key   Expression
+	Colon *token.TokenContext
 	Value Expression
+	Comma *token.TokenContext
 }
 
 func (h *HashItem) EqualTo(item *HashItem) bool {
@@ -226,9 +239,21 @@ func (h *HashItem) EqualTo(item *HashItem) bool {
 	return true
 }
 
+func (h *HashItem) GetContext() *token.Context {
+	c := token.JoinContext(
+		h.Key.GetContext(),
+		h.Colon.ToContext(),
+		h.Value.GetContext(),
+		h.Comma.ToContext(),
+	)
+
+	return c
+}
+
 type HashLiteral struct {
-	Pairs    []*HashItem
-	Position *token.TokenInfo
+	LBrace *token.TokenContext
+	Pairs  []*HashItem
+	RBrace *token.TokenContext
 }
 
 func (h *HashLiteral) expressionNode() {}
@@ -241,6 +266,17 @@ func (h *HashLiteral) CanonicalCode() string {
 	}
 
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", \n"))
+}
+
+func (h *HashLiteral) GetContext() *token.Context {
+	ctxs := make([]*token.Context, len(h.Pairs)+2)
+	ctxs[0] = h.LBrace.ToContext()
+	for i, pair := range h.Pairs {
+		ctxs[i+1] = pair.GetContext()
+	}
+	ctxs[len(ctxs)-1] = h.RBrace.ToContext()
+
+	return token.JoinContext(ctxs...)
 }
 
 func (h *HashLiteral) EqualTo(node Node) bool {
@@ -261,16 +297,21 @@ func (h *HashLiteral) EqualTo(node Node) bool {
 	return result
 }
 
-func (h *HashLiteral) AddPair(key Expression, value Expression) {
+func (h *HashLiteral) AddPair(key Expression, colon *token.TokenContext, value Expression, comma *token.TokenContext) {
 	item := &HashItem{
 		Key:   key,
+		Colon: colon,
 		Value: value,
+		Comma: comma,
 	}
 	h.Pairs = append(h.Pairs, item)
 }
 
 type FunctionLiteral struct {
+	Function     *token.TokenContext
+	LParen       *token.TokenContext
 	Arguments    *IdentifierList
+	RParen       *token.TokenContext
 	Body         *BlockStatement
 	ReturnValues int
 }
@@ -284,6 +325,18 @@ func (f *FunctionLiteral) CanonicalCode() string {
 	)
 
 	return result
+}
+
+func (f *FunctionLiteral) GetContext() *token.Context {
+	c := token.JoinContext(
+		f.Function.ToContext(),
+		f.LParen.ToContext(),
+		f.Arguments.GetContext(),
+		f.RParen.ToContext(),
+		f.Body.GetContext(),
+	)
+
+	return c
 }
 
 func (f *FunctionLiteral) EqualTo(node Node) bool {

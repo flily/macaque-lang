@@ -7,6 +7,7 @@ type Token int
 
 const (
 	Illegal Token = iota
+	Nil           // Go language level nil
 	EOF
 	Comment
 

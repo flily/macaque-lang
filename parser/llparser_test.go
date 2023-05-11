@@ -590,11 +590,13 @@ func TestFunctionLiteral(t *testing.T) {
 							block(
 								expr(
 									&ast.CallExpression{
-										Callable: nil,
-										Token:    token.Fn,
+										Base:   nil,
+										Token:  punct(token.Fn),
+										LParen: punct(token.LParen),
 										Args: exprList(
 											infix("-", id("x"), l(1)),
 										),
+										RParen:    punct(token.RParen),
 										Recursion: true,
 									},
 								),
@@ -615,8 +617,10 @@ func TestFunctionLiteral(t *testing.T) {
 							block(
 								expr(
 									&ast.CallExpression{
-										Callable: nil,
-										Token:    token.Fn,
+										Base: nil,
+										Token: &token.TokenContext{
+											Token: token.Fn,
+										},
 										Args: exprList(
 											id("x"),
 										),

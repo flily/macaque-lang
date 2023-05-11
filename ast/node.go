@@ -2,10 +2,17 @@ package ast
 
 import (
 	"strings"
+
+	"github.com/flily/macaque-lang/token"
 )
+
+type HasContext interface {
+	GetContext() *token.Context
+}
 
 type Node interface {
 	CanonicalCode() string
+	GetContext() *token.Context
 	EqualTo(Node) bool
 }
 
@@ -79,4 +86,13 @@ func (p *Program) CanonicalCode() string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func (p *Program) GetContext() *token.Context {
+	ctxs := make([]*token.Context, len(p.Statements))
+	for i, stmt := range p.Statements {
+		ctxs[i] = stmt.GetContext()
+	}
+
+	return token.JoinContext(ctxs...)
 }

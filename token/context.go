@@ -11,6 +11,14 @@ type TokenContext struct {
 	Content  string
 }
 
+func (c *TokenContext) GetToken() Token {
+	if c == nil {
+		return Nil
+	}
+
+	return c.Token
+}
+
 func (c *TokenContext) Length() int {
 	return c.Position.Length
 }
@@ -35,8 +43,47 @@ func (c *TokenContext) NewSyntaxError(format string, args ...interface{}) *Synta
 	return MakeSyntaxError(c, format, args...)
 }
 
+func (c *TokenContext) NewCompilationError(format string, args ...interface{}) *CompilationNError {
+	return MakeCompilationError(c, format, args...)
+}
+
+func (c *TokenContext) ToContext() *Context {
+	var tokens []*TokenContext
+	if c != nil {
+		tokens = []*TokenContext{c}
+	}
+
+	ctx := &Context{
+		Tokens: tokens,
+	}
+
+	return ctx
+}
+
 type Context struct {
 	Tokens []*TokenContext
+}
+
+func NewContext(tokens ...*TokenContext) *Context {
+	c := &Context{
+		Tokens: tokens,
+	}
+
+	return c
+}
+
+func JoinContext(ctxs ...*Context) *Context {
+	count := 0
+	for _, c := range ctxs {
+		count += len(c.Tokens)
+	}
+
+	tokens := make([]*TokenContext, 0, count)
+	for _, c := range ctxs {
+		tokens = append(tokens, c.Tokens...)
+	}
+
+	return NewContext(tokens...)
 }
 
 func (c *Context) makeLineTokenMap() [][]*TokenContext {

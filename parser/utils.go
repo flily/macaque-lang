@@ -63,11 +63,17 @@ func float(s string) ast.Expression {
 // 	}
 // }
 
+func punct(s token.Token) *token.TokenContext {
+	t := &token.TokenContext{
+		Token: s,
+	}
+
+	return t
+}
+
 func expr(expressions ...ast.Expression) *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{
-		Expressions: &ast.ExpressionList{
-			Expressions: expressions,
-		},
+		Expressions: exprList(expressions...),
 	}
 
 	return stmt
@@ -84,9 +90,7 @@ func let(identifers *ast.IdentifierList, expressions *ast.ExpressionList) *ast.L
 
 func ret(expressions ...ast.Expression) *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{
-		Expressions: &ast.ExpressionList{
-			Expressions: expressions,
-		},
+		Expressions: exprList(expressions...),
 	}
 
 	return stmt
@@ -103,18 +107,25 @@ func id(name string) *ast.Identifier {
 func idList(names ...string) *ast.IdentifierList {
 	list := &ast.IdentifierList{}
 	for _, name := range names {
-		id := &ast.Identifier{
-			Value: name,
+		item := &ast.IdentifierListItem{
+			Identifier: id(name),
 		}
-		list.Identifiers = append(list.Identifiers, id)
+		list.Identifiers = append(list.Identifiers, item)
 	}
 
 	return list
 }
 
 func exprList(expressions ...ast.Expression) *ast.ExpressionList {
+	e := make([]*ast.ExpressionListItem, len(expressions))
+	for i, expr := range expressions {
+		e[i] = &ast.ExpressionListItem{
+			Expression: expr,
+		}
+	}
+
 	list := &ast.ExpressionList{
-		Expressions: expressions,
+		Expressions: e,
 	}
 
 	return list
@@ -122,8 +133,10 @@ func exprList(expressions ...ast.Expression) *ast.ExpressionList {
 
 func prefix(operator string, right ast.Expression) *ast.PrefixExpression {
 	expr := &ast.PrefixExpression{
-		PrefixOperator: token.CheckOperatorToken(operator),
-		Operand:        right,
+		Prefix: &token.TokenContext{
+			Token: token.CheckOperatorToken(operator),
+		},
+		Operand: right,
 	}
 
 	return expr
@@ -131,8 +144,10 @@ func prefix(operator string, right ast.Expression) *ast.PrefixExpression {
 
 func infix(operator string, left ast.Expression, right ast.Expression) *ast.InfixExpression {
 	expr := &ast.InfixExpression{
-		LeftOperand:  left,
-		Operator:     token.CheckOperatorToken(operator),
+		LeftOperand: left,
+		Operator: &token.TokenContext{
+			Token: token.CheckOperatorToken(operator),
+		},
 		RightOperand: right,
 	}
 
@@ -141,7 +156,7 @@ func infix(operator string, left ast.Expression, right ast.Expression) *ast.Infi
 
 func array(elements ...ast.Expression) *ast.ArrayLiteral {
 	expr := &ast.ArrayLiteral{
-		Elements: elements,
+		Expressions: exprList(elements...),
 	}
 
 	return expr

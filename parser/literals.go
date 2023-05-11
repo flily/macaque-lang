@@ -14,9 +14,9 @@ func newInteger(token *token.TokenContext) *ast.IntegerLiteral {
 	content := token.Content
 
 	literal := &ast.IntegerLiteral{
-		Value:    ConvertInteger(content),
-		Content:  content,
-		Position: token.Position,
+		Value:   ConvertInteger(content),
+		Content: content,
+		Context: token.ToContext(),
 	}
 
 	return literal
@@ -24,33 +24,29 @@ func newInteger(token *token.TokenContext) *ast.IntegerLiteral {
 
 func newFloat(token *token.TokenContext) *ast.FloatLiteral {
 	content := token.Content
-
 	literal := &ast.FloatLiteral{
-		Value:    ConvertFloat(content),
-		Content:  content,
-		Position: token.Position,
-	}
-
-	return literal
-}
-
-func makeString(content string, position *token.TokenInfo) *ast.StringLiteral {
-	literal := &ast.StringLiteral{
-		Value:    ConvertString(content),
-		Content:  content,
-		Position: position,
+		Value:   ConvertFloat(content),
+		Content: content,
+		Context: token.ToContext(),
 	}
 
 	return literal
 }
 
 func newString(token *token.TokenContext) *ast.StringLiteral {
-	return makeString(token.Content, token.Position)
+	content := token.Content
+	literal := &ast.StringLiteral{
+		Value:   ConvertString(content),
+		Content: content,
+		Context: token.ToContext(),
+	}
+
+	return literal
 }
 
 func newNull(token *token.TokenContext) *ast.NullLiteral {
 	literal := &ast.NullLiteral{
-		Position: token.Position,
+		Context: token.ToContext(),
 	}
 
 	return literal
@@ -58,8 +54,8 @@ func newNull(token *token.TokenContext) *ast.NullLiteral {
 
 func newBoolean(token *token.TokenContext) *ast.BooleanLiteral {
 	literal := &ast.BooleanLiteral{
-		Value:    token.Token == BooleanTrue,
-		Position: token.Position,
+		Value:   token.Token == BooleanTrue,
+		Context: token.ToContext(),
 	}
 
 	return literal

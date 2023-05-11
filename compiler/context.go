@@ -54,10 +54,10 @@ func (k VarKind) String() string {
 }
 
 type VariableInfo struct {
-	Name     string
-	Offset   int
-	Kind     VarKind
-	Position *token.TokenInfo
+	Name    string
+	Offset  int
+	Kind    VarKind
+	Context *token.Context
 }
 
 type VariableScopeContext struct {
@@ -106,7 +106,7 @@ func (c *VariableScopeContext) FrameOffset() int {
 	}
 }
 
-func (c *VariableScopeContext) DefineArgument(name string, pos *token.TokenInfo) (int, bool) {
+func (c *VariableScopeContext) DefineArgument(name string, ctx *token.Context) (int, bool) {
 	if c.IsDefined(name) {
 		return 0, false
 	}
@@ -114,16 +114,16 @@ func (c *VariableScopeContext) DefineArgument(name string, pos *token.TokenInfo)
 	n := c.arguments + 1
 	c.arguments = n
 	c.Variables[name] = VariableInfo{
-		Name:     name,
-		Offset:   -n,
-		Kind:     VariableKindLocal,
-		Position: pos,
+		Name:    name,
+		Offset:  -n,
+		Kind:    VariableKindLocal,
+		Context: ctx,
 	}
 
 	return n, true
 }
 
-func (c *VariableScopeContext) DefineVariable(name string, pos *token.TokenInfo) (int, bool) {
+func (c *VariableScopeContext) DefineVariable(name string, ctx *token.Context) (int, bool) {
 	if c.IsDefined(name) {
 		return 0, false
 	}
@@ -131,10 +131,10 @@ func (c *VariableScopeContext) DefineVariable(name string, pos *token.TokenInfo)
 	n := c.FrameOffset() + 1
 	c.variables += 1
 	c.Variables[name] = VariableInfo{
-		Name:     name,
-		Offset:   n,
-		Kind:     VariableKindLocal,
-		Position: pos,
+		Name:    name,
+		Offset:  n,
+		Kind:    VariableKindLocal,
+		Context: ctx,
 	}
 
 	return n, true
@@ -262,11 +262,11 @@ func (c *VariableContext) LeaveScope() {
 	c.top = c.top.LeaveScope()
 }
 
-func (c *VariableContext) DefineArgument(name string, pos *token.TokenInfo) (int, bool) {
+func (c *VariableContext) DefineArgument(name string, pos *token.Context) (int, bool) {
 	return c.top.DefineArgument(name, pos)
 }
 
-func (c *VariableContext) DefineVariable(name string, pos *token.TokenInfo) (int, bool) {
+func (c *VariableContext) DefineVariable(name string, pos *token.Context) (int, bool) {
 	return c.top.DefineVariable(name, pos)
 }
 

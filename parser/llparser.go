@@ -98,13 +98,14 @@ func (p *LLParser) nextToken() *token.TokenContext {
 	return p.container.Next()
 }
 
-func (p *LLParser) skipToken(token token.Token, rule string) error {
+func (p *LLParser) skipToken(token token.Token, rule string) (*token.TokenContext, error) {
 	if err := p.expect(token, rule); err != nil {
-		return err
+		return nil, err
 	}
 
+	elem := p.container.current()
 	p.container.Next()
-	return nil
+	return elem, nil
 }
 
 func (p *LLParser) skipComment() {
@@ -118,10 +119,9 @@ func (p *LLParser) skipComment() {
 	}
 }
 
-func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxError {
+func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxNError {
 	current := p.container.Current()
-	ctx := current.Position.MakeContext()
-	return ctx.NewSyntaxError(format, args...)
+	return current.NewSyntaxError(format, args...)
 }
 
 func (p *LLParser) parseProgram() (*ast.Program, error) {
@@ -185,14 +185,15 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 
 // let-stmt => "let" identifier-list "=" expression-list ";"
 func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
-	_ = p.skipToken(token.Let, RuleLetStatement)
+	var sLet, sAssign, sSemicolon *token.TokenContext
+	sLet, _ = p.skipToken(token.Let, RuleLetStatement)
 
 	idList, err := p.parseIdentifierList()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.Assign, RuleLetStatement); err != nil {
+	if sAssign, err = p.skipToken(token.Assign, RuleLetStatement); err != nil {
 		return nil, err
 	}
 
@@ -201,13 +202,16 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.Semicolon, RuleLetStatement); err != nil {
+	if sSemicolon, err = p.skipToken(token.Semicolon, RuleLetStatement); err != nil {
 		return nil, err
 	}
 
 	stmt := &ast.LetStatement{
+		Let:         sLet,
 		Identifiers: idList,
+		Assign:      sAssign,
 		Expressions: exprList,
+		Semicolon:   sSemicolon,
 	}
 
 	return stmt, nil
@@ -215,15 +219,17 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 
 // expression-stmt => expression-list ";"
 func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) {
+	var sSemicolon *token.TokenContext
 	exprList, err := p.parseExpressionList(ExprListMustHave)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = p.skipToken(token.Semicolon, RuleExpressionStatement)
+	sSemicolon, _ = p.skipToken(token.Semicolon, RuleExpressionStatement)
 
 	stmt := &ast.ExpressionStatement{
 		Expressions: exprList,
+		Semicolon:   sSemicolon,
 	}
 
 	return stmt, nil
@@ -231,17 +237,20 @@ func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) 
 
 // return-stmt => "return" [ expression-list ] ";"
 func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
-	_ = p.skipToken(token.Return, RuleReturnStatement)
+	var sReturn, sSemicolon *token.TokenContext
+	sReturn, _ = p.skipToken(token.Return, RuleReturnStatement)
 
 	exprList, err := p.parseExpressionList(ExprListCanBeEmpty)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = p.skipToken(token.Semicolon, RuleReturnStatement)
+	sSemicolon, _ = p.skipToken(token.Semicolon, RuleReturnStatement)
 
 	stmt := &ast.ReturnStatement{
+		Return:      sReturn,
 		Expressions: exprList,
+		Semicolon:   sSemicolon,
 	}
 
 	return stmt, nil
@@ -249,9 +258,13 @@ func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 
 // block-stmt => "{" *statement "}"
 func (p *LLParser) parseBlockStatement(context string) (*ast.BlockStatement, error) {
-	_ = p.skipToken(token.LBrace, context)
+	var sLBrace, sRBrace *token.TokenContext
+	var err error
+	sLBrace, _ = p.skipToken(token.LBrace, context)
 
-	block := &ast.BlockStatement{}
+	block := &ast.BlockStatement{
+		LBrace: sLBrace,
+	}
 	current := p.current()
 	for current != nil && current.Token != token.RBrace && current.Token != token.EOF {
 		stmt, err := p.parseStatement()
@@ -269,10 +282,11 @@ func (p *LLParser) parseBlockStatement(context string) (*ast.BlockStatement, err
 		current = next
 	}
 
-	if err := p.skipToken(token.RBrace, context); err != nil {
+	if sRBrace, err = p.skipToken(token.RBrace, context); err != nil {
 		return nil, err
 	}
 
+	block.RBrace = sRBrace
 	return block, nil
 }
 
@@ -302,7 +316,7 @@ func (p *LLParser) parseIdentifier() (*ast.Identifier, error) {
 		current := p.current()
 		switch current.Token {
 		case token.Identifier:
-			id = ast.NewIdentifier(current.Content, current.Position)
+			id = ast.NewIdentifier(current.Content, current)
 			p.nextToken()
 			found = true
 
@@ -320,7 +334,6 @@ func (p *LLParser) parseIdentifier() (*ast.Identifier, error) {
 
 // identifier-list => identifier *( "," identifier ) [","]
 func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
-	var err error
 	list := &ast.IdentifierList{}
 
 	for {
@@ -329,9 +342,9 @@ func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
 			return nil, err
 		}
 
-		list.AddIdentifier(id)
-
-		if err := p.skipToken(token.Comma, RuleIdentifierList); err != nil {
+		comma, err := p.skipToken(token.Comma, RuleIdentifierList)
+		list.AddIdentifier(id, comma)
+		if err != nil {
 			break
 		}
 
@@ -340,7 +353,7 @@ func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
 		}
 	}
 
-	return list, err
+	return list, nil
 }
 
 // literals
@@ -394,9 +407,11 @@ func (p *LLParser) parseLiteral() (ast.Expression, error) {
 // array-literal
 // => "[" expression-list "]"
 func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
-	_ = p.skipToken(token.LBracket, RuleArrayLiteral)
+	var sLBracket, sRBracket *token.TokenContext
+	var err error
+	sLBracket, _ = p.skipToken(token.LBracket, RuleArrayLiteral)
 
-	if p.skipToken(token.RBracket, RuleArrayLiteral) == nil {
+	if sRBracket, err = p.skipToken(token.RBracket, RuleArrayLiteral); err == nil {
 		return array(), nil
 	}
 
@@ -405,12 +420,14 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RBracket, RuleArrayLiteral); err != nil {
+	if sRBracket, err = p.skipToken(token.RBracket, RuleArrayLiteral); err != nil {
 		return nil, err
 	}
 
 	array := &ast.ArrayLiteral{
-		Elements: list.Expressions,
+		LBracket:    sLBracket,
+		Expressions: list,
+		RBracket:    sRBracket,
 	}
 
 	return array, nil
@@ -419,9 +436,14 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 // hash-literal => "{" hash-pair *( "," hash-pair ) [","] "}"
 // hash-pair => expression ":" expression
 func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
-	_ = p.skipToken(token.LBrace, RuleHashLiteral)
+	var sLBrace, sRBrace *token.TokenContext
+	var err error
 
-	hash := &ast.HashLiteral{}
+	sLBrace, _ = p.skipToken(token.LBrace, RuleHashLiteral)
+
+	hash := &ast.HashLiteral{
+		LBrace: sLBrace,
+	}
 
 	for {
 		current := p.current()
@@ -429,12 +451,13 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 			break
 		}
 
+		var colon, comma *token.TokenContext
 		key, err := p.parseExpression(PrecedenceLowest)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := p.skipToken(token.Colon, RuleHashLiteral); err != nil {
+		if colon, err = p.skipToken(token.Colon, RuleHashLiteral); err != nil {
 			return nil, err
 		}
 
@@ -443,24 +466,28 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 			return nil, err
 		}
 
-		hash.AddPair(key, value)
+		comma, err = p.skipToken(token.Comma, RuleHashLiteral)
+		hash.AddPair(key, colon, value, comma)
 
-		if err := p.skipToken(token.Comma, RuleHashLiteral); err != nil {
+		if err != nil {
 			break
 		}
 	}
 
-	if err := p.skipToken(token.RBrace, RuleHashLiteral); err != nil {
+	if sRBrace, err = p.skipToken(token.RBrace, RuleHashLiteral); err != nil {
 		return nil, err
 	}
 
+	hash.RBrace = sRBrace
 	return hash, nil
 }
 
 func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
-	_ = p.skipToken(token.Fn, RuleFunctionLiteral)
+	var sFunction, sLParen, sRParen *token.TokenContext
+	var err error
+	sFunction, _ = p.skipToken(token.Fn, RuleFunctionLiteral)
 
-	if err := p.skipToken(token.LParen, RuleFunctionLiteral); err != nil {
+	if sLParen, err = p.skipToken(token.LParen, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
@@ -469,7 +496,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RParen, RuleFunctionLiteral); err != nil {
+	if sRParen, err = p.skipToken(token.RParen, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
@@ -477,9 +504,11 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 
 	if p.currentToken() != token.LBrace {
 		callExpr := &ast.CallExpression{
-			Callable:  nil,
-			Token:     token.Fn,
+			Base:      nil,
+			Token:     sFunction,
+			LParen:    sLParen,
 			Args:      args,
+			RParen:    sRParen,
 			Recursion: true,
 		}
 
@@ -493,7 +522,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.LBrace, RuleFunctionLiteral); err != nil {
+	if err := p.expect(token.LBrace, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
@@ -503,7 +532,10 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 	}
 
 	literal := &ast.FunctionLiteral{
+		Function:     sFunction,
+		LParen:       sLParen,
 		Arguments:    args.ToIdentifierList(),
+		RParen:       sRParen,
 		Body:         body,
 		ReturnValues: -1,
 	}
@@ -529,9 +561,9 @@ func (p *LLParser) parseExpressionList(canBeEmpty bool) (*ast.ExpressionList, er
 			return nil, err
 		}
 
-		list.AddExpression(exp)
-
-		if err := p.skipToken(token.Comma, RuleExpressionList); err != nil {
+		comma, err := p.skipToken(token.Comma, RuleExpressionList)
+		list.AddExpression(exp, comma)
+		if err != nil {
 			break
 		}
 
@@ -628,8 +660,8 @@ func (p *LLParser) parsePrefixExpression() (*ast.PrefixExpression, error) {
 	}
 
 	expr := &ast.PrefixExpression{
-		PrefixOperator: operator.Token,
-		Operand:        operand,
+		Prefix:  operator,
+		Operand: operand,
 	}
 
 	return expr, nil
@@ -652,7 +684,7 @@ func (p *LLParser) parseInfixExpression(left ast.Expression, precedence int) (as
 
 	expr := &ast.InfixExpression{
 		LeftOperand:  left,
-		Operator:     operator.Token,
+		Operator:     operator,
 		RightOperand: right,
 	}
 
@@ -661,25 +693,24 @@ func (p *LLParser) parseInfixExpression(left ast.Expression, precedence int) (as
 
 // call-expression => expression [ "::" identifier ] "(" [expression-list] ")"
 func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool) (ast.Expression, error) {
+	var sLParen, sRParen, sToken *token.TokenContext
 	var err error
 	var member *ast.Identifier
-	var t token.Token
 
 	if findMethod {
-		_ = p.skipToken(token.DualColon, RuleCallExpression)
-		t = token.DualColon
+		dualColon, _ := p.skipToken(token.DualColon, RuleCallExpression)
+		sToken = dualColon
 		member, err = p.parseIdentifier()
 		if err != nil {
 			return nil, err
 		}
 
-		if err := p.skipToken(token.LParen, RuleCallExpression); err != nil {
+		if sLParen, err = p.skipToken(token.LParen, RuleCallExpression); err != nil {
 			return nil, err
 		}
 
 	} else {
-		t = token.LParen
-		_ = p.skipToken(token.LParen, RuleCallExpression)
+		sLParen, _ = p.skipToken(token.LParen, RuleCallExpression)
 	}
 
 	arguments, err := p.parseExpressionList(ExprListCanBeEmpty)
@@ -687,15 +718,17 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RParen, RuleCallExpression); err != nil {
+	if sRParen, err = p.skipToken(token.RParen, RuleCallExpression); err != nil {
 		return nil, err
 	}
 
 	expr := &ast.CallExpression{
-		Callable: callable,
-		Token:    t,
-		Member:   member,
-		Args:     arguments,
+		Base:   callable,
+		Token:  sToken,
+		Member: member,
+		LParen: sLParen,
+		Args:   arguments,
+		RParen: sRParen,
 	}
 
 	return p.parseExpressionWithOperator(expr, PrecedenceCall)
@@ -706,21 +739,23 @@ func (p *LLParser) parseIndexExpressionBracketNotaion(base ast.Expression) (ast.
 	var err error
 	var index ast.Expression
 
-	_ = p.skipToken(token.LBracket, RuleIndexExpression)
+	lb, _ := p.skipToken(token.LBracket, RuleIndexExpression)
 
 	index, err = p.parseExpression(PrecedenceLowest)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RBracket, RuleIndexExpression); err != nil {
+	var rb *token.TokenContext
+	if rb, err = p.skipToken(token.RBracket, RuleIndexExpression); err != nil {
 		return nil, err
 	}
 
 	expr := &ast.IndexExpression{
 		Base:     base,
-		Operator: token.LBracket,
+		Operator: lb,
 		Index:    index,
+		End:      rb,
 	}
 
 	return p.parseExpressionWithOperator(expr, PrecedenceIndex)
@@ -731,7 +766,7 @@ func (p *LLParser) parseIndexExpressionPeriodNotation(base ast.Expression) (ast.
 	var err error
 	var index ast.Expression
 
-	_ = p.skipToken(token.Period, RuleIndexExpression)
+	period, _ := p.skipToken(token.Period, RuleIndexExpression)
 
 	index, err = p.parseIdentifier()
 	if err != nil {
@@ -740,7 +775,7 @@ func (p *LLParser) parseIndexExpressionPeriodNotation(base ast.Expression) (ast.
 
 	expr := &ast.IndexExpression{
 		Base:     base,
-		Operator: token.Period,
+		Operator: period,
 		Index:    index,
 	}
 
@@ -749,7 +784,7 @@ func (p *LLParser) parseIndexExpressionPeriodNotation(base ast.Expression) (ast.
 
 // group-expression => "(" expression ")"
 func (p *LLParser) parseGroupExpression() (ast.Expression, error) {
-	if err := p.skipToken(token.LParen, RuleGroupedExpression); err != nil {
+	if _, err := p.skipToken(token.LParen, RuleGroupedExpression); err != nil {
 		return nil, err
 	}
 
@@ -758,7 +793,7 @@ func (p *LLParser) parseGroupExpression() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RParen, RuleGroupedExpression); err != nil {
+	if _, err := p.skipToken(token.RParen, RuleGroupedExpression); err != nil {
 		return nil, err
 	}
 
@@ -771,9 +806,11 @@ func (p *LLParser) parseGroupExpression() (ast.Expression, error) {
 // => "if" "(" expression ")" block-statement "else" block-statement
 // => "if" "(" expression ")" block-statement "else" if-stmt
 func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
-	_ = p.skipToken(token.If, RuleIfExpression)
+	var sIf, sLParen, sRParen *token.TokenContext
+	var err error
 
-	if err := p.skipToken(token.LParen, RuleIfExpression); err != nil {
+	sIf, _ = p.skipToken(token.If, RuleIfExpression)
+	if sLParen, err = p.skipToken(token.LParen, RuleIfExpression); err != nil {
 		return nil, err
 	}
 
@@ -782,7 +819,7 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 		return nil, err
 	}
 
-	if err := p.skipToken(token.RParen, RuleIfExpression); err != nil {
+	if sRParen, err = p.skipToken(token.RParen, RuleIfExpression); err != nil {
 		return nil, err
 	}
 
@@ -792,11 +829,15 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 	}
 
 	stmt := &ast.IfExpression{
+		If:          sIf,
+		LParen:      sLParen,
 		Condition:   condition,
+		RParen:      sRParen,
 		Consequence: consequence,
 	}
 
-	if err := p.skipToken(token.Else, RuleIfExpression); err == nil {
+	if sElse, err := p.skipToken(token.Else, RuleIfExpression); err == nil {
+		stmt.Else = sElse
 		var alternative ast.BlockStatementNode
 		var err error
 

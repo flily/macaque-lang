@@ -3,11 +3,16 @@ package ast
 import (
 	"fmt"
 	"strings"
+
+	"github.com/flily/macaque-lang/token"
 )
 
 type LetStatement struct {
+	Let         *token.TokenContext
 	Identifiers *IdentifierList
+	Assign      *token.TokenContext
 	Expressions *ExpressionList
+	Semicolon   *token.TokenContext
 }
 
 func (s *LetStatement) statementNode()     {}
@@ -22,6 +27,18 @@ func (s *LetStatement) CanonicalCode() string {
 	return result
 }
 
+func (s *LetStatement) GetContext() *token.Context {
+	c := token.JoinContext(
+		s.Let.ToContext(),
+		s.Identifiers.GetContext(),
+		s.Assign.ToContext(),
+		s.Expressions.GetContext(),
+		s.Semicolon.ToContext(),
+	)
+
+	return c
+}
+
 func (s *LetStatement) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
@@ -34,7 +51,9 @@ func (s *LetStatement) EqualTo(node Node) bool {
 }
 
 type ReturnStatement struct {
+	Return      *token.TokenContext
 	Expressions *ExpressionList
+	Semicolon   *token.TokenContext
 }
 
 func (s *ReturnStatement) statementNode()     {}
@@ -43,6 +62,16 @@ func (s *ReturnStatement) lineStatementNode() {}
 func (s *ReturnStatement) CanonicalCode() string {
 	result := fmt.Sprintf("return %s;", s.Expressions.CanonicalCode())
 	return result
+}
+
+func (s *ReturnStatement) GetContext() *token.Context {
+	c := token.JoinContext(
+		s.Return.ToContext(),
+		s.Expressions.GetContext(),
+		s.Semicolon.ToContext(),
+	)
+
+	return c
 }
 
 func (s *ReturnStatement) EqualTo(node Node) bool {
@@ -66,6 +95,10 @@ func (s *IfStatement) CanonicalCode() string {
 	return s.Expression.CanonicalCode()
 }
 
+func (s *IfStatement) GetContext() *token.Context {
+	return s.Expression.GetContext()
+}
+
 func (s *IfStatement) EqualTo(node Node) bool {
 	result := false
 	switch n := node.(type) {
@@ -77,7 +110,9 @@ func (s *IfStatement) EqualTo(node Node) bool {
 }
 
 type BlockStatement struct {
+	LBrace     *token.TokenContext
 	Statements []Statement
+	RBrace     *token.TokenContext
 }
 
 func (s *BlockStatement) statementNode()      {}
@@ -94,6 +129,17 @@ func (s *BlockStatement) CanonicalCode() string {
 	result[length-1] = "}"
 
 	return strings.Join(result, "\n")
+}
+
+func (s *BlockStatement) GetContext() *token.Context {
+	ctxList := make([]*token.Context, len(s.Statements)+2)
+	ctxList[0] = s.LBrace.ToContext()
+	for i, stmt := range s.Statements {
+		ctxList[i+1] = stmt.GetContext()
+	}
+	ctxList[len(ctxList)-1] = s.RBrace.ToContext()
+
+	return token.JoinContext(ctxList...)
 }
 
 func (s *BlockStatement) EqualTo(node Node) bool {
@@ -115,6 +161,7 @@ func (s *BlockStatement) AddStatement(stmt Statement) {
 
 type ExpressionStatement struct {
 	Expressions *ExpressionList
+	Semicolon   *token.TokenContext
 }
 
 func (s *ExpressionStatement) statementNode()     {}
@@ -122,6 +169,15 @@ func (s *ExpressionStatement) lineStatementNode() {}
 
 func (s *ExpressionStatement) CanonicalCode() string {
 	return fmt.Sprintf("%s;", s.Expressions.CanonicalCode())
+}
+
+func (s *ExpressionStatement) GetContext() *token.Context {
+	c := token.JoinContext(
+		s.Expressions.GetContext(),
+		s.Semicolon.ToContext(),
+	)
+
+	return c
 }
 
 func (s *ExpressionStatement) EqualTo(node Node) bool {
@@ -143,6 +199,10 @@ func (s *ImportStatement) lineStatementNode() {}
 
 func (s *ImportStatement) CanonicalCode() string {
 	return "import;"
+}
+
+func (s *ImportStatement) GetContext() *token.Context {
+	return nil
 }
 
 func (s *ImportStatement) EqualTo(node Node) bool {
