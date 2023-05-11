@@ -59,6 +59,12 @@ func TestIntegerObjectInfixOnIntegerEvaluation(t *testing.T) {
 		evalTest("INTEGER(42) != INTEGER(2)").
 			call(i.OnInfix(token.NE, j)).
 			expect(NewBoolean(true), true),
+		evalTest("INTEGER(42) == STRING(42)").
+			call(i.OnInfix(token.EQ, NewString("42"))).
+			expect(NewBoolean(false), true),
+		evalTest("INTEGER(42) != STRING(42)").
+			call(i.OnInfix(token.NE, NewString("42"))).
+			expect(NewBoolean(true), true),
 		evalTest("INTEGER(42) + INTEGER(2)").
 			call(i.OnInfix(token.Plus, j)).
 			expect(NewInteger(44), true),

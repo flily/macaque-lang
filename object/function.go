@@ -44,6 +44,7 @@ func (f *FunctionObject) equals(g *FunctionObject) bool {
 		return false
 	}
 
+	// Number of bounds must be equal
 	for i := 0; i < len(f.Bounds); i++ {
 		if !f.Bounds[i].EqualTo(g.Bounds[i]) {
 			return false
