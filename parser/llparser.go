@@ -412,7 +412,12 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 	sLBracket, _ = p.skipToken(token.LBracket, RuleArrayLiteral)
 
 	if sRBracket, err = p.skipToken(token.RBracket, RuleArrayLiteral); err == nil {
-		return array(), nil
+		a := &ast.ArrayLiteral{
+			LBracket:    sLBracket,
+			Expressions: exprList(),
+			RBracket:    sRBracket,
+		}
+		return a, nil
 	}
 
 	list, err := p.parseExpressionList(ExprListCanBeEmpty)
