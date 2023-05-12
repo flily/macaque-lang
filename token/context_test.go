@@ -66,3 +66,81 @@ func TestContextMessage(t *testing.T) {
 		t.Errorf("expected error message got:\n%s", got)
 	}
 }
+
+func TestTokenContextGetToken(t *testing.T) {
+	text := `the quick brown fox jumps over the lazy dog`
+	tokenizer := NewSimpleTokenizer("testcase")
+	tokenizer.SetContent([]byte(text))
+	tokens := tokenizer.TokenList()
+
+	tokenFox := tokens[3]
+	if tokenFox.GetToken() != String {
+		t.Errorf("expected token type String, got %s", tokenFox.GetToken())
+	}
+
+	var tokenNil *TokenContext
+	if tokenNil.GetToken() != Nil {
+		t.Errorf("expected token type Nil, got %s", tokenNil.GetToken())
+	}
+}
+
+func TestTokenContextToContext(t *testing.T) {
+	text := `the quick brown fox jumps over the lazy dog`
+	tokenizer := NewSimpleTokenizer("testcase")
+	tokenizer.SetContent([]byte(text))
+	tokens := tokenizer.TokenList()
+
+	tokenFox := tokens[3]
+	{
+		ctx := tokenFox.ToContext()
+		expected := strings.Join([]string{
+			`the quick brown fox jumps over the lazy dog`,
+			`                ^^^`,
+		}, "\n")
+
+		if ctx.HighLight() != expected {
+			t.Errorf("expected error highlight got:\n%s", ctx.HighLight())
+		}
+	}
+
+	{
+		var tokenNil *TokenContext
+		ctx := tokenNil.ToContext()
+		expected := ""
+
+		if ctx.HighLight() != expected {
+			t.Errorf("expected error highlight got:'%s'", ctx.HighLight())
+		}
+	}
+}
+
+func TestJoinContext(t *testing.T) {
+	text := `the quick brown fox jumps over the lazy dog`
+	tokenizer := NewSimpleTokenizer("testcase")
+	tokenizer.SetContent([]byte(text))
+	tokens := tokenizer.TokenList()
+
+	tokenJumps := tokens[4]
+	tokenOver := tokens[5]
+
+	ctx1 := JoinContext(tokenJumps.ToContext(), tokenOver.ToContext())
+	expected := strings.Join([]string{
+		`the quick brown fox jumps over the lazy dog`,
+		`                    ^^^^^ ^^^^`,
+	}, "\n")
+
+	if ctx1.HighLight() != expected {
+		t.Errorf("expected error highlight got:\n%s", ctx1.HighLight())
+	}
+
+	var tokenNil *TokenContext
+	ctx2 := JoinContext(
+		tokenJumps.ToContext(),
+		tokenNil.ToContext(),
+		tokenOver.ToContext(),
+	)
+
+	if ctx2.HighLight() != expected {
+		t.Errorf("expected error highlight got:\n%s", ctx2.HighLight())
+	}
+}

@@ -87,7 +87,7 @@ func (p *LLParser) currentToken() token.Token {
 
 func (p *LLParser) DebugLine() string {
 	current := p.container.Current()
-	return current.Position.MakeLineHighlight()
+	return current.ToContext().HighLight()
 }
 
 // func (p *LLParser) peek(offset int) *lex.LexicalElement {
@@ -119,9 +119,9 @@ func (p *LLParser) skipComment() {
 	}
 }
 
-func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxNError {
+func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxError {
 	current := p.container.Current()
-	return current.NewSyntaxError(format, args...)
+	return current.ToContext().NewSyntaxError(format, args...)
 }
 
 func (p *LLParser) parseProgram() (*ast.Program, error) {
@@ -521,7 +521,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 	}
 
 	if !args.IsIdentifierList() {
-		err := current.Position.MakeContext().NewSyntaxError(
+		err := current.ToContext().NewSyntaxError(
 			"recursion function call MUST NOT follow by a block statement",
 		)
 		return nil, err

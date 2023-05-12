@@ -52,10 +52,6 @@ func (c *TokenContext) ToContext() *Context {
 	return ctx
 }
 
-func (c *TokenContext) HighLight() string {
-	return c.ToContext().HighLight()
-}
-
 type Context struct {
 	Tokens []*TokenContext
 }
@@ -179,10 +175,10 @@ func readSpaces(s string, start int, end int) string {
 	return string(chars)
 }
 
-func (c *Context) NewSyntaxError(format string, args ...interface{}) *SyntaxNError {
+func (c *Context) NewSyntaxError(format string, args ...interface{}) *SyntaxError {
 	return MakeSyntaxError(c, format, args...)
 }
 
-func (c *Context) NewCompilationError(format string, args ...interface{}) *CompilationNError {
+func (c *Context) NewCompilationError(format string, args ...interface{}) *CompilationError {
 	return MakeCompilationError(c, format, args...)
 }
