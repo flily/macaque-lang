@@ -86,23 +86,3 @@ func (t *TokenInfo) String() string {
 		t.Content, t.Line.File.Filename, line, column,
 	)
 }
-
-func (t *TokenInfo) MakeContext() *CodeContext {
-	ctx := &CodeContext{
-		Filename:  t.Line.File.Filename,
-		NumLine:   t.GetLineNumber(),
-		NumColumn: t.GetColumnNumber(),
-		Line:      t.Line.Content,
-		Length:    t.Length,
-	}
-
-	return ctx
-}
-
-func (t *TokenInfo) MakeLineHighlight() string {
-	return t.MakeContext().MakeLineHighlight()
-}
-
-func (t *TokenInfo) MakeMessage(format string, args ...interface{}) string {
-	return t.MakeContext().MakeMessage(format, args...)
-}

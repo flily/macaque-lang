@@ -100,7 +100,7 @@ CompileSwitch:
 		p := c.compileIdentifierReference(n.Value, r)
 		if p <= 0 {
 			ctx := n.GetContext()
-			e = token.MakeSyntaxError(ctx.Tokens[0], "variable %s undefined", n.Value)
+			e = token.MakeSyntaxError(ctx, "variable %s undefined", n.Value)
 			break CompileSwitch
 		}
 
@@ -173,8 +173,8 @@ CompileSwitch:
 				ctx1, _ := c.Context.Variable.Reference(v.Value)
 				ctx2 := v.Context.Tokens[0]
 
-				e = ctx2.NewCompilationError("variable %s redeclared", v.Value).
-					WithInfo(ctx1.Context.Tokens[0],
+				e = ctx2.ToContext().NewCompilationError("variable %s redeclared", v.Value).
+					WithInfo(ctx1.Context,
 						"variable %s is already declared here", v.Value)
 
 				break CompileSwitch

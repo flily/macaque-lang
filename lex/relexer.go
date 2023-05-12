@@ -165,7 +165,7 @@ StringLoop:
 		case '\\':
 			if s.EOF() {
 				ctx := s.RejectToken(1)
-				return nil, ctx.NewSyntaxError("unexpected EOF")
+				return nil, ctx.ToContext().NewSyntaxError("unexpected EOF")
 			}
 
 			n := s.Current()
@@ -177,7 +177,7 @@ StringLoop:
 				s.Shift(1)
 				if charsLeft := s.CharsLeft(); charsLeft < 2 {
 					ctx := s.RejectToken(charsLeft + 1)
-					return nil, ctx.NewSyntaxError("insufficient characters for escape sequence")
+					return nil, ctx.ToContext().NewSyntaxError("insufficient characters for escape sequence")
 				}
 
 				n1 := s.Current()
@@ -187,12 +187,12 @@ StringLoop:
 
 				} else {
 					ctx := s.RejectToken(2)
-					return nil, ctx.NewSyntaxError("invalid escape sequence: \\x%c%c", n1, n2)
+					return nil, ctx.ToContext().NewSyntaxError("invalid escape sequence: \\x%c%c", n1, n2)
 				}
 
 			default:
 				ctx := s.RejectToken(1)
-				return nil, ctx.NewSyntaxError("invalid escape sequence: \\%c", n)
+				return nil, ctx.ToContext().NewSyntaxError("invalid escape sequence: \\%c", n)
 			}
 		}
 	}
@@ -249,7 +249,7 @@ func (s *RecursiveScanner) scanStatePunctuation() (*token.TokenContext, error) {
 
 	} else {
 		ctx := s.RejectToken(1)
-		err = ctx.NewSyntaxError("unknown operator '%c'", c)
+		err = ctx.ToContext().NewSyntaxError("unknown operator '%c'", c)
 	}
 
 	return elem, err

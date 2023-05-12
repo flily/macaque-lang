@@ -39,14 +39,6 @@ func (c *TokenContext) ColumnEnd() int {
 	return c.Position.Column + c.Position.Length
 }
 
-func (c *TokenContext) NewSyntaxError(format string, args ...interface{}) *SyntaxNError {
-	return MakeSyntaxError(c, format, args...)
-}
-
-func (c *TokenContext) NewCompilationError(format string, args ...interface{}) *CompilationNError {
-	return MakeCompilationError(c, format, args...)
-}
-
 func (c *TokenContext) ToContext() *Context {
 	var tokens []*TokenContext
 	if c != nil {
@@ -58,6 +50,10 @@ func (c *TokenContext) ToContext() *Context {
 	}
 
 	return ctx
+}
+
+func (c *TokenContext) HighLight() string {
+	return c.ToContext().HighLight()
 }
 
 type Context struct {
@@ -181,4 +177,12 @@ func readSpaces(s string, start int, end int) string {
 	}
 
 	return string(chars)
+}
+
+func (c *Context) NewSyntaxError(format string, args ...interface{}) *SyntaxNError {
+	return MakeSyntaxError(c, format, args...)
+}
+
+func (c *Context) NewCompilationError(format string, args ...interface{}) *CompilationNError {
+	return MakeCompilationError(c, format, args...)
 }
