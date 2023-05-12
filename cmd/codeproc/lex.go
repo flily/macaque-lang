@@ -38,7 +38,7 @@ func LexicalAnalysis(filename string) {
 	}
 
 	for _, elem := range elementList {
-		highlight := elem.HighLight()
+		highlight := elem.ToContext().HighLight()
 		fmt.Printf("%s\n%s  %s\n",
 			elem.Position.Line.Content,
 			highlight,
