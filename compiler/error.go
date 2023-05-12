@@ -7,28 +7,28 @@ import (
 	"github.com/flily/macaque-lang/token"
 )
 
-type CompilationError struct {
+type SematicError struct {
 	token.ErrorWithContext
 
 	Info []string
 }
 
-func NewCompilationError(context *token.Context, format string, args ...interface{}) *CompilationError {
+func NewSemanticError(context *token.Context, format string, args ...interface{}) *SematicError {
 	base := token.NewErrorWithContext(context, errors.ErrCodeCompilationError, format, args...)
-	e := &CompilationError{
+	e := &SematicError{
 		ErrorWithContext: *base,
 	}
 
 	return e
 }
 
-func (e *CompilationError) WithInfo(ctx *token.Context, format string, args ...interface{}) *CompilationError {
+func (e *SematicError) WithInfo(ctx *token.Context, format string, args ...interface{}) *SematicError {
 	s := ctx.Message(format, args...)
 	e.Info = append(e.Info, s)
 	return e
 }
 
-func (e *CompilationError) Error() string {
+func (e *SematicError) Error() string {
 	parts := make([]string, 1+len(e.Info))
 	parts[0] = e.Context.Message(e.Message)
 	for i, info := range e.Info {
