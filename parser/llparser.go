@@ -119,9 +119,9 @@ func (p *LLParser) skipComment() {
 	}
 }
 
-func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *token.SyntaxError {
+func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *SyntaxError {
 	current := p.container.Current()
-	return current.ToContext().NewSyntaxError(format, args...)
+	return NewSyntaxError(current.ToContext(), format, args...)
 }
 
 func (p *LLParser) parseProgram() (*ast.Program, error) {
@@ -521,7 +521,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 	}
 
 	if !args.IsIdentifierList() {
-		err := current.ToContext().NewSyntaxError(
+		err := NewSyntaxError(current.ToContext(),
 			"recursion function call MUST NOT follow by a block statement",
 		)
 		return nil, err

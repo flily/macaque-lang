@@ -175,10 +175,6 @@ func readSpaces(s string, start int, end int) string {
 	return string(chars)
 }
 
-func (c *Context) NewSyntaxError(format string, args ...interface{}) *SyntaxError {
-	return MakeSyntaxError(c, format, args...)
-}
-
-func (c *Context) NewCompilationError(format string, args ...interface{}) *CompilationError {
-	return MakeCompilationError(c, format, args...)
+func (c *Context) NewError(code int, format string, args ...interface{}) *ErrorWithContext {
+	return NewErrorWithContext(c, code, format, args...)
 }

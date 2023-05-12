@@ -41,6 +41,11 @@ SkipWhitespace:
 	return i
 }
 
+func (s *RecursiveScanner) RejectError(length int, format string, args ...interface{}) *LexicalError {
+	ctx := s.RejectToken(length)
+	return NewLexicalError(ctx, format, args...)
+}
+
 func (s *RecursiveScanner) scanStateInit() (*token.TokenContext, error) {
 	var elem *token.TokenContext
 	var err error
@@ -164,8 +169,8 @@ StringLoop:
 
 		case '\\':
 			if s.EOF() {
-				ctx := s.RejectToken(1)
-				return nil, ctx.ToContext().NewSyntaxError("unexpected EOF")
+				err := s.RejectError(1, "unexpected EOF")
+				return nil, err
 			}
 
 			n := s.Current()
@@ -176,8 +181,8 @@ StringLoop:
 			case 'x':
 				s.Shift(1)
 				if charsLeft := s.CharsLeft(); charsLeft < 2 {
-					ctx := s.RejectToken(charsLeft + 1)
-					return nil, ctx.ToContext().NewSyntaxError("insufficient characters for escape sequence")
+					err := s.RejectError(charsLeft+1, "insufficient characters for escape sequence")
+					return nil, err
 				}
 
 				n1 := s.Current()
@@ -186,13 +191,13 @@ StringLoop:
 					s.Shift(2)
 
 				} else {
-					ctx := s.RejectToken(2)
-					return nil, ctx.ToContext().NewSyntaxError("invalid escape sequence: \\x%c%c", n1, n2)
+					err := s.RejectError(2, "invalid escape sequence: \\x%c%c", n1, n2)
+					return nil, err
 				}
 
 			default:
-				ctx := s.RejectToken(1)
-				return nil, ctx.ToContext().NewSyntaxError("invalid escape sequence: \\%c", n)
+				err := s.RejectError(1, "invalid escape sequence: \\%c", n)
+				return nil, err
 			}
 		}
 	}
@@ -248,8 +253,7 @@ func (s *RecursiveScanner) scanStatePunctuation() (*token.TokenContext, error) {
 		elem = s.makeForwardLexicalElement(1)
 
 	} else {
-		ctx := s.RejectToken(1)
-		err = ctx.ToContext().NewSyntaxError("unknown operator '%c'", c)
+		err = s.RejectError(1, "unknown operator '%c'", c)
 	}
 
 	return elem, err

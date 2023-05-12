@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrScannerHasContentAlready = errors.NewError(token.ErrScannerError, "scanner has content already")
+	ErrScannerHasContentAlready = errors.NewError(errors.ErrScannerError, "scanner has content already")
 )
 
 type Scanner interface {
