@@ -61,6 +61,8 @@ func (c parserErrorTestCase) expect(got string) bool {
 }
 
 func runParserErrorTestCase(t *testing.T, cases []parserErrorTestCase) {
+	t.Helper()
+
 	for _, c := range cases {
 		program, err := testLLParseCode(c.code())
 		if err == nil {
@@ -158,7 +160,7 @@ func TestParseLetStatementError(t *testing.T) {
 			[]string{
 				`let answer = 3 + return`,
 				"                 ^^^^^^",
-				"                 unexpected token in EXPRESSION: RETURN",
+				"                 unexpected token RETURN IN EXPRESSION",
 				"  at testcase:1:18",
 			},
 		},
@@ -412,7 +414,7 @@ func TestParseArrayLiteralError(t *testing.T) {
 			[]string{
 				`[1 + return, 2, 3]`,
 				"     ^^^^^^",
-				"     unexpected token in EXPRESSION: RETURN",
+				"     unexpected token RETURN IN EXPRESSION",
 				"  at testcase:1:6",
 			},
 		},
@@ -489,7 +491,7 @@ func TestParseHashLiteralError(t *testing.T) {
 			[]string{
 				`{1 + return: 1},`,
 				"     ^^^^^^",
-				"     unexpected token in EXPRESSION: RETURN",
+				"     unexpected token RETURN IN EXPRESSION",
 				"  at testcase:1:6",
 			},
 		},
@@ -497,7 +499,7 @@ func TestParseHashLiteralError(t *testing.T) {
 			[]string{
 				`{1: 1 + return}`,
 				"        ^^^^^^",
-				"        unexpected token in EXPRESSION: RETURN",
+				"        unexpected token RETURN IN EXPRESSION",
 				"  at testcase:1:9",
 			},
 		},

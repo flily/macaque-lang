@@ -9,6 +9,7 @@ const (
 	UnknownError = iota
 	ErrCodeLexicalError
 	ErrCodeSyntaxError
+	ErrCodeUnexpectedToken
 	ErrCodeRuntimeError
 	ErrCodeCompilationError
 
@@ -31,15 +32,19 @@ type CanDerive interface {
 
 func NewRawError(kind int, format string, args ...interface{}) *BaseError {
 	e := &BaseError{
-		Kind:    kind,
-		Message: fmt.Sprintf(format, args...),
+		Kind: kind,
 	}
 
-	return e
+	return e.WithMessage(format, args...)
 }
 
 func NewError(kind int, format string, args ...interface{}) error {
 	return NewRawError(kind, format, args...)
+}
+
+func (e *BaseError) WithMessage(format string, args ...interface{}) *BaseError {
+	e.Message = fmt.Sprintf(format, args...)
+	return e
 }
 
 func (e *BaseError) Error() string {

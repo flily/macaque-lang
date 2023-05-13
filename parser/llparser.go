@@ -66,10 +66,18 @@ func (p *LLParser) Parse() (*ast.Program, error) {
 	return p.parseProgram()
 }
 
+func (p *LLParser) unexpectedError(context string, expected []token.Token) *UnexpectedTokenError {
+	current := p.current()
+	return NewUnexpectedTokenError(current.ToContext(), current, expected...).
+		WithMessage("unexpected token %s IN %s", current.Token, context)
+}
+
 func (p *LLParser) expect(token token.Token, rule string) error {
 	current := p.container.Current()
 	if current.Token != token {
-		return p.makeSyntaxError("expect token %s IN %s, but got %s",
+		ctx := current.ToContext()
+		err := NewUnexpectedTokenError(ctx, current, token)
+		return err.WithMessage("expect token %s IN %s, but got %s",
 			token, rule, current.Token)
 	}
 
@@ -173,7 +181,14 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 		stmt, err = p.parseReturnStatement()
 
 	default:
-		return nil, p.makeSyntaxError("unexpected token in PROGRAM: %s", current.Token)
+		expects := []token.Token{
+			token.Let, token.Comment,
+			token.Null, token.False, token.True, token.Integer, token.Float, token.String,
+			token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace,
+			token.If, token.Fn,
+			token.Return,
+		}
+		return nil, p.unexpectedError("PROGRAM", expects)
 	}
 
 	if err != nil {
@@ -602,7 +617,15 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 		expr, err = p.parseIfExpression()
 
 	default:
-		err = p.makeSyntaxError("unexpected token in EXPRESSION: %s", current.Token)
+		expecteds := []token.Token{
+			token.LParen,
+			token.Integer, token.Float, token.String, token.True, token.False, token.Null,
+			token.LBracket, token.LBrace, token.Fn,
+			token.Identifier,
+			token.Bang, token.Minus,
+			token.If,
+		}
+		err = p.unexpectedError("EXPRESSION", expecteds)
 	}
 
 	if err != nil {
@@ -640,7 +663,10 @@ func (p *LLParser) parseExpressionWithOperator(expr ast.Expression, precedence i
 			expr, err = p.parseInfixExpression(expr, precedence)
 
 		} else {
-			err = p.makeSyntaxError("unexpected token in EXPRESSION_OP: %s", operator)
+			expecteds := []token.Token{
+				token.LParen, token.DualColon, token.LBracket, token.Period,
+			}
+			err = p.unexpectedError("EXPRESSION_OP", expecteds)
 		}
 	}
 
@@ -855,7 +881,9 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 			alternative, err = p.parseBlockStatement(RuleIfExpression)
 
 		default:
-			return nil, p.makeSyntaxError("unexpected token in IF-ELSE: %s", current.Token)
+			expecteds := []token.Token{token.If, token.LBrace}
+			err = p.unexpectedError("IF-ELSE", expecteds).
+				WithMessage("unexpected token in IF-ELSE: %s", current.Token)
 		}
 
 		if err != nil {
