@@ -941,3 +941,119 @@ func TestParseExpressionListToIdentifierList(t *testing.T) {
 		t.Errorf("Expression list should be identifier list")
 	}
 }
+
+func TestCodeWithComments(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`
+				// This is a comment
+				let answer = 42;
+			`,
+			program(
+				let(
+					idList(
+						"answer"),
+					exprList(
+						l(42),
+					),
+				),
+			),
+		},
+		{
+			`
+				let a = 3 + // This is a comment
+						5;
+			`,
+			program(
+				let(
+					idList(
+						"a"),
+					exprList(
+						infix("+", l(3), l(5)),
+					),
+				),
+			),
+		},
+		{
+			`	let    // a let
+			        a      // identifier
+				  =      // assign
+				    3      // 3, a number
+				       +  // add
+				       // multiple lines comments
+				    5     // last number  5
+				; // end of statement
+			`,
+			program(
+				let(
+					idList(
+						"a"),
+					exprList(
+						infix("+", l(3), l(5)),
+					),
+				),
+			),
+		},
+		{
+			`let        // a let
+			    a       // identifier
+			  =         // assign
+			    if      // if
+			        (   // left paren)
+			      3     // 3, a number
+			        >   // greater than
+		          5     // 5, a number
+			    )       // right paren
+			// comment before block
+			  {         // left brace
+		        7       // 7, a number
+			  }         // right brace
+			// comment after block
+			else        // else
+			// comment if block
+			if          // else-if
+			// comment left paren
+			(           // left paren
+			  9         // 9, a number
+			    <       // less than
+			  11        // 11, a number
+			)           // right paren
+			// comment before block
+			  {         // left brace
+			     13     // 13, a number
+			  }         // right brace
+			// comment after block
+			else        // else
+			// comment before block
+			  {         // left brace
+			     15     // 15, a number
+			  }         // right brace
+			;           // end of statement
+			`,
+			program(
+				let(
+					idList("a"),
+					exprList(
+						ifexp(
+							infix(">", l(3), l(5)),
+							block(
+								expr(l(7)),
+							),
+							elseif(
+								infix("<", l(9), l(11)),
+								block(
+									expr(l(13)),
+								),
+								block(
+									expr(l(15)),
+								),
+							),
+						),
+					),
+				),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}

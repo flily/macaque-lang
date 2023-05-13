@@ -72,8 +72,7 @@ func (p *LLParser) unexpectedError(context string, expected []token.Token) *Unex
 		WithMessage("unexpected token %s IN %s", current.Token, context)
 }
 
-func (p *LLParser) expect(token token.Token, rule string) error {
-	current := p.container.Current()
+func (p *LLParser) expectToken(current *token.TokenContext, token token.Token, rule string) error {
 	if current.Token != token {
 		ctx := current.ToContext()
 		err := NewUnexpectedTokenError(ctx, current, token)
@@ -84,23 +83,47 @@ func (p *LLParser) expect(token token.Token, rule string) error {
 	return nil
 }
 
+func (p *LLParser) expect(token token.Token, rule string) error {
+	current := p.current()
+	return p.expectToken(current, token, rule)
+}
+
+func (p *LLParser) expectSkipComment(token token.Token, rule string) error {
+	current, _ := p.currentSkipComment()
+	return p.expectToken(current, token, rule)
+}
+
 func (p *LLParser) current() *token.TokenContext {
 	return p.container.Current()
 }
 
-func (p *LLParser) currentToken() token.Token {
-	current := p.container.Current()
-	return current.Token
+func (p *LLParser) currentSkipComment() (*token.TokenContext, *token.Context) {
+	var comments []*token.TokenContext
+	var current *token.TokenContext
+	foundToken := false
+
+	for !foundToken {
+		current = p.current()
+		if current == nil {
+			break
+		}
+
+		if current.Token == token.Comment {
+			p.nextToken()
+			comments = append(comments, current)
+			continue
+		}
+
+		foundToken = true
+	}
+
+	return current, token.NewContext(comments...)
 }
 
 func (p *LLParser) DebugLine() string {
-	current := p.container.Current()
+	current := p.current()
 	return current.ToContext().HighLight()
 }
-
-// func (p *LLParser) peek(offset int) *lex.LexicalElement {
-// 	return p.container.Peek(offset)
-// }
 
 func (p *LLParser) nextToken() *token.TokenContext {
 	return p.container.Next()
@@ -111,40 +134,52 @@ func (p *LLParser) skipToken(token token.Token, rule string) (*token.TokenContex
 		return nil, err
 	}
 
-	elem := p.container.current()
-	p.container.Next()
+	elem := p.container.currentUnsafe()
+	p.nextToken()
 	return elem, nil
 }
 
-func (p *LLParser) skipComment() {
-	for {
-		current := p.container.Current()
-		if current == nil || current.Token != token.Comment {
-			break
-		}
-
-		p.container.Next()
+func (p *LLParser) skipTokenAndComment(token token.Token, rule string) (*token.TokenContext, error) {
+	current, _ := p.currentSkipComment()
+	if err := p.expectToken(current, token, rule); err != nil {
+		return nil, err
 	}
+
+	p.nextToken()
+	return current, nil
 }
 
 func (p *LLParser) makeSyntaxError(format string, args ...interface{}) *SyntaxError {
-	current := p.container.Current()
+	current := p.current()
 	return NewSyntaxError(current.ToContext(), format, args...)
 }
 
 func (p *LLParser) parseProgram() (*ast.Program, error) {
-	program := ast.NewEmptyProgram()
+	statements, err := p.parseStatements("PROGRAM")
+	if err != nil {
+		return nil, err
+	}
+
+	program := ast.NewEmptyProgram(statements)
+	return program, nil
+}
+
+// Parse statements
+
+func (p *LLParser) parseStatements(context string) ([]ast.Statement, error) {
+	var stmts []ast.Statement
+
 	current := p.current()
-
-	p.DebugLine()
-
-	for current != nil && current.Token != token.EOF {
-		stmt, err := p.parseStatement()
+	for current != nil && current.Token != token.RBrace && current.Token != token.EOF {
+		stmt, err := p.parseStatement(context)
 		if err != nil {
 			return nil, err
 		}
 
-		program.AddStatement(stmt)
+		if stmt != nil {
+			// skip comments
+			stmts = append(stmts, stmt)
+		}
 
 		next := p.current()
 		if next == current {
@@ -154,23 +189,17 @@ func (p *LLParser) parseProgram() (*ast.Program, error) {
 		current = next
 	}
 
-	return program, nil
+	return stmts, nil
 }
 
-// Parse statements
-
-func (p *LLParser) parseStatement() (ast.Statement, error) {
+func (p *LLParser) parseStatement(context string) (ast.Statement, error) {
 	var stmt ast.Statement
 	var err error
 
-	current := p.current()
+	current, comments := p.currentSkipComment()
 	switch current.Token {
 	case token.Let:
 		stmt, err = p.parseLetStatement()
-
-	case token.Comment:
-		// skip comment
-		p.skipComment()
 
 	case token.Null, token.False, token.True, token.Integer, token.Float, token.String,
 		token.Identifier, token.Minus, token.Bang, token.LParen, token.LBracket, token.LBrace,
@@ -180,6 +209,9 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 	case token.Return:
 		stmt, err = p.parseReturnStatement()
 
+	case token.EOF:
+		stmt, err = nil, nil
+
 	default:
 		expects := []token.Token{
 			token.Let, token.Comment,
@@ -188,13 +220,15 @@ func (p *LLParser) parseStatement() (ast.Statement, error) {
 			token.If, token.Fn,
 			token.Return,
 		}
-		return nil, p.unexpectedError("PROGRAM", expects)
+
+		err = p.unexpectedError(context, expects)
 	}
 
-	if err != nil {
+	if stmt == nil || err != nil {
 		return nil, err
 	}
 
+	stmt.SetLeadingComments(comments)
 	return stmt, nil
 }
 
@@ -208,7 +242,7 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, err
 	}
 
-	if sAssign, err = p.skipToken(token.Assign, RuleLetStatement); err != nil {
+	if sAssign, err = p.skipTokenAndComment(token.Assign, RuleLetStatement); err != nil {
 		return nil, err
 	}
 
@@ -217,7 +251,7 @@ func (p *LLParser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, err
 	}
 
-	if sSemicolon, err = p.skipToken(token.Semicolon, RuleLetStatement); err != nil {
+	if sSemicolon, err = p.skipTokenAndComment(token.Semicolon, RuleLetStatement); err != nil {
 		return nil, err
 	}
 
@@ -240,7 +274,7 @@ func (p *LLParser) parseExpressionStatement() (*ast.ExpressionStatement, error) 
 		return nil, err
 	}
 
-	sSemicolon, _ = p.skipToken(token.Semicolon, RuleExpressionStatement)
+	sSemicolon, _ = p.skipTokenAndComment(token.Semicolon, RuleExpressionStatement)
 
 	stmt := &ast.ExpressionStatement{
 		Expressions: exprList,
@@ -260,7 +294,7 @@ func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 		return nil, err
 	}
 
-	sSemicolon, _ = p.skipToken(token.Semicolon, RuleReturnStatement)
+	sSemicolon, _ = p.skipTokenAndComment(token.Semicolon, RuleReturnStatement)
 
 	stmt := &ast.ReturnStatement{
 		Return:      sReturn,
@@ -275,33 +309,23 @@ func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 func (p *LLParser) parseBlockStatement(context string) (*ast.BlockStatement, error) {
 	var sLBrace, sRBrace *token.TokenContext
 	var err error
-	sLBrace, _ = p.skipToken(token.LBrace, context)
+	// block in if-else may have leading comments
+	sLBrace, _ = p.skipTokenAndComment(token.LBrace, context)
 
-	block := &ast.BlockStatement{
-		LBrace: sLBrace,
-	}
-	current := p.current()
-	for current != nil && current.Token != token.RBrace && current.Token != token.EOF {
-		stmt, err := p.parseStatement()
-		if err != nil {
-			return nil, err
-		}
-
-		block.AddStatement(stmt)
-
-		next := p.current()
-		if next == current {
-			return nil, p.makeSyntaxError("parser does not shift any token")
-		}
-
-		current = next
-	}
-
-	if sRBrace, err = p.skipToken(token.RBrace, context); err != nil {
+	statements, err := p.parseStatements(context)
+	if err != nil {
 		return nil, err
 	}
 
-	block.RBrace = sRBrace
+	if sRBrace, err = p.skipTokenAndComment(token.RBrace, context); err != nil {
+		return nil, err
+	}
+
+	block := &ast.BlockStatement{
+		LBrace:     sLBrace,
+		Statements: statements,
+		RBrace:     sRBrace,
+	}
 	return block, nil
 }
 
@@ -324,24 +348,10 @@ func (p *LLParser) parseIfStatement() (*ast.IfStatement, error) {
 // => [identifier-prefix] ( ALPHA / "_" ) *( ALPHA / DIGIT / "_" ) [identifier-suffix]
 func (p *LLParser) parseIdentifier() (*ast.Identifier, error) {
 	var id *ast.Identifier
-	var err error
 
-	found := false
-	for !found {
-		current := p.current()
-		switch current.Token {
-		case token.Identifier:
-			id = ast.NewIdentifier(current.Content, current)
-			p.nextToken()
-			found = true
-
-		case token.Comment:
-			p.skipComment()
-
-		default:
-			found = true
-			err = p.expect(token.Identifier, RuleIdentifier)
-		}
+	current, err := p.skipTokenAndComment(token.Identifier, RuleIdentifier)
+	if err == nil {
+		id = ast.NewIdentifier(current.Content, current)
 	}
 
 	return id, err
@@ -357,13 +367,13 @@ func (p *LLParser) parseIdentifierList() (*ast.IdentifierList, error) {
 			return nil, err
 		}
 
-		comma, err := p.skipToken(token.Comma, RuleIdentifierList)
+		comma, err := p.skipTokenAndComment(token.Comma, RuleIdentifierList)
 		list.AddIdentifier(id, comma)
 		if err != nil {
 			break
 		}
 
-		if p.expect(token.Identifier, RuleIdentifierList) != nil {
+		if p.expectSkipComment(token.Identifier, RuleIdentifierList) != nil {
 			break
 		}
 	}
@@ -426,7 +436,7 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 	var err error
 	sLBracket, _ = p.skipToken(token.LBracket, RuleArrayLiteral)
 
-	if sRBracket, err = p.skipToken(token.RBracket, RuleArrayLiteral); err == nil {
+	if sRBracket, err = p.skipTokenAndComment(token.RBracket, RuleArrayLiteral); err == nil {
 		a := &ast.ArrayLiteral{
 			LBracket:    sLBracket,
 			Expressions: exprList(),
@@ -440,7 +450,7 @@ func (p *LLParser) parseArrayLiteral() (*ast.ArrayLiteral, error) {
 		return nil, err
 	}
 
-	if sRBracket, err = p.skipToken(token.RBracket, RuleArrayLiteral); err != nil {
+	if sRBracket, err = p.skipTokenAndComment(token.RBracket, RuleArrayLiteral); err != nil {
 		return nil, err
 	}
 
@@ -466,7 +476,7 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 	}
 
 	for {
-		current := p.current()
+		current, _ := p.currentSkipComment()
 		if current.Token == token.RBrace {
 			break
 		}
@@ -477,7 +487,7 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 			return nil, err
 		}
 
-		if colon, err = p.skipToken(token.Colon, RuleHashLiteral); err != nil {
+		if colon, err = p.skipTokenAndComment(token.Colon, RuleHashLiteral); err != nil {
 			return nil, err
 		}
 
@@ -486,7 +496,7 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 			return nil, err
 		}
 
-		comma, err = p.skipToken(token.Comma, RuleHashLiteral)
+		comma, err = p.skipTokenAndComment(token.Comma, RuleHashLiteral)
 		hash.AddPair(key, colon, value, comma)
 
 		if err != nil {
@@ -494,7 +504,7 @@ func (p *LLParser) parseHashLiteral() (*ast.HashLiteral, error) {
 		}
 	}
 
-	if sRBrace, err = p.skipToken(token.RBrace, RuleHashLiteral); err != nil {
+	if sRBrace, err = p.skipTokenAndComment(token.RBrace, RuleHashLiteral); err != nil {
 		return nil, err
 	}
 
@@ -507,7 +517,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 	var err error
 	sFunction, _ = p.skipToken(token.Fn, RuleFunctionLiteral)
 
-	if sLParen, err = p.skipToken(token.LParen, RuleFunctionLiteral); err != nil {
+	if sLParen, err = p.skipTokenAndComment(token.LParen, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
@@ -516,13 +526,12 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if sRParen, err = p.skipToken(token.RParen, RuleFunctionLiteral); err != nil {
+	if sRParen, err = p.skipTokenAndComment(token.RParen, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
-	current := p.current()
-
-	if p.currentToken() != token.LBrace {
+	current, _ := p.currentSkipComment()
+	if current.Token != token.LBrace {
 		callExpr := &ast.CallExpression{
 			Base:      nil,
 			Token:     sFunction,
@@ -542,7 +551,7 @@ func (p *LLParser) parseFunctionLiteral() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if err := p.expect(token.LBrace, RuleFunctionLiteral); err != nil {
+	if err := p.expectSkipComment(token.LBrace, RuleFunctionLiteral); err != nil {
 		return nil, err
 	}
 
@@ -570,7 +579,7 @@ func (p *LLParser) parseExpressionList(canBeEmpty bool) (*ast.ExpressionList, er
 	var err error
 	list := &ast.ExpressionList{}
 
-	current := p.current()
+	current, _ := p.currentSkipComment()
 	if !canBeEmpty && !isExpressionFirstSet(current.Token) {
 		return nil, p.expect(token.Identifier, RuleExpressionList)
 	}
@@ -581,7 +590,7 @@ func (p *LLParser) parseExpressionList(canBeEmpty bool) (*ast.ExpressionList, er
 			return nil, err
 		}
 
-		comma, err := p.skipToken(token.Comma, RuleExpressionList)
+		comma, err := p.skipTokenAndComment(token.Comma, RuleExpressionList)
 		list.AddExpression(exp, comma)
 		if err != nil {
 			break
@@ -597,8 +606,7 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 	var expr ast.Expression
 	var err error
 
-	current := p.current()
-
+	current, _ := p.currentSkipComment()
 	switch current.Token {
 	case token.LParen:
 		expr, err = p.parseGroupExpression()
@@ -636,7 +644,7 @@ func (p *LLParser) parseExpression(precedence int) (ast.Expression, error) {
 }
 
 func (p *LLParser) parseExpressionWithOperator(expr ast.Expression, precedence int) (ast.Expression, error) {
-	current := p.current()
+	current, _ := p.currentSkipComment()
 	operator := current.Token
 	currentPrecedent := GetPrecedence(operator)
 
@@ -704,7 +712,7 @@ func (p *LLParser) parsePrefixExpression() (*ast.PrefixExpression, error) {
 // => "+" / "-" / "*" / "/" / "==" / "!=" / "<" / ">"     ; original design
 // => "%" / "<=" / ">=" / "&&" / "||" / "&" / "|" / "^"   ; extended operators
 func (p *LLParser) parseInfixExpression(left ast.Expression, precedence int) (ast.Expression, error) {
-	operator := p.current()
+	operator, _ := p.currentSkipComment()
 	currentPrecedence := GetPrecedence(operator.Token)
 	p.nextToken()
 
@@ -736,7 +744,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 			return nil, err
 		}
 
-		if sLParen, err = p.skipToken(token.LParen, RuleCallExpression); err != nil {
+		if sLParen, err = p.skipTokenAndComment(token.LParen, RuleCallExpression); err != nil {
 			return nil, err
 		}
 
@@ -749,7 +757,7 @@ func (p *LLParser) parseCallExpression(callable ast.Expression, findMethod bool)
 		return nil, err
 	}
 
-	if sRParen, err = p.skipToken(token.RParen, RuleCallExpression); err != nil {
+	if sRParen, err = p.skipTokenAndComment(token.RParen, RuleCallExpression); err != nil {
 		return nil, err
 	}
 
@@ -778,7 +786,7 @@ func (p *LLParser) parseIndexExpressionBracketNotaion(base ast.Expression) (ast.
 	}
 
 	var rb *token.TokenContext
-	if rb, err = p.skipToken(token.RBracket, RuleIndexExpression); err != nil {
+	if rb, err = p.skipTokenAndComment(token.RBracket, RuleIndexExpression); err != nil {
 		return nil, err
 	}
 
@@ -824,7 +832,7 @@ func (p *LLParser) parseGroupExpression() (ast.Expression, error) {
 		return nil, err
 	}
 
-	if _, err := p.skipToken(token.RParen, RuleGroupedExpression); err != nil {
+	if _, err := p.skipTokenAndComment(token.RParen, RuleGroupedExpression); err != nil {
 		return nil, err
 	}
 
@@ -841,7 +849,7 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 	var err error
 
 	sIf, _ = p.skipToken(token.If, RuleIfExpression)
-	if sLParen, err = p.skipToken(token.LParen, RuleIfExpression); err != nil {
+	if sLParen, err = p.skipTokenAndComment(token.LParen, RuleIfExpression); err != nil {
 		return nil, err
 	}
 
@@ -850,7 +858,7 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 		return nil, err
 	}
 
-	if sRParen, err = p.skipToken(token.RParen, RuleIfExpression); err != nil {
+	if sRParen, err = p.skipTokenAndComment(token.RParen, RuleIfExpression); err != nil {
 		return nil, err
 	}
 
@@ -867,12 +875,12 @@ func (p *LLParser) parseIfExpression() (*ast.IfExpression, error) {
 		Consequence: consequence,
 	}
 
-	if sElse, err := p.skipToken(token.Else, RuleIfExpression); err == nil {
+	if sElse, err := p.skipTokenAndComment(token.Else, RuleIfExpression); err == nil {
 		stmt.Else = sElse
 		var alternative ast.BlockStatementNode
 		var err error
 
-		current := p.current()
+		current, _ := p.currentSkipComment()
 		switch current.Token {
 		case token.If:
 			alternative, err = p.parseIfStatement()

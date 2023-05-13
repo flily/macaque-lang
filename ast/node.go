@@ -18,6 +18,8 @@ type Node interface {
 
 type Statement interface {
 	Node
+	SetLeadingComments(*token.Context)
+	GetLeadingComments() *token.Context
 	statementNode()
 }
 
@@ -45,9 +47,9 @@ type Program struct {
 	Statements []Statement
 }
 
-func NewEmptyProgram() *Program {
+func NewEmptyProgram(statements []Statement) *Program {
 	p := &Program{
-		Statements: make([]Statement, 0),
+		Statements: statements,
 	}
 
 	return p

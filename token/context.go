@@ -78,6 +78,14 @@ func JoinContext(ctxs ...*Context) *Context {
 	return NewContext(tokens...)
 }
 
+func (c *Context) AddTokens(tokens ...*TokenContext) {
+	c.Tokens = append(c.Tokens, tokens...)
+}
+
+func (c *Context) AddContext(ctx *Context) {
+	c.AddTokens(ctx.Tokens...)
+}
+
 func (c *Context) makeLineTokenMap() [][]*TokenContext {
 	lines := make([]int, 0)
 	tokens := make(map[int][]*TokenContext)

@@ -40,13 +40,13 @@ func (c *CodeContainer) ReadTokens() error {
 	return err
 }
 
-func (c *CodeContainer) current() *token.TokenContext {
+func (c *CodeContainer) currentUnsafe() *token.TokenContext {
 	return c.Elements[c.Index]
 }
 
 func (c *CodeContainer) Current() *token.TokenContext {
 	if c.Index < len(c.Elements) {
-		return c.current()
+		return c.currentUnsafe()
 	}
 
 	return nil
@@ -66,5 +66,5 @@ func (c *CodeContainer) Next() *token.TokenContext {
 		c.Index++
 	}
 
-	return c.current()
+	return c.currentUnsafe()
 }

@@ -7,7 +7,21 @@ import (
 	"github.com/flily/macaque-lang/token"
 )
 
+type StatementBase struct {
+	LeadingComments *token.Context
+}
+
+func (s *StatementBase) SetLeadingComments(c *token.Context) {
+	s.LeadingComments = c
+}
+
+func (s *StatementBase) GetLeadingComments() *token.Context {
+	return s.LeadingComments
+}
+
 type LetStatement struct {
+	StatementBase
+
 	Let         *token.TokenContext
 	Identifiers *IdentifierList
 	Assign      *token.TokenContext
@@ -51,6 +65,8 @@ func (s *LetStatement) EqualTo(node Node) bool {
 }
 
 type ReturnStatement struct {
+	StatementBase
+
 	Return      *token.TokenContext
 	Expressions *ExpressionList
 	Semicolon   *token.TokenContext
@@ -85,6 +101,8 @@ func (s *ReturnStatement) EqualTo(node Node) bool {
 }
 
 type IfStatement struct {
+	StatementBase
+
 	Expression *IfExpression
 }
 
@@ -110,6 +128,8 @@ func (s *IfStatement) EqualTo(node Node) bool {
 }
 
 type BlockStatement struct {
+	StatementBase
+
 	LBrace     *token.TokenContext
 	Statements []Statement
 	RBrace     *token.TokenContext
@@ -160,6 +180,8 @@ func (s *BlockStatement) AddStatement(stmt Statement) {
 }
 
 type ExpressionStatement struct {
+	StatementBase
+
 	Expressions *ExpressionList
 	Semicolon   *token.TokenContext
 }
@@ -192,6 +214,7 @@ func (s *ExpressionStatement) EqualTo(node Node) bool {
 
 // ImportStatement is not determined yet.
 type ImportStatement struct {
+	StatementBase
 }
 
 func (s *ImportStatement) statementNode()     {}
