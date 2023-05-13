@@ -95,3 +95,25 @@ func TestIsInfixOperator(t *testing.T) {
 		}
 	}
 }
+
+func TestUnfinishedCode(t *testing.T) {
+	code := "let answer = 42"
+
+	program, err := testLLParseCode(code)
+	if program != nil {
+		t.Fatalf("testLLParseCode(%s) expected nil, got %v", code, program)
+	}
+
+	if err == nil {
+		t.Fatalf("testLLParseCode(%s) expected error, got nil", code)
+	}
+
+	ute, ok := err.(*UnexpectedTokenError)
+	if !ok {
+		t.Fatalf("testLLParseCode(%s) expected UnexpectedTokenError, got %T", code, err)
+	}
+
+	if ute.Actual.Token != token.EOF {
+		t.Errorf("testLLParseCode(%s) expected %s, got %s", code, token.EOF, ute.Actual)
+	}
+}
