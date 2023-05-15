@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/flily/macaque-lang/compiler"
-	"github.com/flily/macaque-lang/errors"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -186,8 +185,9 @@ func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
 	return m.Functions[i], true
 }
 
-func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
+func (m *NaiveVM) ExecOpcode(op opcode.Opcode) (error, bool) {
 	var e error
+	var isHalt bool
 
 	// fmt.Printf("OP %s\n", op)
 	// vs, vv := m.InspectStack()
@@ -235,7 +235,7 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 		left := m.stackPop()
 		o, ok := left.OnInfix(operator, right)
 		if !ok {
-			e = errors.NewError(errors.ErrCodeRuntimeError,
+			e = NewRuntimeError(
 				"%s %s %s is not accepted", left.Type(), operator, right.Type())
 			break
 		}
@@ -246,7 +246,7 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 		operand := m.stackPop()
 		o, ok := operand.OnPrefix(operator)
 		if !ok {
-			e = errors.NewError(errors.ErrCodeRuntimeError,
+			e = NewRuntimeError(
 				"%s %s is not accepted", operator, operand.Type())
 			break
 		}
@@ -281,7 +281,7 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 		index := op.Operand0
 		info, ok := m.GetFunctionInfo(index)
 		if !ok {
-			e = errors.NewError(errors.ErrCodeRuntimeError,
+			e = NewRuntimeError(
 				"function %d not found", index)
 			break
 		}
@@ -300,7 +300,7 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 		base := m.stackPop()
 		o, ok := base.OnIndex(index)
 		if !ok {
-			e = errors.NewError(errors.ErrCodeRuntimeError,
+			e = NewRuntimeError(
 				"%s[%s] is not accepted", base.Type(), index.Type())
 			break
 		}
@@ -331,7 +331,7 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 	case opcode.ICall:
 		f := m.Top()
 		if f.Type() != object.ObjectTypeFunction {
-			e = errors.NewError(errors.ErrCodeRuntimeError,
+			e = NewRuntimeError(
 				"%s is not callable", f.Type())
 			break
 		}
@@ -357,10 +357,10 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
 		m.stackPushN(returnValues)
 
 	case opcode.IHalt:
-		break
+		isHalt = true
 	}
 
-	return e
+	return e, isHalt
 }
 
 func (m *NaiveVM) Run(entry *object.FunctionObject) error {
@@ -368,9 +368,10 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 
 	codeSize := uint64(len(m.Code))
 	var e error
-	for m.ip < codeSize && e == nil {
+	var isHalt bool
+	for m.ip < codeSize && e == nil && !isHalt {
 		op := m.fetchOp()
-		e = m.ExecOpcode(op)
+		e, isHalt = m.ExecOpcode(op)
 	}
 
 	return e
