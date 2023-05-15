@@ -186,184 +186,191 @@ func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
 	return m.Functions[i], true
 }
 
+func (m *NaiveVM) ExecOpcode(op opcode.Opcode) error {
+	var e error
+
+	// fmt.Printf("OP %s\n", op)
+	// vs, vv := m.InspectStack()
+	// fmt.Printf("STACK %s\n", vs)
+	// fmt.Printf("      %s\n", vv)
+
+	switch op.Name {
+	case opcode.ILoadNull:
+		m.stackPush(null)
+
+	case opcode.ILoadBool:
+		o := object.NewBoolean(op.Operand0 != 0)
+		m.stackPush(o)
+
+	case opcode.ILoadInt:
+		o := object.NewInteger(int64(op.Operand0))
+		m.stackPush(o)
+
+	case opcode.ILoadBind:
+		o := m.localRead(0)
+		f := o.(*object.FunctionObject)
+		i := int64(op.Operand0)
+		m.stackPush(f.Bounds[i])
+
+	case opcode.ISStore:
+		o := m.stackPop()
+		offset := op.Operand0
+		m.localBind(int64(offset), o)
+
+	case opcode.ISLoad:
+		offset := op.Operand0
+		o := m.localRead(int64(offset))
+		m.stackPush(o)
+
+	case opcode.ILoad:
+		o := m.refData(uint64(op.Operand0))
+		m.stackPush(o)
+
+	case opcode.IPop:
+		m.stackPopN(uint64(op.Operand0))
+
+	case opcode.IBinOp:
+		operator := token.Token(op.Operand0)
+		right := m.stackPop()
+		left := m.stackPop()
+		o, ok := left.OnInfix(operator, right)
+		if !ok {
+			e = errors.NewError(errors.ErrCodeRuntimeError,
+				"%s %s %s is not accepted", left.Type(), operator, right.Type())
+			break
+		}
+		m.stackPush(o)
+
+	case opcode.IUniOp:
+		operator := token.Token(op.Operand0)
+		operand := m.stackPop()
+		o, ok := operand.OnPrefix(operator)
+		if !ok {
+			e = errors.NewError(errors.ErrCodeRuntimeError,
+				"%s %s is not accepted", operator, operand.Type())
+			break
+		}
+		m.stackPush(o)
+
+	case opcode.IMakeList:
+		n := op.Operand0
+		array := make([]object.Object, n)
+		for i := 0; i < n; i++ {
+			array[n-1-i] = m.stackPop()
+		}
+		o := object.NewArray(array)
+		m.stackPush(o)
+
+	case opcode.IMakeHash:
+		n := op.Operand0
+		hash := make([]object.HashPair, n)
+		for i := 0; i < n; i++ {
+			value := m.stackPop()
+			key := m.stackPop()
+			item := object.HashPair{
+				Key:   key,
+				Value: value,
+			}
+			hash[n-1-i] = item
+		}
+
+		o := object.NewHash(hash)
+		m.stackPush(o)
+
+	case opcode.IMakeFunc:
+		index := op.Operand0
+		info, ok := m.GetFunctionInfo(index)
+		if !ok {
+			e = errors.NewError(errors.ErrCodeRuntimeError,
+				"function %d not found", index)
+			break
+		}
+
+		n := op.Operand1
+		bounds := make([]object.Object, n)
+		for i := 0; i < n; i++ {
+			bounds[n-1-i] = m.stackPop()
+		}
+
+		o := info.Func(bounds)
+		m.stackPush(o)
+
+	case opcode.IIndex:
+		index := m.stackPop()
+		base := m.stackPop()
+		o, ok := base.OnIndex(index)
+		if !ok {
+			e = errors.NewError(errors.ErrCodeRuntimeError,
+				"%s[%s] is not accepted", base.Type(), index.Type())
+			break
+		}
+		m.stackPush(o)
+
+	case opcode.IJumpFWD:
+		m.incrIP(uint64(op.Operand0))
+
+	case opcode.IJumpIf:
+		o := m.stackPop()
+		notJump := false
+		switch obj := o.(type) {
+		case *object.NullObject:
+			notJump = false
+		case *object.BooleanObject:
+			notJump = obj.Value
+		default:
+			notJump = true
+		}
+		if !notJump {
+			m.incrIP(uint64(op.Operand0))
+		}
+
+	case opcode.ISDUP:
+		top := m.Top()
+		m.stackPush(top)
+
+	case opcode.ICall:
+		f := m.Top()
+		if f.Type() != object.ObjectTypeFunction {
+			e = errors.NewError(errors.ErrCodeRuntimeError,
+				"%s is not callable", f.Type())
+			break
+		}
+
+		fn := f.(*object.FunctionObject)
+		m.pushCallInfo()
+		m.initCallStack(fn.FrameSize)
+		m.ip = fn.IP
+
+	case opcode.IClean:
+		n := m.sp - m.sb
+		m.stackPopN(n)
+
+	case opcode.IReturn:
+		n := int(m.sp - m.sb)
+		returnValues := m.stackPopNWithValue(n)
+		m.popCallInfo()
+
+		f := m.stackPop()
+		fn := f.(*object.FunctionObject)
+		args := fn.Arguments
+		m.stackPopN(uint64(args))
+		m.stackPushN(returnValues)
+
+	case opcode.IHalt:
+		break
+	}
+
+	return e
+}
+
 func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	m.SetEntry(entry)
 
 	codeSize := uint64(len(m.Code))
 	var e error
-RunSwitch:
-	for m.ip < codeSize {
+	for m.ip < codeSize && e == nil {
 		op := m.fetchOp()
-		// fmt.Printf("OP %s\n", op)
-		// vs, vv := m.InspectStack()
-		// fmt.Printf("STACK %s\n", vs)
-		// fmt.Printf("      %s\n", vv)
-
-		switch op.Name {
-		case opcode.ILoadNull:
-			m.stackPush(null)
-
-		case opcode.ILoadBool:
-			o := object.NewBoolean(op.Operand0 != 0)
-			m.stackPush(o)
-
-		case opcode.ILoadInt:
-			o := object.NewInteger(int64(op.Operand0))
-			m.stackPush(o)
-
-		case opcode.ILoadBind:
-			o := m.localRead(0)
-			f := o.(*object.FunctionObject)
-			i := int64(op.Operand0)
-			m.stackPush(f.Bounds[i])
-
-		case opcode.ISStore:
-			o := m.stackPop()
-			offset := op.Operand0
-			m.localBind(int64(offset), o)
-
-		case opcode.ISLoad:
-			offset := op.Operand0
-			o := m.localRead(int64(offset))
-			m.stackPush(o)
-
-		case opcode.ILoad:
-			o := m.refData(uint64(op.Operand0))
-			m.stackPush(o)
-
-		case opcode.IPop:
-			m.stackPopN(uint64(op.Operand0))
-
-		case opcode.IBinOp:
-			operator := token.Token(op.Operand0)
-			right := m.stackPop()
-			left := m.stackPop()
-			o, ok := left.OnInfix(operator, right)
-			if !ok {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"%s %s %s is not accepted", left.Type(), operator, right.Type())
-				break RunSwitch
-			}
-			m.stackPush(o)
-
-		case opcode.IUniOp:
-			operator := token.Token(op.Operand0)
-			operand := m.stackPop()
-			o, ok := operand.OnPrefix(operator)
-			if !ok {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"%s %s is not accepted", operator, operand.Type())
-				break RunSwitch
-			}
-			m.stackPush(o)
-
-		case opcode.IMakeList:
-			n := op.Operand0
-			array := make([]object.Object, n)
-			for i := 0; i < n; i++ {
-				array[n-1-i] = m.stackPop()
-			}
-			o := object.NewArray(array)
-			m.stackPush(o)
-
-		case opcode.IMakeHash:
-			n := op.Operand0
-			hash := make([]object.HashPair, n)
-			for i := 0; i < n; i++ {
-				value := m.stackPop()
-				key := m.stackPop()
-				item := object.HashPair{
-					Key:   key,
-					Value: value,
-				}
-				hash[n-1-i] = item
-			}
-
-			o := object.NewHash(hash)
-			m.stackPush(o)
-
-		case opcode.IMakeFunc:
-			index := op.Operand0
-			info, ok := m.GetFunctionInfo(index)
-			if !ok {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"function %d not found", index)
-				break RunSwitch
-			}
-
-			n := op.Operand1
-			bounds := make([]object.Object, n)
-			for i := 0; i < n; i++ {
-				bounds[n-1-i] = m.stackPop()
-			}
-
-			o := info.Func(bounds)
-			m.stackPush(o)
-
-		case opcode.IIndex:
-			index := m.stackPop()
-			base := m.stackPop()
-			o, ok := base.OnIndex(index)
-			if !ok {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"%s[%s] is not accepted", base.Type(), index.Type())
-				break RunSwitch
-			}
-			m.stackPush(o)
-
-		case opcode.IJumpFWD:
-			m.incrIP(uint64(op.Operand0))
-
-		case opcode.IJumpIf:
-			o := m.stackPop()
-			notJump := false
-			switch obj := o.(type) {
-			case *object.NullObject:
-				notJump = false
-			case *object.BooleanObject:
-				notJump = obj.Value
-			default:
-				notJump = true
-			}
-			if !notJump {
-				m.incrIP(uint64(op.Operand0))
-			}
-
-		case opcode.ISDUP:
-			top := m.Top()
-			m.stackPush(top)
-
-		case opcode.ICall:
-			f := m.Top()
-			if f.Type() != object.ObjectTypeFunction {
-				e = errors.NewError(errors.ErrCodeRuntimeError,
-					"%s is not callable", f.Type())
-				break RunSwitch
-			}
-
-			fn := f.(*object.FunctionObject)
-			m.pushCallInfo()
-			m.initCallStack(fn.FrameSize)
-			m.ip = fn.IP
-
-		case opcode.IClean:
-			n := m.sp - m.sb
-			m.stackPopN(n)
-
-		case opcode.IReturn:
-			n := int(m.sp - m.sb)
-			returnValues := m.stackPopNWithValue(n)
-			m.popCallInfo()
-
-			f := m.stackPop()
-			fn := f.(*object.FunctionObject)
-			args := fn.Arguments
-			m.stackPopN(uint64(args))
-			m.stackPushN(returnValues)
-
-		case opcode.IHalt:
-			break RunSwitch
-		}
+		e = m.ExecOpcode(op)
 	}
 
 	return e
