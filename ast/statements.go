@@ -215,6 +215,9 @@ func (s *ExpressionStatement) EqualTo(node Node) bool {
 // ImportStatement is not determined yet.
 type ImportStatement struct {
 	StatementBase
+
+	Import *token.TokenContext
+	Target *token.TokenContext
 }
 
 func (s *ImportStatement) statementNode()     {}
@@ -225,14 +228,18 @@ func (s *ImportStatement) CanonicalCode() string {
 }
 
 func (s *ImportStatement) GetContext() *token.Context {
-	return nil
+	c := token.NewContext(s.Import, s.Target)
+
+	return c
 }
 
 func (s *ImportStatement) EqualTo(node Node) bool {
 	result := false
-	switch node.(type) {
+	switch n := node.(type) {
 	case *ImportStatement:
-		result = true
+		if s.Target != nil && n.Target != nil {
+			result = s.Target.Content == n.Target.Content
+		}
 	}
 
 	return result
