@@ -44,7 +44,7 @@ func makeCodePrint(left []opcode.Opcode, right []opcode.Opcode) string {
 	return strings.Join(parts, "\n")
 }
 
-func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
+func testCompileCode(t *testing.T, code string) (*Compiler, *opcode.CodePage, error) {
 	t.Helper()
 
 	scanner := lex.NewRecursiveScanner("testcase")
@@ -65,7 +65,7 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *CodePage, error) {
 	return compiler, page, err
 }
 
-func checkInstructions(t *testing.T, text string, page *CodePage, compiler *Compiler, expecteds []opcode.Opcode) {
+func checkInstructions(t *testing.T, text string, page *opcode.CodePage, compiler *Compiler, expecteds []opcode.Opcode) {
 	t.Helper()
 
 	codes := page.Codes

@@ -1,8 +1,7 @@
-package compiler
+package opcode
 
 import (
 	"github.com/flily/macaque-lang/object"
-	"github.com/flily/macaque-lang/opcode"
 )
 
 type FunctionInfo struct {
@@ -17,7 +16,7 @@ func (f FunctionInfo) Func(bounds []object.Object) *object.FunctionObject {
 }
 
 type CodePage struct {
-	Codes     []opcode.Opcode
+	Codes     []Opcode
 	Data      []object.Object
 	Functions []FunctionInfo
 }
