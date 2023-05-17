@@ -23,7 +23,7 @@ func NewCompiler() *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(p *ast.Program) (*opcode.CodePage, error) {
+func (c *Compiler) Compile(p *ast.Program) (*CodePage, error) {
 	r, err := c.compileCode(p, FlagNone)
 	if err != nil {
 		return nil, err
@@ -330,7 +330,7 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 
 	frameSize := c.Context.Variable.CurrentScope().UpdateFrameSize(0)
 	functionContext := &FunctionContext{
-		FunctionInfo: opcode.FunctionInfo{
+		FunctionInfo: FunctionInfo{
 			Arguments: f.Arguments.Length(),
 			FrameSize: frameSize,
 		},

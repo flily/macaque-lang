@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -37,7 +38,7 @@ type NaiveVM struct {
 	Stack     []object.Object
 	callStack []callStackInfo
 	csi       uint64
-	Functions []opcode.FunctionInfo
+	Functions []compiler.FunctionInfo
 
 	AX int64
 }
@@ -143,18 +144,18 @@ func (m *NaiveVM) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
 
-func (m *NaiveVM) LoadCodePage(page *opcode.CodePage) {
+func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
 	m.LoadFunctions(page)
 	m.LoadCode(page)
 	m.LoadData(page)
 }
 
-func (m *NaiveVM) LoadFunctions(page *opcode.CodePage) {
-	m.Functions = make([]opcode.FunctionInfo, len(page.Functions))
+func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
+	m.Functions = make([]compiler.FunctionInfo, len(page.Functions))
 	copy(m.Functions, page.Functions)
 }
 
-func (m *NaiveVM) LoadCode(page *opcode.CodePage) {
+func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
 	m.Code = make([]opcode.Opcode, len(page.Codes))
 	copy(m.Code, page.Codes)
 	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
@@ -162,7 +163,7 @@ func (m *NaiveVM) LoadCode(page *opcode.CodePage) {
 	}
 }
 
-func (m *NaiveVM) LoadData(c *opcode.CodePage) {
+func (m *NaiveVM) LoadData(c *compiler.CodePage) {
 	m.Data = make([]object.Object, len(c.Data))
 	copy(m.Data, c.Data)
 }
@@ -176,9 +177,9 @@ func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
 	m.sb = m.sp
 }
 
-func (m *NaiveVM) GetFunctionInfo(i int) (opcode.FunctionInfo, bool) {
+func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
 	if i < 0 || i >= len(m.Functions) {
-		return opcode.FunctionInfo{}, false
+		return compiler.FunctionInfo{}, false
 	}
 
 	return m.Functions[i], true

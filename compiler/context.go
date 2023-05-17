@@ -321,7 +321,7 @@ func (c *LiteralContext) ReferenceString(s string) uint64 {
 }
 
 type FunctionContext struct {
-	opcode.FunctionInfo
+	FunctionInfo
 	Code *CodeBuffer
 }
 
@@ -331,11 +331,11 @@ type CompilerContext struct {
 	Functions []*FunctionContext
 }
 
-func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *opcode.CodePage {
+func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *CodePage {
 	code := NewCodeBuffer()
-	links := make([]opcode.FunctionInfo, len(c.Functions))
+	links := make([]FunctionInfo, len(c.Functions))
 
-	mainInfo := opcode.FunctionInfo{
+	mainInfo := FunctionInfo{
 		IP:        0,
 		FrameSize: c.Variable.CurrentFrameSize(),
 	}
@@ -364,7 +364,7 @@ func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *opcode.CodePage {
 	data := make([]object.Object, len(c.Literal.Values))
 	copy(data, c.Literal.Values)
 
-	page := &opcode.CodePage{
+	page := &CodePage{
 		Codes:     code.Code,
 		Functions: links,
 		Data:      data,

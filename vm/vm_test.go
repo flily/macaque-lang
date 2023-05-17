@@ -7,11 +7,10 @@ import (
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/object"
-	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/parser"
 )
 
-func testCompileCode(t *testing.T, code string) (*NaiveVM, *opcode.CodePage) {
+func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
 	t.Helper()
 
 	scanner := lex.NewRecursiveScanner("testcase")
