@@ -93,6 +93,7 @@ type ilCodeMakeFunc struct {
 	Module   string
 	Function int
 	Bindings int
+	Info     *Function
 }
 
 func (i ilCodeMakeFunc) GetCode() int {
