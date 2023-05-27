@@ -62,6 +62,14 @@ func (m *Module) Link() []Opcode {
 	return result
 }
 
+func (m *Module) AddFunction(f *Function) {
+	m.Functions = append(m.Functions, f)
+}
+
+func (m *Module) Main() *Function {
+	return m.Functions[0]
+}
+
 // Collection of modules, and link to an executable file.
 type Program struct {
 	Modules   []*Module
