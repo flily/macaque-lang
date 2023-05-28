@@ -34,8 +34,12 @@ type Function struct {
 }
 
 func (f *Function) Link() []Opcode {
-	result := make([]Opcode, 0)
+	l := 0
+	for _, c := range f.Codes {
+		l += c.Length()
+	}
 
+	result := make([]Opcode, 0, l)
 	for _, c := range f.Codes {
 		result = append(result, c.Link()...)
 	}
