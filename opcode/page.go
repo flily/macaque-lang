@@ -31,6 +31,7 @@ type Function struct {
 	ReturnValues int
 	IP           int64
 	Codes        []*CodeBlock
+	Contexts     []*token.Context
 }
 
 func (f *Function) Link() []Opcode {
@@ -40,10 +41,16 @@ func (f *Function) Link() []Opcode {
 	}
 
 	result := make([]Opcode, 0, l)
+	contexts := make([]*token.Context, 0, l)
+
 	for _, c := range f.Codes {
 		result = append(result, c.Link()...)
+		for i := 0; i < c.Length(); i++ {
+			contexts = append(contexts, c.Context)
+		}
 	}
 
+	f.Contexts = contexts
 	return result
 }
 
