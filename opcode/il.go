@@ -5,6 +5,8 @@ import "fmt"
 type IL interface {
 	GetCode() int
 	GetOpcode() Opcode
+
+	elemCodeBlock()
 }
 
 func NewIL(code int, ops ...interface{}) IL {
@@ -76,6 +78,8 @@ func (i ilCodeOp0) GetOpcode() Opcode {
 	return Code(int(i))
 }
 
+func (i ilCodeOp0) elemCodeBlock() {}
+
 type ilCodeOp1 struct {
 	Code    int
 	Operand int
@@ -88,6 +92,8 @@ func (i ilCodeOp1) GetCode() int {
 func (i ilCodeOp1) GetOpcode() Opcode {
 	return Code(i.Code, i.Operand)
 }
+
+func (i ilCodeOp1) elemCodeBlock() {}
 
 type ilCodeMakeFunc struct {
 	Module   string
@@ -103,3 +109,5 @@ func (i ilCodeMakeFunc) GetCode() int {
 func (i ilCodeMakeFunc) GetOpcode() Opcode {
 	return Code(IMakeFunc, i.Function, i.Bindings)
 }
+
+func (i ilCodeMakeFunc) elemCodeBlock() {}
