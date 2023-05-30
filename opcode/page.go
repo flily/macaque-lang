@@ -31,6 +31,7 @@ func (b *CodeBlock) IL(ctx *token.Context, code int, ops ...interface{}) *CodeBl
 		IL:      NewIL(code, ops...),
 		Context: ctx,
 	}
+
 	b.Codes = append(b.Codes, context)
 	return b
 }
