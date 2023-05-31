@@ -1,6 +1,7 @@
 package opcode
 
 import (
+	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -79,6 +80,10 @@ type Function struct {
 	ReturnValues int
 	IP           uint64
 	Codes        *CodeBlock
+}
+
+func (f *Function) Func(bounds []object.Object) *object.FunctionObject {
+	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
 }
 
 func (f *Function) Link() []Opcode {

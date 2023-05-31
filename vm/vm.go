@@ -38,7 +38,7 @@ type NaiveVM struct {
 	Stack     []object.Object
 	callStack []callStackInfo
 	csi       uint64
-	Functions []compiler.FunctionInfo
+	Functions []*opcode.Function
 
 	AX int64
 }
@@ -151,7 +151,7 @@ func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
 }
 
 func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
-	m.Functions = make([]compiler.FunctionInfo, len(page.Functions))
+	m.Functions = make([]*opcode.Function, len(page.Functions))
 	copy(m.Functions, page.Functions)
 }
 
@@ -177,9 +177,9 @@ func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
 	m.sb = m.sp
 }
 
-func (m *NaiveVM) GetFunctionInfo(i int) (compiler.FunctionInfo, bool) {
+func (m *NaiveVM) GetFunctionInfo(i int) (*opcode.Function, bool) {
 	if i < 0 || i >= len(m.Functions) {
-		return compiler.FunctionInfo{}, false
+		return nil, false
 	}
 
 	return m.Functions[i], true
