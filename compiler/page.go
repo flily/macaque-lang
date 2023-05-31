@@ -5,17 +5,6 @@ import (
 	"github.com/flily/macaque-lang/opcode"
 )
 
-type FunctionInfo struct {
-	Index     int
-	FrameSize int
-	Arguments int
-	IP        uint64
-}
-
-func (f FunctionInfo) Func(bounds []object.Object) *object.FunctionObject {
-	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
-}
-
 type CodePage struct {
 	Codes     []opcode.Opcode
 	Data      []object.Object

@@ -320,11 +320,6 @@ func (c *LiteralContext) ReferenceString(s string) uint64 {
 	return c.Add(s, o)
 }
 
-type FunctionContext struct {
-	FunctionInfo
-	Code *opcode.CodeBlock
-}
-
 type CompilerContext struct {
 	Variable  *VariableContext
 	Literal   *LiteralContext
