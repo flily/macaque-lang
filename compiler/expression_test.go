@@ -198,7 +198,7 @@ func TestCallExpression(t *testing.T) {
 				inst(opcode.ISLoad, -1),
 				inst(opcode.ISLoad, -2),
 				inst(opcode.IBinOp, int(token.Plus)),
-				inst(opcode.IReturn,),
+				inst(opcode.IReturn),
 				inst(opcode.IHalt),
 			),
 			data(),

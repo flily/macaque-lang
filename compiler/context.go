@@ -322,50 +322,49 @@ func (c *LiteralContext) ReferenceString(s string) uint64 {
 
 type FunctionContext struct {
 	FunctionInfo
-	Code *CodeBuffer
+	Code *opcode.CodeBlock
 }
 
 type CompilerContext struct {
 	Variable  *VariableContext
 	Literal   *LiteralContext
-	Functions []*FunctionContext
+	Functions []*opcode.Function
 }
 
-func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *CodePage {
-	code := NewCodeBuffer()
-	links := make([]FunctionInfo, len(c.Functions))
+func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *CodePage {
+	code := opcode.NewCodeBlock()
+	links := make([]*opcode.Function, len(c.Functions))
 
-	mainInfo := FunctionInfo{
+	mainInfo := &opcode.Function{
 		IP:        0,
 		FrameSize: c.Variable.CurrentFrameSize(),
 	}
 
-	code.Append(main)
+	code.Block(main)
 	links[0] = mainInfo
 
 	if len(c.Functions) > 1 {
-		code.Write(opcode.IHalt)
+		code.IL(nil, opcode.IHalt)
 		for i, f := range c.Functions {
 			if i == 0 {
 				continue
 			}
 
 			offset := code.Length()
+			f.IP = uint64(offset)
 
-			info := f.FunctionInfo
-			info.IP = uint64(offset)
-
-			code.Append(f.Code)
-			code.Write(opcode.IHalt)
-			links[i] = info
+			code.Block(f.Codes)
+			code.IL(nil, opcode.IHalt)
+			links[i] = f
 		}
 	}
 
 	data := make([]object.Object, len(c.Literal.Values))
 	copy(data, c.Literal.Values)
 
+	pageCode, _ := code.Link()
 	page := &CodePage{
-		Codes:     code.Code,
+		Codes:     pageCode,
 		Functions: links,
 		Data:      data,
 	}
@@ -373,7 +372,7 @@ func (c *CompilerContext) LinkCodePage(main *CodeBuffer) *CodePage {
 	return page
 }
 
-func (c *CompilerContext) AddFunction(f *FunctionContext) int {
+func (c *CompilerContext) AddFunction(f *opcode.Function) int {
 	n := len(c.Functions)
 	f.Index = n
 	c.Functions = append(c.Functions, f)
@@ -384,7 +383,7 @@ func NewCompilerContext() *CompilerContext {
 	c := &CompilerContext{
 		Variable: NewVariableContext(),
 		Literal:  NewLiteralContext(),
-		Functions: []*FunctionContext{
+		Functions: []*opcode.Function{
 			nil, // reserve for main function
 		},
 	}

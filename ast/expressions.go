@@ -425,7 +425,7 @@ func (e *IfExpression) GetContext() *token.Context {
 		e.RParen.ToContext(),
 		e.Consequence.GetContext(),
 		e.Else.ToContext(),
-		e.Alternative.GetContext(),
+		GetContext(e.Alternative),
 	)
 
 	return c

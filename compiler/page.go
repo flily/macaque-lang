@@ -19,13 +19,13 @@ func (f FunctionInfo) Func(bounds []object.Object) *object.FunctionObject {
 type CodePage struct {
 	Codes     []opcode.Opcode
 	Data      []object.Object
-	Functions []FunctionInfo
+	Functions []*opcode.Function
 }
 
-func (p *CodePage) Main() FunctionInfo {
+func (p *CodePage) Main() *opcode.Function {
 	return p.Functions[0]
 }
 
-func (p *CodePage) Info(i int) FunctionInfo {
+func (p *CodePage) Info(i int) *opcode.Function {
 	return p.Functions[i]
 }

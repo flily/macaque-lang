@@ -29,42 +29,44 @@ func (c *Compiler) Compile(p *ast.Program) (*CodePage, error) {
 		return nil, err
 	}
 
-	page := c.Context.LinkCodePage(r.Code)
+	page := c.Context.LinkCodePage(r)
 	return page, nil
 }
 
-func (c *Compiler) compileCode(node ast.Node, flag uint64) (*CompileResult, error) {
-	r := NewCompileResult()
+func (c *Compiler) compileCode(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
+	r := opcode.NewCodeBlock()
 	var e error
 
+	ctx := node.GetContext()
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
 		c.Context.Variable.EnterScope(FrameScopeFunction)
-		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
 
 	case *ast.NullLiteral:
-		r.Write(opcode.ILoadNull)
-		r.Values = 1
+		r.IL(ctx, opcode.ILoadNull).
+			SetValues(1)
 
 	case *ast.BooleanLiteral:
 		if n.Value {
-			r.Write(opcode.ILoadBool, 1)
+			r.IL(ctx, opcode.ILoadBool, 1)
 		} else {
-			r.Write(opcode.ILoadBool, 0)
+			r.IL(ctx, opcode.ILoadBool, 0)
 		}
-		r.Values = 1
+
+		r.SetValues(1)
 
 	case *ast.IntegerLiteral:
-		r.Write(opcode.ILoadInt, int(n.Value))
-		r.Values = 1
+		r.IL(ctx, opcode.ILoadInt, int(n.Value)).
+			SetValues(1)
 
 	case *ast.StringLiteral:
 		i := c.Context.Literal.ReferenceString(n.Value)
-		r.Write(opcode.ILoad, int(i))
-		r.Values = 1
+		r.IL(ctx, opcode.ILoad, int(i)).
+			SetValues(1)
 
 	case *ast.ArrayLiteral:
 		f := flag
@@ -78,8 +80,8 @@ CompileSwitch:
 			}
 		}
 
-		r.Write(opcode.IMakeList, n.Length())
-		r.Values = 1
+		r.IL(ctx, opcode.IMakeList, n.Length()).
+			SetValues(1)
 
 	case *ast.HashLiteral:
 		l := len(n.Pairs)
@@ -93,18 +95,18 @@ CompileSwitch:
 			}
 		}
 
-		r.Write(opcode.IMakeHash, l)
-		r.Values = 1
+		r.IL(ctx, opcode.IMakeHash, l).
+			SetValues(1)
 
 	case *ast.Identifier:
-		p := c.compileIdentifierReference(n.Value, r)
+		p := c.compileIdentifierReference(n.Value, ctx, r)
 		if p <= 0 {
 			ctx := n.GetContext()
 			e = NewSemanticError(ctx, "variable %s undefined", n.Value)
 			break CompileSwitch
 		}
 
-		r.Values = 1
+		r.SetValues(1)
 
 	case *ast.FunctionLiteral:
 		if e = r.Append(c.compileFunctionLiteral(n)); e != nil {
@@ -125,8 +127,8 @@ CompileSwitch:
 		}
 
 		if flag&FlagPackValue != 0 {
-			r.Write(opcode.IMakeList, n.Length())
-			r.Values = 1
+			r.IL(ctx, opcode.IMakeList, n.Length()).
+				SetValues(1)
 		}
 
 	case *ast.InfixExpression:
@@ -138,16 +140,16 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IBinOp, int(n.Operator.Token))
-		r.Values = 1
+		r.IL(ctx, opcode.IBinOp, int(n.Operator.Token)).
+			SetValues(1)
 
 	case *ast.PrefixExpression:
 		if e = r.Append(c.compileCode(n.Operand, flag|FlagPackValue)); e != nil {
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IUniOp, int(n.Prefix.Token))
-		r.Values = 1
+		r.IL(ctx, opcode.IUniOp, int(n.Prefix.Token)).
+			SetValues(1)
 
 	case *ast.IfExpression:
 		if e = r.Append(c.compileIfExpression(n)); e != nil {
@@ -187,9 +189,9 @@ CompileSwitch:
 		}
 
 		for k := len(index) - 1; k >= 0; k-- {
-			r.Write(opcode.ISStore, index[k])
+			r.IL(ctx, opcode.ISStore, index[k])
 		}
-		r.Values = 0
+		r.SetValues(0)
 
 	case *ast.IfStatement:
 		if e = r.Append(c.compileIfExpression(n.Expression)); e != nil {
@@ -202,7 +204,7 @@ CompileSwitch:
 		}
 
 	case *ast.BlockStatement:
-		if e = r.Append(c.compileStatements(n.Statements, false)); e != nil {
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
 			break CompileSwitch
 		}
 
@@ -211,24 +213,24 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
-		r.Write(opcode.IReturn)
+		r.IL(ctx, opcode.IReturn)
 	}
 
 	return r, e
 }
 
-func (c *Compiler) compileIdentifierReference(name string, r *CompileResult) int {
+func (c *Compiler) compileIdentifierReference(name string, ctx *token.Context, r *opcode.CodeBlock) int {
 	ref, kind := c.Context.Variable.Reference(name)
 	n := 1
 	switch kind {
 	case VariableKindGlobal, VariableKindModule:
-		r.Write(opcode.ILoad, ref.Offset)
+		r.IL(ctx, opcode.ILoad, ref.Offset)
 
 	case VariableKindBinding:
-		r.Write(opcode.ILoadBind, ref.Offset)
+		r.IL(ctx, opcode.ILoadBind, ref.Offset)
 
 	case VariableKindLocal:
-		r.Write(opcode.ISLoad, ref.Offset)
+		r.IL(ctx, opcode.ISLoad, ref.Offset)
 
 	default:
 		n = 0
@@ -237,7 +239,7 @@ func (c *Compiler) compileIdentifierReference(name string, r *CompileResult) int
 	return n
 }
 
-func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, error) {
+func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, error) {
 	code, err := c.compileCode(n.Condition, FlagNone)
 	if err != nil {
 		return nil, err
@@ -250,7 +252,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 	}
 	c.Context.Variable.LeaveScope()
 
-	var alternative *CompileResult
+	var alternative *opcode.CodeBlock
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	if n.Alternative != nil {
 		alternative, err = c.compileCode(n.Alternative, FlagNone)
@@ -259,22 +261,22 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*CompileResult, err
 		}
 
 	} else {
-		alternative = NewCompileResult()
-		alternative.Write(opcode.ILoadNull)
+		alternative = opcode.NewCodeBlock()
+		alternative.IL(n.GetContext(), opcode.ILoadNull)
 		alternative.Values = 1
 	}
 	c.Context.Variable.LeaveScope()
 
-	consequence.Write(opcode.IJumpFWD, alternative.Code.Length())
-	code.Write(opcode.IJumpIf, consequence.Code.Length())
-	code.AppendCode(consequence)
-	code.AppendCode(alternative)
+	consequence.IL(n.Consequence.GetContext(), opcode.IJumpFWD, alternative.Length())
+	code.IL(n.Consequence.GetContext(), opcode.IJumpIf, consequence.Length())
+	code.Block(consequence)
+	code.Block(alternative)
 
 	return code, nil
 }
 
-func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool) (*CompileResult, error) {
-	r := NewCompileResult()
+func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, withReturn bool) (*opcode.CodeBlock, error) {
+	r := opcode.NewCodeBlock()
 	var e error
 
 	var last ast.Statement
@@ -289,14 +291,17 @@ func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool
 	}
 
 	if last == nil {
-		r.Write(opcode.ILoadNull)
+		r.IL(ctx, opcode.ILoadNull)
 		r.Values = 1
+		if withReturn {
+			r.IL(ctx, opcode.IReturn)
+		}
 
 	} else {
+		lastContext := last.GetContext()
 		count := r.Values
 		if count > 0 {
-			// r.Write(opcode.IPop, count)
-			r.Write(opcode.IClean)
+			r.IL(lastContext, opcode.IClean)
 		}
 
 		lastResult, err := c.compileCode(last, FlagNone)
@@ -304,37 +309,34 @@ func (c *Compiler) compileStatements(statements []ast.Statement, withReturn bool
 			return nil, err
 		}
 
-		r.AppendCode(lastResult)
+		r.Block(lastResult)
 		r.Values = lastResult.Values
-	}
-
-	if withReturn {
-		r.Write(opcode.IReturn)
+		if withReturn {
+			r.IL(lastContext, opcode.IReturn)
+		}
 	}
 
 	return r, e
 }
 
-func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResult, error) {
-	result := NewCompileResult()
+func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*opcode.CodeBlock, error) {
+	result := opcode.NewCodeBlock()
 	c.Context.Variable.EnterScope(FrameScopeFunction)
 
 	for _, item := range f.Arguments.Identifiers {
 		c.Context.Variable.DefineArgument(item.Identifier.Value, item.Identifier.GetContext())
 	}
 
-	r, e := c.compileStatements(f.Body.Statements, true)
+	r, e := c.compileStatements(f.Body.GetContext(), f.Body.Statements, true)
 	if e != nil {
 		return nil, e
 	}
 
 	frameSize := c.Context.Variable.CurrentScope().UpdateFrameSize(0)
-	functionContext := &FunctionContext{
-		FunctionInfo: FunctionInfo{
-			Arguments: f.Arguments.Length(),
-			FrameSize: frameSize,
-		},
-		Code: r.Code,
+	functionContext := &opcode.Function{
+		FrameSize: frameSize,
+		Arguments: f.Arguments.Length(),
+		Codes:     r,
 	}
 
 	id := c.Context.AddFunction(functionContext)
@@ -342,18 +344,18 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*CompileResul
 	c.Context.Variable.LeaveScope()
 
 	for _, arg := range scope.BindingOrder {
-		c.compileIdentifierReference(arg.Name, result)
+		c.compileIdentifierReference(arg.Name, arg.Context, result)
 	}
 
-	result.Write(opcode.IMakeFunc, id, len(scope.Bindings))
+	result.IL(f.GetContext(), opcode.IMakeFunc, id, len(scope.Bindings))
 	result.Values = 1
 	return result, nil
 }
 
-func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) (*CompileResult, error) {
-	result := NewCompileResult()
+func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) (*opcode.CodeBlock, error) {
+	result := opcode.NewCodeBlock()
 
-	args := NewCompileResult()
+	args := opcode.NewCodeBlock()
 	l := expr.Args.Length()
 	for i := 0; i < l; i++ {
 		a := expr.Args.Expressions[l-i-1]
@@ -361,7 +363,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 			return nil, e
 		}
 	}
-	result.AppendCode(args)
+	result.Block(args)
 
 	switch expr.Token.GetToken() {
 	case token.Nil:
@@ -369,7 +371,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 		if err != nil {
 			return nil, err
 		}
-		result.AppendCode(callable)
+		result.Block(callable)
 
 	case token.DualColon:
 		callable, err := c.compileCode(expr.Base, flag)
@@ -378,29 +380,29 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 		}
 
 		memberIndex := c.Context.Literal.ReferenceString(expr.Member.Value)
-		callable.Write(opcode.ILoad, int(memberIndex))
-		callable.Write(opcode.ISDUP)
-		callable.Write(opcode.IIndex)
-		result.AppendCode(callable)
+		callable.IL(expr.Member.GetContext(), opcode.ILoad, int(memberIndex))
+		callable.IL(expr.Base.GetContext(), opcode.ISDUP)
+		callable.IL(expr.Member.GetContext(), opcode.IIndex)
+		result.Block(callable)
 
 	case token.Fn:
-		result.Write(opcode.ISLoad, 0)
+		result.IL(expr.Token.ToContext(), opcode.ISLoad, 0)
 	}
 
-	result.Write(opcode.ICall, args.Values)
+	result.IL(expr.GetContext(), opcode.ICall, args.Values)
 	result.Values = 1
 	return result, nil
 }
 
-func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*CompileResult, error) {
-	result := NewCompileResult()
+func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.CodeBlock, error) {
+	result := opcode.NewCodeBlock()
 
 	base, err := c.compileCode(expr.Base, FlagNone|FlagPackValue)
 	if err != nil {
 		return nil, err
 	}
 
-	var index *CompileResult
+	var index *opcode.CodeBlock
 
 	if expr.Operator.Token == token.LBracket {
 		index, err = c.compileCode(expr.Index, FlagNone|FlagPackValue)
@@ -410,14 +412,14 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*CompileRe
 	} else {
 		key := expr.Index.(*ast.Identifier)
 		i := c.Context.Literal.ReferenceString(key.Value)
-		index = NewCompileResult()
-		index.Write(opcode.ILoad, int(i))
+		index = opcode.NewCodeBlock()
+		index.IL(expr.Index.GetContext(), opcode.ILoad, int(i))
 		index.Values = 1
 	}
 
-	result.AppendCode(base)
-	result.AppendCode(index)
-	result.Write(opcode.IIndex)
+	result.Block(base)
+	result.Block(index)
+	result.IL(expr.Index.GetContext(), opcode.IIndex)
 
 	return result, nil
 }

@@ -76,7 +76,7 @@ type Function struct {
 	FrameSize    int
 	Arguments    int
 	ReturnValues int
-	IP           int64
+	IP           uint64
 	Codes        *CodeBlock
 }
 
