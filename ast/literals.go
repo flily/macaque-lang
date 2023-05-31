@@ -29,6 +29,10 @@ func (i *Identifier) CanonicalCode() string {
 }
 
 func (i *Identifier) GetContext() *token.Context {
+	if i == nil {
+		return nil
+	}
+
 	return i.Context
 }
 

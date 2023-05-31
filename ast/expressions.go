@@ -360,7 +360,7 @@ func (e *CallExpression) CanonicalCode() string {
 
 func (e *CallExpression) GetContext() *token.Context {
 	c := token.JoinContext(
-		e.Base.GetContext(),
+		GetContext(e.Base),
 		e.Token.ToContext(),
 		e.Member.GetContext(),
 		e.LParen.ToContext(),
