@@ -38,6 +38,7 @@ func (b *CodeBlock) IL(ctx *token.Context, code int, ops ...interface{}) *CodeBl
 
 func (b *CodeBlock) Block(block *CodeBlock) *CodeBlock {
 	b.Codes = append(b.Codes, block.Codes...)
+	b.Values += block.Values
 	return b
 }
 
