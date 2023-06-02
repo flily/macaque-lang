@@ -1,27 +1,76 @@
 package opcode
 
 import (
+	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/token"
 )
 
+type CodeBlockItem interface {
+	elemCodeBlock()
+}
+
+type ILContext struct {
+	IL      IL
+	Context *token.Context
+}
+
 // IL of a statement of an expression.
 type CodeBlock struct {
-	Context *token.Context
-	Codes   []IL
+	Codes  []ILContext
+	Values int
+}
+
+func NewCodeBlock() *CodeBlock {
+	b := &CodeBlock{}
+	return b
+}
+
+func (b *CodeBlock) elemCodeBlock() {}
+
+func (b *CodeBlock) IL(ctx *token.Context, code int, ops ...interface{}) *CodeBlock {
+	context := ILContext{
+		IL:      NewIL(code, ops...),
+		Context: ctx,
+	}
+
+	b.Codes = append(b.Codes, context)
+	return b
+}
+
+func (b *CodeBlock) Block(block *CodeBlock) *CodeBlock {
+	b.Codes = append(b.Codes, block.Codes...)
+	b.Values += block.Values
+	return b
+}
+
+func (b *CodeBlock) Append(block *CodeBlock, err error) error {
+	if err != nil {
+		return err
+	}
+
+	b.Block(block)
+	return nil
+}
+
+func (b *CodeBlock) SetValues(values int) *CodeBlock {
+	b.Values = values
+	return b
 }
 
 func (b *CodeBlock) Length() int {
 	return len(b.Codes)
 }
 
-func (b *CodeBlock) Link() []Opcode {
-	result := make([]Opcode, b.Length())
+func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
+	codes := make([]Opcode, b.Length())
+	debug := make([]*token.Context, b.Length())
 
 	for i, c := range b.Codes {
-		result[i] = c.GetOpcode()
+		codes[i] = c.IL.GetOpcode()
+		debug[i] = c.Context
 	}
 
-	return result
+	return codes, debug
 }
 
 type Function struct {
@@ -29,29 +78,17 @@ type Function struct {
 	FrameSize    int
 	Arguments    int
 	ReturnValues int
-	IP           int64
-	Codes        []*CodeBlock
-	Contexts     []*token.Context
+	IP           uint64
+	Codes        *CodeBlock
+}
+
+func (f *Function) Func(bounds []object.Object) *object.FunctionObject {
+	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
 }
 
 func (f *Function) Link() []Opcode {
-	l := 0
-	for _, c := range f.Codes {
-		l += c.Length()
-	}
-
-	result := make([]Opcode, 0, l)
-	contexts := make([]*token.Context, 0, l)
-
-	for _, c := range f.Codes {
-		result = append(result, c.Link()...)
-		for i := 0; i < c.Length(); i++ {
-			contexts = append(contexts, c.Context)
-		}
-	}
-
-	f.Contexts = contexts
-	return result
+	codes, _ := f.Codes.Link()
+	return codes
 }
 
 // Codes of a module, which codes in a single file.

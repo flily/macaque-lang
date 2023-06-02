@@ -67,12 +67,16 @@ func NewContext(tokens ...*TokenContext) *Context {
 func JoinContext(ctxs ...*Context) *Context {
 	count := 0
 	for _, c := range ctxs {
-		count += len(c.Tokens)
+		if c != nil {
+			count += len(c.Tokens)
+		}
 	}
 
 	tokens := make([]*TokenContext, 0, count)
 	for _, c := range ctxs {
-		tokens = append(tokens, c.Tokens...)
+		if c != nil {
+			tokens = append(tokens, c.Tokens...)
+		}
 	}
 
 	return NewContext(tokens...)
