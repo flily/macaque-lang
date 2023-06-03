@@ -91,10 +91,18 @@ func (f *Function) Link() []Opcode {
 	return codes
 }
 
+const (
+	ModuleTypeNoSet = iota
+	ModuleTypeSystem
+	ModuleTypeImported
+	ModuleTypeUser
+)
+
 // Codes of a module, which codes in a single file.
 type Module struct {
 	Name      string
 	Canonical string
+	Type      int
 	Index     int
 	File      *token.FileInfo
 	Functions []*Function
@@ -120,8 +128,9 @@ func (m *Module) Main() *Function {
 
 // Collection of modules, and link to an executable file.
 type Program struct {
-	Modules   []*Module
-	Functions []*Function
+	Modules       []*Module
+	ModuleNameMap map[string]*Module
+	Functions     []*Function
 }
 
 func (p *Program) LinkFunctions() {
