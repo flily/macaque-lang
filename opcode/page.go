@@ -143,3 +143,16 @@ func (p *Program) LinkFunctions() {
 		}
 	}
 }
+
+func (p *Program) LinkCode() []Opcode {
+	code := make([]Opcode, 0)
+
+	for _, f := range p.Functions {
+		f.IP = uint64(len(code))
+		fc := f.Link()
+		code = append(code, fc...)
+		code = append(code, Code(IHalt))
+	}
+
+	return code
+}
