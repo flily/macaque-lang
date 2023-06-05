@@ -369,7 +369,8 @@ func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *CodePage {
 
 func (c *CompilerContext) AddFunction(f *opcode.Function) int {
 	n := len(c.Functions)
-	f.Index = n
+	f.GlobalIndex = uint64(n)
+	f.ModuleIndex = uint64(n)
 	c.Functions = append(c.Functions, f)
 	return n
 }

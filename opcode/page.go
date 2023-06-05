@@ -74,7 +74,8 @@ func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
 }
 
 type Function struct {
-	Index        int
+	ModuleIndex  uint64
+	GlobalIndex  uint64
 	FrameSize    int
 	Arguments    int
 	ReturnValues int
@@ -138,7 +139,7 @@ func (p *Program) LinkFunctions() {
 
 	for _, m := range p.Modules {
 		for _, f := range m.Functions {
-			f.Index = len(p.Functions)
+			f.GlobalIndex = uint64(len(p.Functions))
 			p.Functions = append(p.Functions, f)
 		}
 	}
