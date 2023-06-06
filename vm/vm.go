@@ -24,6 +24,8 @@ type callStackInfo struct {
 	sp uint64
 	sb uint64
 	ip uint64
+	fi uint64
+	fp uint64
 }
 
 type NaiveVM struct {
@@ -34,6 +36,8 @@ type NaiveVM struct {
 	sp uint64 // stack pointer
 	sb uint64 // stack base pointer
 	bp uint64 // base pointer
+	fi uint64 // function index
+	fp uint64 // function pointer
 
 	Stack     []object.Object
 	callStack []callStackInfo
@@ -121,6 +125,8 @@ func (m *NaiveVM) pushCallInfo() {
 	m.callStack[m.csi].sp = m.sp
 	m.callStack[m.csi].sb = m.sb
 	m.callStack[m.csi].ip = m.ip
+	m.callStack[m.csi].fi = m.fi
+	m.callStack[m.csi].fp = m.fp
 	m.csi++
 }
 
@@ -130,6 +136,8 @@ func (m *NaiveVM) popCallInfo() {
 	m.sp = m.callStack[m.csi].sp
 	m.sb = m.callStack[m.csi].sb
 	m.ip = m.callStack[m.csi].ip
+	m.fi = m.callStack[m.csi].fi
+	m.fp = m.callStack[m.csi].fp
 }
 
 func (m *NaiveVM) initCallStack(frameSize int) {
@@ -339,6 +347,8 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) (error, bool) {
 		fn := f.(*object.FunctionObject)
 		m.pushCallInfo()
 		m.initCallStack(fn.FrameSize)
+		m.fi = fn.Index
+		m.fp = fn.IP
 		m.ip = fn.IP
 
 	case opcode.IClean:
