@@ -5,6 +5,7 @@ import (
 )
 
 type FunctionObject struct {
+	Index     uint64
 	FrameSize int
 	Arguments int
 	IP        uint64
