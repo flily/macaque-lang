@@ -28,8 +28,7 @@ type callStackInfo struct {
 	fp uint64
 }
 
-type NaiveVM struct {
-	Code []opcode.Opcode
+type NaiveVMBase struct {
 	Data []object.Object
 
 	ip uint64 // instruction pointer
@@ -47,9 +46,8 @@ type NaiveVM struct {
 	AX int64
 }
 
-func NewNaiveVM() *NaiveVM {
-	m := &NaiveVM{
-		Code:      make([]opcode.Opcode, 0),
+func NewNaiveVMBase() *NaiveVMBase {
+	m := &NaiveVMBase{
 		Data:      make([]object.Object, DefaultDataSize),
 		Stack:     make([]object.Object, DefaultStackSize),
 		callStack: make([]callStackInfo, DefaultStackSize),
@@ -58,12 +56,12 @@ func NewNaiveVM() *NaiveVM {
 	return m
 }
 
-func (m *NaiveVM) stackPush(o object.Object) {
+func (m *NaiveVMBase) stackPush(o object.Object) {
 	m.Stack[m.sp] = o
 	m.sp++
 }
 
-func (m *NaiveVM) stackPop() object.Object {
+func (m *NaiveVMBase) stackPop() object.Object {
 	var r object.Object
 	if m.sp > m.sb {
 		m.sp--
@@ -75,7 +73,7 @@ func (m *NaiveVM) stackPop() object.Object {
 	return r
 }
 
-func (m *NaiveVM) stackPopN(n uint64) {
+func (m *NaiveVMBase) stackPopN(n uint64) {
 	for m.sp > 0 && n > 0 {
 		n--
 		m.sp--
@@ -83,13 +81,13 @@ func (m *NaiveVM) stackPopN(n uint64) {
 	}
 }
 
-func (m *NaiveVM) stackPushN(objects []object.Object) {
+func (m *NaiveVMBase) stackPushN(objects []object.Object) {
 	for _, o := range objects {
 		m.stackPush(o)
 	}
 }
 
-func (m *NaiveVM) stackPopNWithValue(n int) []object.Object {
+func (m *NaiveVMBase) stackPopNWithValue(n int) []object.Object {
 	r := make([]object.Object, n)
 	for i := 0; i < n; i++ {
 		r[n-i-1] = m.stackPop()
@@ -98,29 +96,23 @@ func (m *NaiveVM) stackPopNWithValue(n int) []object.Object {
 	return r
 }
 
-func (m *NaiveVM) incrIP(n uint64) {
+func (m *NaiveVMBase) incrIP(n uint64) {
 	m.ip += n
 }
 
-func (m *NaiveVM) localBind(i int64, o object.Object) {
+func (m *NaiveVMBase) localBind(i int64, o object.Object) {
 	m.Stack[int64(m.bp)+i] = o
 }
 
-func (m *NaiveVM) localRead(i int64) object.Object {
+func (m *NaiveVMBase) localRead(i int64) object.Object {
 	return m.Stack[int64(m.bp)+i]
 }
 
-func (m *NaiveVM) fetchOp() opcode.Opcode {
-	r := m.Code[m.ip]
-	m.ip++
-	return r
-}
-
-func (m *NaiveVM) refData(i uint64) object.Object {
+func (m *NaiveVMBase) refData(i uint64) object.Object {
 	return m.Data[i]
 }
 
-func (m *NaiveVM) pushCallInfo() {
+func (m *NaiveVMBase) pushCallInfo() {
 	m.callStack[m.csi].bp = m.bp
 	m.callStack[m.csi].sp = m.sp
 	m.callStack[m.csi].sb = m.sb
@@ -130,7 +122,7 @@ func (m *NaiveVM) pushCallInfo() {
 	m.csi++
 }
 
-func (m *NaiveVM) popCallInfo() {
+func (m *NaiveVMBase) popCallInfo() {
 	m.csi--
 	m.bp = m.callStack[m.csi].bp
 	m.sp = m.callStack[m.csi].sp
@@ -140,7 +132,7 @@ func (m *NaiveVM) popCallInfo() {
 	m.fp = m.callStack[m.csi].fp
 }
 
-func (m *NaiveVM) initCallStack(frameSize int) {
+func (m *NaiveVMBase) initCallStack(frameSize int) {
 	m.bp = m.sp - 1
 	for i := 0; i < frameSize; i++ {
 		m.stackPush(null)
@@ -148,35 +140,10 @@ func (m *NaiveVM) initCallStack(frameSize int) {
 	m.sb = m.sp
 }
 
-func (m *NaiveVM) Top() object.Object {
+func (m *NaiveVMBase) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
-
-func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
-	m.LoadFunctions(page)
-	m.LoadCode(page)
-	m.LoadData(page)
-}
-
-func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
-	m.Functions = make([]*opcode.Function, len(page.Functions))
-	copy(m.Functions, page.Functions)
-}
-
-func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
-	m.Code = make([]opcode.Opcode, len(page.Codes))
-	copy(m.Code, page.Codes)
-	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
-		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
-	}
-}
-
-func (m *NaiveVM) LoadData(c *compiler.CodePage) {
-	m.Data = make([]object.Object, len(c.Data))
-	copy(m.Data, c.Data)
-}
-
-func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
+func (m *NaiveVMBase) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
 	m.ip = entry.IP
 	for i := 0; i < entry.FrameSize; i++ {
@@ -185,7 +152,7 @@ func (m *NaiveVM) SetEntry(entry *object.FunctionObject) {
 	m.sb = m.sp
 }
 
-func (m *NaiveVM) GetFunctionInfo(i int) (*opcode.Function, bool) {
+func (m *NaiveVMBase) GetFunctionInfo(i int) (*opcode.Function, bool) {
 	if i < 0 || i >= len(m.Functions) {
 		return nil, false
 	}
@@ -193,7 +160,7 @@ func (m *NaiveVM) GetFunctionInfo(i int) (*opcode.Function, bool) {
 	return m.Functions[i], true
 }
 
-func (m *NaiveVM) ExecOpcode(op opcode.Opcode) (error, bool) {
+func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	var e error
 	var isHalt bool
 
@@ -373,25 +340,11 @@ func (m *NaiveVM) ExecOpcode(op opcode.Opcode) (error, bool) {
 	return e, isHalt
 }
 
-func (m *NaiveVM) Run(entry *object.FunctionObject) error {
-	m.SetEntry(entry)
-
-	codeSize := uint64(len(m.Code))
-	var e error
-	var isHalt bool
-	for m.ip < codeSize && e == nil && !isHalt {
-		op := m.fetchOp()
-		e, isHalt = m.ExecOpcode(op)
-	}
-
-	return e
-}
-
-func (m *NaiveVM) GetAllStack() []object.Object {
+func (m *NaiveVMBase) GetAllStack() []object.Object {
 	return m.Stack[:m.sp]
 }
 
-func (m *NaiveVM) InspectStack() (string, string) {
+func (m *NaiveVMBase) InspectStack() (string, string) {
 	items := m.GetAllStack()
 	data := make([]string, len(items))
 	view := make([]string, len(items))
@@ -418,4 +371,62 @@ func (m *NaiveVM) InspectStack() (string, string) {
 	}
 
 	return strings.Join(data, ""), strings.Join(view, "")
+}
+
+type NaiveVM struct {
+	NaiveVMBase
+	Code []opcode.Opcode
+}
+
+func NewNaiveVM() *NaiveVM {
+	m := &NaiveVM{
+		NaiveVMBase: *NewNaiveVMBase(),
+		Code:        make([]opcode.Opcode, 0),
+	}
+
+	return m
+}
+
+func (m *NaiveVM) fetchOp() opcode.Opcode {
+	r := m.Code[m.ip]
+	m.ip++
+	return r
+}
+
+func (m *NaiveVM) Run(entry *object.FunctionObject) error {
+	m.SetEntry(entry)
+
+	codeSize := uint64(len(m.Code))
+	var e error
+	var isHalt bool
+	for m.ip < codeSize && e == nil && !isHalt {
+		op := m.fetchOp()
+		e, isHalt = m.ExecOpcode(op)
+	}
+
+	return e
+}
+
+func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
+	m.LoadFunctions(page)
+	m.LoadCode(page)
+	m.LoadData(page)
+}
+
+func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
+	m.Functions = make([]*opcode.Function, len(page.Functions))
+	copy(m.Functions, page.Functions)
+}
+
+func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
+	m.Code = make([]opcode.Opcode, len(page.Codes))
+	copy(m.Code, page.Codes)
+	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
+		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
+	}
+}
+
+func (m *NaiveVM) LoadData(c *compiler.CodePage) {
+	m.Data = make([]object.Object, len(c.Data))
+	copy(m.Data, c.Data)
 }
