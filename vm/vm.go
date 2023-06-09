@@ -407,18 +407,12 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	return e
 }
 
-func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
-	m.LoadFunctions(page)
-	m.LoadCode(page)
-	m.LoadData(page)
-}
-
-func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
+func (m *NaiveVM) loadFunctions(page *compiler.CodePage) {
 	m.Functions = make([]*opcode.Function, len(page.Functions))
 	copy(m.Functions, page.Functions)
 }
 
-func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
+func (m *NaiveVM) loadCode(page *compiler.CodePage) {
 	m.Code = make([]opcode.Opcode, len(page.Codes))
 	copy(m.Code, page.Codes)
 	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
@@ -426,7 +420,89 @@ func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
 	}
 }
 
-func (m *NaiveVM) LoadData(c *compiler.CodePage) {
+func (m *NaiveVM) loadData(c *compiler.CodePage) {
 	m.Data = make([]object.Object, len(c.Data))
 	copy(m.Data, c.Data)
+}
+
+func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
+	m.loadFunctions(page)
+	m.loadCode(page)
+	m.loadData(page)
+}
+
+type NaiveVMInterpreter struct {
+	NaiveVMBase
+	CodePage *opcode.CodePage
+}
+
+func (i *NaiveVMInterpreter) LoadCodePage(page *opcode.CodePage) {
+	i.CodePage = page
+}
+
+func (i *NaiveVMInterpreter) getFunction(o object.Object) (*opcode.Function, error) {
+	f, ok := o.(*object.FunctionObject)
+	if !ok {
+		return nil, NewRuntimeError(
+			"%s is not callable", f.Type())
+	}
+
+	fn, ok := i.GetFunctionInfo(int(f.Index))
+	if !ok {
+		return nil, NewRuntimeError(
+			"function %d not found", f.Index)
+	}
+
+	return fn, nil
+}
+
+func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
+	var e error
+	var isHalt bool
+	var breakAndReturn bool
+
+	for _, code := range f.Opcodes {
+		top := i.Top()
+		e, isHalt = i.ExecOpcode(code)
+		if e != nil {
+			break
+		}
+
+		if isHalt {
+			break
+		}
+
+		switch code.Name {
+		case opcode.ICall:
+			fn, err := i.getFunction(top)
+			if err != nil {
+				e = err
+				break
+			}
+
+			e, isHalt = i.runFunction(fn)
+
+		case opcode.IReturn:
+			breakAndReturn = true
+		}
+
+		if breakAndReturn {
+			break
+		}
+	}
+
+	return e, isHalt
+}
+
+func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
+	i.SetEntry(entry)
+
+	fn, ok := i.GetFunctionInfo(int(entry.Index))
+	if !ok {
+		return NewRuntimeError("function %d not found", entry.Index)
+	}
+
+	err, _ := i.runFunction(fn)
+
+	return err
 }

@@ -81,15 +81,26 @@ type Function struct {
 	ReturnValues int
 	IP           uint64
 	Codes        *CodeBlock
+	Opcodes      []Opcode
+	DebugInfo    []*token.Context
 }
 
 func (f *Function) Func(bounds []object.Object) *object.FunctionObject {
 	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
 }
 
+func (f *Function) IsLink() bool {
+	return f.Opcodes != nil
+}
+
 func (f *Function) Link() []Opcode {
-	codes, _ := f.Codes.Link()
-	return codes
+	if !f.IsLink() {
+		codes, debug := f.Codes.Link()
+		f.Opcodes = codes
+		f.DebugInfo = debug
+	}
+
+	return f.Opcodes
 }
 
 const (
@@ -127,17 +138,17 @@ func (m *Module) Main() *Function {
 	return m.Functions[0]
 }
 
-// Collection of modules, and link to an executable file.
-type Program struct {
-	Modules       []*Module
+// Collection of all modules, and link to an executable file.
+type CodePage struct {
+	NativeModules []*Module
 	ModuleNameMap map[string]*Module
 	Functions     []*Function
 }
 
-func (p *Program) LinkFunctions() {
+func (p *CodePage) LinkFunctions() {
 	p.Functions = make([]*Function, 1)
 
-	for _, m := range p.Modules {
+	for _, m := range p.NativeModules {
 		for _, f := range m.Functions {
 			f.GlobalIndex = uint64(len(p.Functions))
 			p.Functions = append(p.Functions, f)
@@ -145,7 +156,7 @@ func (p *Program) LinkFunctions() {
 	}
 }
 
-func (p *Program) LinkCode() []Opcode {
+func (p *CodePage) LinkCode() []Opcode {
 	code := make([]Opcode, 0)
 
 	for _, f := range p.Functions {
