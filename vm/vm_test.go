@@ -10,7 +10,7 @@ import (
 	"github.com/flily/macaque-lang/parser"
 )
 
-func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
+func testCompileCode(t *testing.T, code string) *compiler.CodePage {
 	t.Helper()
 
 	scanner := lex.NewRecursiveScanner("testcase")
@@ -32,8 +32,7 @@ func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
 		t.Fatalf("compiler error:\n%s", err)
 	}
 
-	m := NewNaiveVM()
-	return m, page
+	return page
 }
 
 func checkVMStackTop(t *testing.T, m *NaiveVM, expecteds []object.Object) {
@@ -109,7 +108,8 @@ func runVMTest(t *testing.T, cases []vmTest) {
 	t.Helper()
 
 	for _, c := range cases {
-		m, page := testCompileCode(t, c.code)
+		m := NewNaiveVM()
+		page := testCompileCode(t, c.code)
 		m.LoadCodePage(page)
 		main := page.Main().Func(nil)
 		err := m.Run(main)

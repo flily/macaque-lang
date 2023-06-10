@@ -102,7 +102,8 @@ func runMonkeyCompatibleTest(t *testing.T, tests []monkeyTestCase) {
 	t.Helper()
 
 	for i, tt := range tests {
-		m, page := testCompileCode(t, tt.input)
+		m := NewNaiveVM()
+		page := testCompileCode(t, tt.input)
 		m.LoadCodePage(page)
 		main := page.Main().Func(nil)
 		err := m.Run(main)
