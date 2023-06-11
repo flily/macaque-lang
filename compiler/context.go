@@ -326,40 +326,25 @@ type CompilerContext struct {
 	Functions []*opcode.Function
 }
 
-func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *CodePage {
-	code := opcode.NewCodeBlock()
+func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *opcode.CodePage {
 	links := make([]*opcode.Function, len(c.Functions))
 
 	mainInfo := &opcode.Function{
-		IP:        0,
-		FrameSize: c.Variable.CurrentFrameSize(),
+		ModuleIndex: 0,
+		IP:          0,
+		FrameSize:   c.Variable.CurrentFrameSize(),
+		Codes:       main,
 	}
 
-	code.Block(main)
 	links[0] = mainInfo
-
 	if len(c.Functions) > 1 {
-		code.IL(nil, opcode.IHalt)
-		for i, f := range c.Functions {
-			if i == 0 {
-				continue
-			}
-
-			offset := code.Length()
-			f.IP = uint64(offset)
-
-			code.Block(f.Codes)
-			code.IL(nil, opcode.IHalt)
-			links[i] = f
-		}
+		copy(links[1:], c.Functions[1:])
 	}
 
 	data := make([]object.Object, len(c.Literal.Values))
 	copy(data, c.Literal.Values)
 
-	pageCode, _ := code.Link()
-	page := &CodePage{
-		Codes:     pageCode,
+	page := &opcode.CodePage{
 		Functions: links,
 		Data:      data,
 	}

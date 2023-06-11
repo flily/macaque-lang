@@ -61,8 +61,8 @@ func (b *CodeBlock) Length() int {
 	return len(b.Codes)
 }
 
-func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
-	codes := make([]Opcode, b.Length())
+func (b *CodeBlock) Link(postfixes ...Opcode) ([]Opcode, []*token.Context) {
+	codes := make([]Opcode, b.Length()+len(postfixes))
 	debug := make([]*token.Context, b.Length())
 
 	for i, c := range b.Codes {
@@ -70,6 +70,7 @@ func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
 		debug[i] = c.Context
 	}
 
+	copy(codes[b.Length():], postfixes)
 	return codes, debug
 }
 
@@ -93,9 +94,9 @@ func (f *Function) IsLink() bool {
 	return f.Opcodes != nil
 }
 
-func (f *Function) Link() []Opcode {
+func (f *Function) Link(postfix ...Opcode) []Opcode {
 	if !f.IsLink() {
-		codes, debug := f.Codes.Link()
+		codes, debug := f.Codes.Link(postfix...)
 		f.Opcodes = codes
 		f.DebugInfo = debug
 	}
@@ -143,6 +144,17 @@ type CodePage struct {
 	NativeModules []*Module
 	ModuleNameMap map[string]*Module
 	Functions     []*Function
+	Data          []object.Object
+}
+
+func NewCodePage() *CodePage {
+	p := &CodePage{}
+	p.ModuleNameMap = make(map[string]*Module)
+	return p
+}
+
+func (p *CodePage) Main() *Function {
+	return p.Functions[0]
 }
 
 func (p *CodePage) LinkFunctions() {
@@ -157,13 +169,17 @@ func (p *CodePage) LinkFunctions() {
 }
 
 func (p *CodePage) LinkCode() []Opcode {
+	var post []Opcode
+	if len(p.Functions) > 1 {
+		post = []Opcode{Code(IHalt)}
+	}
+
 	code := make([]Opcode, 0)
 
 	for _, f := range p.Functions {
 		f.IP = uint64(len(code))
-		fc := f.Link()
+		fc := f.Link(post...)
 		code = append(code, fc...)
-		code = append(code, Code(IHalt))
 	}
 
 	return code

@@ -23,7 +23,7 @@ func NewCompiler() *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(p *ast.Program) (*CodePage, error) {
+func (c *Compiler) Compile(p *ast.Program) (*opcode.CodePage, error) {
 	r, err := c.compileCode(p, FlagNone)
 	if err != nil {
 		return nil, err

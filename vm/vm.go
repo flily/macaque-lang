@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -407,25 +406,26 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	return e
 }
 
-func (m *NaiveVM) loadFunctions(page *compiler.CodePage) {
+func (m *NaiveVM) loadFunctions(page *opcode.CodePage) {
 	m.Functions = make([]*opcode.Function, len(page.Functions))
 	copy(m.Functions, page.Functions)
 }
 
-func (m *NaiveVM) loadCode(page *compiler.CodePage) {
-	m.Code = make([]opcode.Opcode, len(page.Codes))
-	copy(m.Code, page.Codes)
+func (m *NaiveVM) loadCode(page *opcode.CodePage) {
+	codes := page.LinkCode()
+	m.Code = make([]opcode.Opcode, len(codes))
+	copy(m.Code, codes)
 	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
 		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
 	}
 }
 
-func (m *NaiveVM) loadData(c *compiler.CodePage) {
+func (m *NaiveVM) loadData(c *opcode.CodePage) {
 	m.Data = make([]object.Object, len(c.Data))
 	copy(m.Data, c.Data)
 }
 
-func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
+func (m *NaiveVM) LoadCodePage(page *opcode.CodePage) {
 	m.loadFunctions(page)
 	m.loadCode(page)
 	m.loadData(page)
