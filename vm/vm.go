@@ -27,6 +27,12 @@ type callStackInfo struct {
 	fp uint64
 }
 
+type VM interface {
+	GetSP() uint64
+	GetStackObject(i int) object.Object
+	GetRegister(name string) uint64
+}
+
 type NaiveVMBase struct {
 	Data []object.Object
 
@@ -142,6 +148,44 @@ func (m *NaiveVMBase) initCallStack(frameSize int) {
 func (m *NaiveVMBase) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
+
+func (m *NaiveVMBase) GetRegister(name string) uint64 {
+	var r uint64
+	switch name {
+	case "ip":
+		r = m.ip
+
+	case "sp":
+		r = m.sp
+
+	case "sb":
+		r = m.sb
+
+	case "bp":
+		r = m.bp
+
+	case "fi":
+		r = m.fi
+
+	case "fp":
+		r = m.fp
+	}
+
+	return r
+}
+
+func (m *NaiveVMBase) GetSP() uint64 {
+	return m.sp
+}
+
+func (m *NaiveVMBase) GetStackObject(i int) object.Object {
+	if i < 0 || i >= int(m.sp) {
+		return nil
+	}
+
+	return m.Stack[i]
+}
+
 func (m *NaiveVMBase) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
 	m.ip = entry.IP
