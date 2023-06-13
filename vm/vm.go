@@ -28,9 +28,11 @@ type callStackInfo struct {
 }
 
 type VM interface {
+	LoadCodePage(page *opcode.CodePage)
 	GetSP() uint64
 	GetStackObject(i int) object.Object
 	GetRegister(name string) uint64
+	Run(entry *object.FunctionObject) error
 }
 
 type NaiveVMBase struct {
@@ -59,6 +61,10 @@ func NewNaiveVMBase() *NaiveVMBase {
 	}
 
 	return m
+}
+
+func (m *NaiveVMBase) execOne() {
+	m.ip++
 }
 
 func (m *NaiveVMBase) stackPush(o object.Object) {
@@ -432,7 +438,7 @@ func NewNaiveVM() *NaiveVM {
 
 func (m *NaiveVM) fetchOp() opcode.Opcode {
 	r := m.Code[m.ip]
-	m.ip++
+	m.execOne()
 	return r
 }
 
@@ -444,6 +450,10 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	var isHalt bool
 	for m.ip < codeSize && e == nil && !isHalt {
 		op := m.fetchOp()
+		// f := m.fi
+		// info := m.Functions[f].DebugInfo[m.fi]
+		// fmt.Printf("%s\n", info.Message("%s", op))
+
 		e, isHalt = m.ExecOpcode(op)
 	}
 
@@ -480,8 +490,17 @@ type NaiveVMInterpreter struct {
 	CodePage *opcode.CodePage
 }
 
+func NewNaiveVMInterpreter() *NaiveVMInterpreter {
+	m := &NaiveVMInterpreter{
+		NaiveVMBase: *NewNaiveVMBase(),
+	}
+
+	return m
+}
+
 func (i *NaiveVMInterpreter) LoadCodePage(page *opcode.CodePage) {
 	i.CodePage = page
+	i.Data = page.Data
 }
 
 func (i *NaiveVMInterpreter) getFunction(o object.Object) (*opcode.Function, error) {
@@ -505,7 +524,15 @@ func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
 	var isHalt bool
 	var breakAndReturn bool
 
-	for _, code := range f.Opcodes {
+	length := len(f.Opcodes)
+
+	for i.ip-i.fp < uint64(length) && e == nil && !isHalt {
+		j := int(i.ip - i.fp)
+		i.execOne()
+
+		code := f.Opcodes[j]
+		// info := f.DebugInfo[j]
+		// fmt.Printf("%s\n", info.Message("%s", code))
 		top := i.Top()
 		e, isHalt = i.ExecOpcode(code)
 		if e != nil {
@@ -541,11 +568,12 @@ func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
 func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
 	i.SetEntry(entry)
 
-	fn, ok := i.GetFunctionInfo(int(entry.Index))
-	if !ok {
+	index := int(entry.Index)
+	if index < 0 || index >= len(i.CodePage.Functions) {
 		return NewRuntimeError("function %d not found", entry.Index)
 	}
 
+	fn := i.CodePage.Functions[index]
 	err, _ := i.runFunction(fn)
 
 	return err

@@ -52,7 +52,7 @@ func checkVMStackTop(t *testing.T, m VM, expecteds []object.Object) {
 
 		got := m.GetStackObject(index)
 		if got.EqualTo(expected) == false {
-			t.Fatalf("ERROR on %d: expect %s, got %s", i, expected, got)
+			t.Fatalf("ERROR on stack %d: expect %s, got %s", i, expected, got)
 		}
 	}
 }
@@ -99,6 +99,19 @@ func runVMRegisterCheck(t *testing.T, m VM, cases []registerAssertion) {
 	}
 }
 
+func runVMTestOnInstance(t *testing.T, name string, vm VM, page *opcode.CodePage, main *object.FunctionObject, c vmTest) {
+	t.Helper()
+
+	vm.LoadCodePage(page)
+	err := vm.Run(main)
+	if err != nil {
+		t.Fatalf("%s error: %s", name, err)
+	}
+
+	checkVMStackTop(t, vm, c.stack)
+	runVMRegisterCheck(t, vm, c.registers)
+}
+
 func runVMTest(t *testing.T, cases []vmTest) {
 	t.Helper()
 
@@ -106,16 +119,7 @@ func runVMTest(t *testing.T, cases []vmTest) {
 		page := testCompileCode(t, c.code)
 		main := page.Main().Func(nil)
 
-		{
-			m := NewNaiveVM()
-			m.LoadCodePage(page)
-			err := m.Run(main)
-			if err != nil {
-				t.Fatalf("vm error: %s", err)
-			}
-
-			checkVMStackTop(t, m, c.stack)
-			runVMRegisterCheck(t, m, c.registers)
-		}
+		runVMTestOnInstance(t, "vme", NewNaiveVM(), page, main, c)
+		runVMTestOnInstance(t, "vmi", NewNaiveVMInterpreter(), page, main, c)
 	}
 }

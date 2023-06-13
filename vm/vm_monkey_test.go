@@ -121,7 +121,7 @@ func runMonkeyCompatibleTest(t *testing.T, tests []monkeyTestCase) {
 		// there are ONLY one element on the stack, ONLY true in original monkey.
 		expectedStack := uint64(main.FrameSize + 2)
 		if m.sp != expectedStack {
-			t.Errorf("ERROR on %d: expect stack size %d, got %d", i, expectedStack, m.sp)
+			t.Errorf("ERROR on %d stack: expect stack size %d, got %d", i, expectedStack, m.sp)
 			t.Errorf("  code: %s", tt.input)
 		}
 	}
