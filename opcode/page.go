@@ -87,7 +87,15 @@ type Function struct {
 }
 
 func (f *Function) Func(bounds []object.Object) *object.FunctionObject {
-	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
+	function := &object.FunctionObject{
+		Index:     f.GlobalIndex,
+		FrameSize: f.FrameSize,
+		Arguments: f.Arguments,
+		IP:        f.IP,
+		Bounds:    bounds,
+	}
+
+	return function
 }
 
 func (f *Function) IsLink() bool {
