@@ -28,5 +28,10 @@ steps:
   displayName: Go coverage test
   inputs:
     command: 'test'
-    arguments: '-covermode=count ./...'
+    arguments: '-covermode=count -coverprofile=coverage.txt ./...'
 
+- task: VSTest@2
+  displayName: Run tests via VSTest
+  inputs:
+    testSelector: 'testAssemblies'
+    searchFolder: '$(System.DefaultWorkingDirectory)'
