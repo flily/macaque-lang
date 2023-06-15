@@ -61,7 +61,7 @@ var codeNames = [...]string{
 }
 
 func CodeName(code int) string {
-	if code < 0 || code >= len(codeNames) {
+	if code < 0 || int(code) >= len(codeNames) {
 		return "INVALID"
 	}
 

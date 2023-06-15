@@ -7,10 +7,11 @@ import (
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/object"
+	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/parser"
 )
 
-func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
+func testCompileCode(t *testing.T, code string) *opcode.CodePage {
 	t.Helper()
 
 	scanner := lex.NewRecursiveScanner("testcase")
@@ -32,11 +33,10 @@ func testCompileCode(t *testing.T, code string) (*NaiveVM, *compiler.CodePage) {
 		t.Fatalf("compiler error:\n%s", err)
 	}
 
-	m := NewNaiveVM()
-	return m, page
+	return page
 }
 
-func checkVMStackTop(t *testing.T, m *NaiveVM, expecteds []object.Object) {
+func checkVMStackTop(t *testing.T, m VM, expecteds []object.Object) {
 	t.Helper()
 
 	if len(expecteds) == 0 {
@@ -44,14 +44,15 @@ func checkVMStackTop(t *testing.T, m *NaiveVM, expecteds []object.Object) {
 	}
 
 	for i, expected := range expecteds {
-		index := int(m.sp) - i - 1
-		if index >= int(m.sp) {
+		sp := m.GetSP()
+		index := int(sp) - i - 1
+		if index >= int(m.GetSP()) || index < 0 {
 			t.Fatalf("ERROR on %d: stack do not have enough elements", i)
 		}
 
-		got := m.Stack[index]
+		got := m.GetStackObject(index)
 		if got.EqualTo(expected) == false {
-			t.Fatalf("ERROR on %d: expect %s, got %s", i, expected, got)
+			t.Fatalf("ERROR on stack %d: expect %s, got %s", i, expected, got)
 		}
 	}
 }
@@ -87,37 +88,38 @@ func bp(v uint64) registerAssertion {
 	return registerAssertion{"bp", v}
 }
 
-func runVMRegisterCheck(t *testing.T, m *NaiveVM, cases []registerAssertion) {
+func runVMRegisterCheck(t *testing.T, m VM, cases []registerAssertion) {
 	t.Helper()
 
 	for _, c := range cases {
-		switch c.register {
-		case "sp":
-			if m.sp != c.value {
-				t.Errorf("sp error: expect %d, got %d", c.value, m.sp)
-			}
-
-		case "bp":
-			if m.bp != c.value {
-				t.Errorf("bp error: expect %d, got %d", c.value, m.bp)
-			}
+		regValue := m.GetRegister(c.register)
+		if regValue != c.value {
+			t.Errorf("register %s error: expect %d, got %d", c.register, c.value, regValue)
 		}
 	}
+}
+
+func runVMTestOnInstance(t *testing.T, name string, vm VM, page *opcode.CodePage, main *object.FunctionObject, c vmTest) {
+	t.Helper()
+
+	vm.LoadCodePage(page)
+	err := vm.Run(main)
+	if err != nil {
+		t.Fatalf("%s error: %s", name, err)
+	}
+
+	checkVMStackTop(t, vm, c.stack)
+	runVMRegisterCheck(t, vm, c.registers)
 }
 
 func runVMTest(t *testing.T, cases []vmTest) {
 	t.Helper()
 
 	for _, c := range cases {
-		m, page := testCompileCode(t, c.code)
-		m.LoadCodePage(page)
+		page := testCompileCode(t, c.code)
 		main := page.Main().Func(nil)
-		err := m.Run(main)
-		if err != nil {
-			t.Fatalf("vm error: %s", err)
-		}
 
-		checkVMStackTop(t, m, c.stack)
-		runVMRegisterCheck(t, m, c.registers)
+		runVMTestOnInstance(t, "vme", NewNaiveVM(), page, main, c)
+		runVMTestOnInstance(t, "vmi", NewNaiveVMInterpreter(), page, main, c)
 	}
 }

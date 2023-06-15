@@ -61,8 +61,8 @@ func (b *CodeBlock) Length() int {
 	return len(b.Codes)
 }
 
-func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
-	codes := make([]Opcode, b.Length())
+func (b *CodeBlock) Link(postfixes ...Opcode) ([]Opcode, []*token.Context) {
+	codes := make([]Opcode, b.Length()+len(postfixes))
 	debug := make([]*token.Context, b.Length())
 
 	for i, c := range b.Codes {
@@ -70,6 +70,7 @@ func (b *CodeBlock) Link() ([]Opcode, []*token.Context) {
 		debug[i] = c.Context
 	}
 
+	copy(codes[b.Length():], postfixes)
 	return codes, debug
 }
 
@@ -81,15 +82,34 @@ type Function struct {
 	ReturnValues int
 	IP           uint64
 	Codes        *CodeBlock
+	Opcodes      []Opcode
+	DebugInfo    []*token.Context
 }
 
 func (f *Function) Func(bounds []object.Object) *object.FunctionObject {
-	return object.NewFunction(f.FrameSize, f.Arguments, f.IP, bounds)
+	function := &object.FunctionObject{
+		Index:     f.GlobalIndex,
+		FrameSize: f.FrameSize,
+		Arguments: f.Arguments,
+		IP:        f.IP,
+		Bounds:    bounds,
+	}
+
+	return function
 }
 
-func (f *Function) Link() []Opcode {
-	codes, _ := f.Codes.Link()
-	return codes
+func (f *Function) IsLink() bool {
+	return f.Opcodes != nil
+}
+
+func (f *Function) Link(postfix ...Opcode) []Opcode {
+	if !f.IsLink() {
+		codes, debug := f.Codes.Link(postfix...)
+		f.Opcodes = codes
+		f.DebugInfo = debug
+	}
+
+	return f.Opcodes
 }
 
 const (
@@ -127,17 +147,28 @@ func (m *Module) Main() *Function {
 	return m.Functions[0]
 }
 
-// Collection of modules, and link to an executable file.
-type Program struct {
-	Modules       []*Module
+// Collection of all modules, and link to an executable file.
+type CodePage struct {
+	NativeModules []*Module
 	ModuleNameMap map[string]*Module
 	Functions     []*Function
+	Data          []object.Object
 }
 
-func (p *Program) LinkFunctions() {
+func NewCodePage() *CodePage {
+	p := &CodePage{}
+	p.ModuleNameMap = make(map[string]*Module)
+	return p
+}
+
+func (p *CodePage) Main() *Function {
+	return p.Functions[0]
+}
+
+func (p *CodePage) LinkFunctions() {
 	p.Functions = make([]*Function, 1)
 
-	for _, m := range p.Modules {
+	for _, m := range p.NativeModules {
 		for _, f := range m.Functions {
 			f.GlobalIndex = uint64(len(p.Functions))
 			p.Functions = append(p.Functions, f)
@@ -145,14 +176,18 @@ func (p *Program) LinkFunctions() {
 	}
 }
 
-func (p *Program) LinkCode() []Opcode {
+func (p *CodePage) LinkCode() []Opcode {
+	var post []Opcode
+	if len(p.Functions) > 1 {
+		post = []Opcode{Code(IHalt)}
+	}
+
 	code := make([]Opcode, 0)
 
 	for _, f := range p.Functions {
 		f.IP = uint64(len(code))
-		fc := f.Link()
+		fc := f.Link(post...)
 		code = append(code, fc...)
-		code = append(code, Code(IHalt))
 	}
 
 	return code

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -26,6 +25,14 @@ type callStackInfo struct {
 	ip uint64
 	fi uint64
 	fp uint64
+}
+
+type VM interface {
+	LoadCodePage(page *opcode.CodePage)
+	GetSP() uint64
+	GetStackObject(i int) object.Object
+	GetRegister(name string) uint64
+	Run(entry *object.FunctionObject) error
 }
 
 type NaiveVMBase struct {
@@ -54,6 +61,10 @@ func NewNaiveVMBase() *NaiveVMBase {
 	}
 
 	return m
+}
+
+func (m *NaiveVMBase) execOne() {
+	m.ip++
 }
 
 func (m *NaiveVMBase) stackPush(o object.Object) {
@@ -143,6 +154,44 @@ func (m *NaiveVMBase) initCallStack(frameSize int) {
 func (m *NaiveVMBase) Top() object.Object {
 	return m.Stack[m.sp-1]
 }
+
+func (m *NaiveVMBase) GetRegister(name string) uint64 {
+	var r uint64
+	switch name {
+	case "ip":
+		r = m.ip
+
+	case "sp":
+		r = m.sp
+
+	case "sb":
+		r = m.sb
+
+	case "bp":
+		r = m.bp
+
+	case "fi":
+		r = m.fi
+
+	case "fp":
+		r = m.fp
+	}
+
+	return r
+}
+
+func (m *NaiveVMBase) GetSP() uint64 {
+	return m.sp
+}
+
+func (m *NaiveVMBase) GetStackObject(i int) object.Object {
+	if i < 0 || i >= int(m.sp) {
+		return nil
+	}
+
+	return m.Stack[i]
+}
+
 func (m *NaiveVMBase) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
 	m.ip = entry.IP
@@ -389,7 +438,7 @@ func NewNaiveVM() *NaiveVM {
 
 func (m *NaiveVM) fetchOp() opcode.Opcode {
 	r := m.Code[m.ip]
-	m.ip++
+	m.execOne()
 	return r
 }
 
@@ -401,32 +450,131 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 	var isHalt bool
 	for m.ip < codeSize && e == nil && !isHalt {
 		op := m.fetchOp()
+		// f := m.fi
+		// info := m.Functions[f].DebugInfo[m.fi]
+		// fmt.Printf("%s\n", info.Message("%s", op))
+
 		e, isHalt = m.ExecOpcode(op)
 	}
 
 	return e
 }
 
-func (m *NaiveVM) LoadCodePage(page *compiler.CodePage) {
-	m.LoadFunctions(page)
-	m.LoadCode(page)
-	m.LoadData(page)
-}
-
-func (m *NaiveVM) LoadFunctions(page *compiler.CodePage) {
+func (m *NaiveVM) loadFunctions(page *opcode.CodePage) {
 	m.Functions = make([]*opcode.Function, len(page.Functions))
 	copy(m.Functions, page.Functions)
 }
 
-func (m *NaiveVM) LoadCode(page *compiler.CodePage) {
-	m.Code = make([]opcode.Opcode, len(page.Codes))
-	copy(m.Code, page.Codes)
+func (m *NaiveVM) loadCode(page *opcode.CodePage) {
+	codes := page.LinkCode()
+	m.Code = make([]opcode.Opcode, len(codes))
+	copy(m.Code, codes)
 	if m.Code[len(m.Code)-1].Name != opcode.IHalt {
 		m.Code = append(m.Code, opcode.Code(opcode.IHalt))
 	}
 }
 
-func (m *NaiveVM) LoadData(c *compiler.CodePage) {
+func (m *NaiveVM) loadData(c *opcode.CodePage) {
 	m.Data = make([]object.Object, len(c.Data))
 	copy(m.Data, c.Data)
+}
+
+func (m *NaiveVM) LoadCodePage(page *opcode.CodePage) {
+	m.loadFunctions(page)
+	m.loadCode(page)
+	m.loadData(page)
+}
+
+type NaiveVMInterpreter struct {
+	NaiveVMBase
+	CodePage *opcode.CodePage
+}
+
+func NewNaiveVMInterpreter() *NaiveVMInterpreter {
+	m := &NaiveVMInterpreter{
+		NaiveVMBase: *NewNaiveVMBase(),
+	}
+
+	return m
+}
+
+func (i *NaiveVMInterpreter) LoadCodePage(page *opcode.CodePage) {
+	i.CodePage = page
+	i.Data = page.Data
+}
+
+func (i *NaiveVMInterpreter) getFunction(o object.Object) (*opcode.Function, error) {
+	f, ok := o.(*object.FunctionObject)
+	if !ok {
+		return nil, NewRuntimeError(
+			"%s is not callable", f.Type())
+	}
+
+	fn, ok := i.GetFunctionInfo(int(f.Index))
+	if !ok {
+		return nil, NewRuntimeError(
+			"function %d not found", f.Index)
+	}
+
+	return fn, nil
+}
+
+func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
+	var e error
+	var isHalt bool
+	var breakAndReturn bool
+
+	length := len(f.Opcodes)
+
+	for i.ip-i.fp < uint64(length) && e == nil && !isHalt {
+		j := int(i.ip - i.fp)
+		i.execOne()
+
+		code := f.Opcodes[j]
+		// info := f.DebugInfo[j]
+		// fmt.Printf("%s\n", info.Message("%s", code))
+		top := i.Top()
+		e, isHalt = i.ExecOpcode(code)
+		if e != nil {
+			break
+		}
+
+		if isHalt {
+			break
+		}
+
+		switch code.Name {
+		case opcode.ICall:
+			fn, err := i.getFunction(top)
+			if err != nil {
+				e = err
+				break
+			}
+
+			e, isHalt = i.runFunction(fn)
+
+		case opcode.IReturn:
+			breakAndReturn = true
+		}
+
+		if breakAndReturn {
+			break
+		}
+	}
+
+	return e, isHalt
+}
+
+func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
+	i.SetEntry(entry)
+
+	index := int(entry.Index)
+	if index < 0 || index >= len(i.CodePage.Functions) {
+		return NewRuntimeError("function %d not found", entry.Index)
+	}
+
+	fn := i.CodePage.Functions[index]
+	err, _ := i.runFunction(fn)
+
+	return err
 }

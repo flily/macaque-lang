@@ -10,7 +10,6 @@ type FunctionObject struct {
 	Arguments int
 	IP        uint64
 	Bounds    []Object
-	Context   *token.Context
 }
 
 func NewFunction(frameSize int, args int, ip uint64, bounds []Object) *FunctionObject {
