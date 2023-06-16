@@ -30,8 +30,3 @@ steps:
     command: 'test'
     arguments: '-covermode=count -coverprofile=coverage.txt ./...'
 
-- task: VSTest@2
-  displayName: Run tests via VSTest
-  inputs:
-    testSelector: 'testAssemblies'
-    searchFolder: '$(System.DefaultWorkingDirectory)'
