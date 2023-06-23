@@ -267,7 +267,7 @@ situations:
         }
 
         return 1;
-    }
+    };
     
     r + 1;  // 11
     ```
