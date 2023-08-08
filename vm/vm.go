@@ -142,7 +142,11 @@ func (m *NaiveVMBase) pushCallInfo() {
 	m.csi++
 }
 
-func (m *NaiveVMBase) popCallInfo() {
+func (m *NaiveVMBase) popCallInfo() bool {
+	if m.csi == 0 {
+		return false
+	}
+
 	m.csi--
 	m.bp = m.callStack[m.csi].bp
 	m.sp = m.callStack[m.csi].sp
@@ -150,6 +154,7 @@ func (m *NaiveVMBase) popCallInfo() {
 	m.ip = m.callStack[m.csi].ip
 	m.fi = m.callStack[m.csi].fi
 	m.fp = m.callStack[m.csi].fp
+	return true
 }
 
 func (m *NaiveVMBase) initCallStack(frameSize int) {
@@ -197,6 +202,7 @@ func (m *NaiveVMBase) shiftFrame(frameSize uint64, newSize uint64) {
 		for i := 0; i < int(offset); i++ {
 			m.stackPush(null)
 		}
+		m.sb += offset
 
 		for i := m.sp - 1; i > localTop; i-- {
 			m.Stack[i+offset] = m.Stack[i]
@@ -238,7 +244,8 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	var e error
 	var isHalt bool
 
-	// fmt.Printf("OP %s\n", op)
+	// fmt.Printf("OPCODE: %s\n", op)
+	// fmt.Printf("  code:\n%s\n", m.InspectCode())
 	// vs, vv := m.InspectStack()
 	// fmt.Printf("STACK %s\n", vs)
 	// fmt.Printf("      %s\n", vv)
@@ -399,7 +406,10 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	case opcode.IReturn:
 		n := int(m.sp - m.sb)
 		returnValues := m.stackPopNWithValue(n)
-		m.popCallInfo()
+		if !m.popCallInfo() {
+			isHalt = true
+			break
+		}
 
 		f := m.stackPop()
 		fn := f.(*object.FunctionObject)
@@ -445,6 +455,19 @@ func (m *NaiveVMBase) InspectStack() (string, string) {
 	}
 
 	return strings.Join(data, ""), strings.Join(view, "")
+}
+
+func (m *NaiveVMBase) InspectCode() string {
+	fi := m.fi
+	f := m.Functions[fi]
+	fp := m.fp
+	offset := int64(m.ip) - int64(fp) - 1
+	if offset < 0 || offset >= int64(len(f.DebugInfo)) {
+		return ""
+	}
+
+	info := f.DebugInfo[offset]
+	return info.HighLight()
 }
 
 type NaiveVM struct {
@@ -525,8 +548,10 @@ func NewNaiveVMInterpreter() *NaiveVMInterpreter {
 
 func (i *NaiveVMInterpreter) LoadCodePage(page *opcode.CodePage) {
 	page.LinkCode()
+
 	i.CodePage = page
 	i.Data = page.Data
+	i.Functions = page.Functions
 }
 
 func (i *NaiveVMInterpreter) MergeCodeBlock(block *opcode.CodeBlock, ctx *compiler.CompilerContext) {
@@ -534,14 +559,16 @@ func (i *NaiveVMInterpreter) MergeCodeBlock(block *opcode.CodeBlock, ctx *compil
 	main := page.Functions[0]
 	main.Append(block)
 
-	for i := len(page.Functions); i < len(ctx.Functions); i++ {
-		f := ctx.Functions[i]
+	for j := len(page.Functions); j < len(ctx.Functions); j++ {
+		f := ctx.Functions[j]
 		f.Link()
 		page.Functions = append(page.Functions, f)
+		i.Functions = append(i.Functions, f)
 	}
 
-	for i := len(page.Data); i < len(ctx.Literal.Values); i++ {
-		page.Data = append(page.Data, ctx.Literal.Values[i])
+	for j := len(page.Data); j < len(ctx.Literal.Values); j++ {
+		page.Data = append(page.Data, ctx.Literal.Values[j])
+		i.Data = append(i.Data, ctx.Literal.Values[j])
 	}
 
 	newFrameSize := ctx.Variable.CurrentFrameSize()
@@ -628,7 +655,7 @@ func (i *NaiveVMInterpreter) runEntry(index int) error {
 func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
 	i.SetEntry(entry)
 
-	return i.runEntry(int(entry.Index))
+	return i.Resume(entry)
 }
 
 func (i *NaiveVMInterpreter) Resume(entry *object.FunctionObject) error {
