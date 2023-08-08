@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
 	"github.com/flily/macaque-lang/token"
@@ -111,6 +112,14 @@ func (m *NaiveVMBase) incrIP(n uint64) {
 	m.ip += n
 }
 
+func (m *NaiveVMBase) IncrIP(n int64) {
+	if n < 0 {
+		m.ip -= uint64(-n)
+	} else {
+		m.ip += uint64(n)
+	}
+}
+
 func (m *NaiveVMBase) localBind(i int64, o object.Object) {
 	m.Stack[int64(m.bp)+i] = o
 }
@@ -178,6 +187,22 @@ func (m *NaiveVMBase) GetRegister(name string) uint64 {
 	}
 
 	return r
+}
+
+func (m *NaiveVMBase) shiftFrame(frameSize uint64, newSize uint64) {
+	if newSize > frameSize {
+		localTop := m.bp + frameSize
+		offset := newSize - frameSize
+
+		for i := 0; i < int(offset); i++ {
+			m.stackPush(null)
+		}
+
+		for i := m.sp - 1; i > localTop; i-- {
+			m.Stack[i+offset] = m.Stack[i]
+			m.Stack[i] = object.NewNull()
+		}
+	}
 }
 
 func (m *NaiveVMBase) GetSP() uint64 {
@@ -499,8 +524,32 @@ func NewNaiveVMInterpreter() *NaiveVMInterpreter {
 }
 
 func (i *NaiveVMInterpreter) LoadCodePage(page *opcode.CodePage) {
+	page.LinkCode()
 	i.CodePage = page
 	i.Data = page.Data
+}
+
+func (i *NaiveVMInterpreter) MergeCodeBlock(block *opcode.CodeBlock, ctx *compiler.CompilerContext) {
+	page := i.CodePage
+	main := page.Functions[0]
+	main.Append(block)
+
+	for i := len(page.Functions); i < len(ctx.Functions); i++ {
+		f := ctx.Functions[i]
+		f.Link()
+		page.Functions = append(page.Functions, f)
+	}
+
+	for i := len(page.Data); i < len(ctx.Literal.Values); i++ {
+		page.Data = append(page.Data, ctx.Literal.Values[i])
+	}
+
+	newFrameSize := ctx.Variable.CurrentFrameSize()
+	if newFrameSize > main.FrameSize {
+		i.shiftFrame(uint64(main.FrameSize), uint64(newFrameSize))
+	}
+
+	main.FrameSize = newFrameSize
 }
 
 func (i *NaiveVMInterpreter) getFunction(o object.Object) (*opcode.Function, error) {
@@ -565,16 +614,23 @@ func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
 	return e, isHalt
 }
 
-func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
-	i.SetEntry(entry)
-
-	index := int(entry.Index)
+func (i *NaiveVMInterpreter) runEntry(index int) error {
 	if index < 0 || index >= len(i.CodePage.Functions) {
-		return NewRuntimeError("function %d not found", entry.Index)
+		return NewRuntimeError("function %d not found", index)
 	}
 
 	fn := i.CodePage.Functions[index]
 	err, _ := i.runFunction(fn)
 
 	return err
+}
+
+func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
+	i.SetEntry(entry)
+
+	return i.runEntry(int(entry.Index))
+}
+
+func (i *NaiveVMInterpreter) Resume(entry *object.FunctionObject) error {
+	return i.runEntry(int(entry.Index))
 }

@@ -1,6 +1,8 @@
 package object
 
 import (
+	"fmt"
+
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -28,7 +30,7 @@ func (f *FunctionObject) Type() ObjectType {
 }
 
 func (f *FunctionObject) Inspect() string {
-	return "function"
+	return fmt.Sprintf("function[%d]", f.Index)
 }
 
 func (f *FunctionObject) Hashable() bool {

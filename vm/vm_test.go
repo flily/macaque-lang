@@ -28,11 +28,12 @@ func testCompileCode(t *testing.T, code string) *opcode.CodePage {
 	}
 
 	compiler := compiler.NewCompiler()
-	page, err := compiler.Compile(program)
+	block, err := compiler.CompileCode(program)
 	if err != nil {
 		t.Fatalf("compiler error:\n%s", err)
 	}
 
+	page := compiler.Link(block)
 	return page
 }
 
@@ -99,8 +100,11 @@ func runVMRegisterCheck(t *testing.T, m VM, cases []registerAssertion) {
 	}
 }
 
-func runVMTestOnInstance(t *testing.T, name string, vm VM, page *opcode.CodePage, main *object.FunctionObject, c vmTest) {
+func runVMTestOnInstance(t *testing.T, name string, vm VM, c vmTest) {
 	t.Helper()
+
+	page := testCompileCode(t, c.code)
+	main := page.Main().Func(nil)
 
 	vm.LoadCodePage(page)
 	err := vm.Run(main)
@@ -116,10 +120,7 @@ func runVMTest(t *testing.T, cases []vmTest) {
 	t.Helper()
 
 	for _, c := range cases {
-		page := testCompileCode(t, c.code)
-		main := page.Main().Func(nil)
-
-		runVMTestOnInstance(t, "vme", NewNaiveVM(), page, main, c)
-		runVMTestOnInstance(t, "vmi", NewNaiveVMInterpreter(), page, main, c)
+		runVMTestOnInstance(t, "vme", NewNaiveVM(), c)
+		runVMTestOnInstance(t, "vmi", NewNaiveVMInterpreter(), c)
 	}
 }

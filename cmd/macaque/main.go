@@ -78,13 +78,22 @@ func main() {
 	args := &Arguments{}
 
 	flag.BoolVar(&args.CompileMode, "c", false, "Compile mode")
+	flag.BoolVar(&args.InteractiveMode, "i", false, "Interactive mode")
 	flag.Parse()
 
-	if flag.NArg() <= 0 {
-		fmt.Println("Usage: macaque [-c] <file>")
+	if flag.NArg() < 0 {
+		fmt.Println("Usage: macaque [-c] [-i] <file>")
 		return
 	}
 
 	args.Files = flag.Args()
-	execFile(args.Files[0])
+	if len(args.Files) <= 0 {
+		args.InteractiveMode = true
+	}
+
+	if args.InteractiveMode {
+		Repl(args)
+	} else {
+		execFile(args.Files[0])
+	}
 }

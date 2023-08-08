@@ -13,7 +13,7 @@ func TestFunctionObject(t *testing.T) {
 		t.Errorf("f.Type() is not ObjectTypeFunction. got=%T (%+v)", f.Type(), f.Type())
 	}
 
-	if f.Inspect() != "function" {
+	if f.Inspect() != "function[0]" {
 		t.Errorf("f.Inspect() wrong. got=%q", f.Inspect())
 	}
 

@@ -104,12 +104,22 @@ func (f *Function) IsLink() bool {
 
 func (f *Function) Link(postfix ...Opcode) []Opcode {
 	if !f.IsLink() {
-		codes, debug := f.Codes.Link(postfix...)
-		f.Opcodes = codes
-		f.DebugInfo = debug
+		f.Relink(postfix...)
 	}
 
 	return f.Opcodes
+}
+
+func (f *Function) Relink(postfix ...Opcode) []Opcode {
+	codes, debug := f.Codes.Link(postfix...)
+	f.Opcodes = codes
+	f.DebugInfo = debug
+
+	return codes
+}
+
+func (f *Function) Append(block *CodeBlock) {
+	f.Codes.Block(block)
 }
 
 const (

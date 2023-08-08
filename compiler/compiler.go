@@ -20,6 +20,7 @@ func NewCompiler() *Compiler {
 		Context: NewCompilerContext(),
 	}
 
+	c.Context.Variable.EnterScope(FrameScopeFunction)
 	return c
 }
 
@@ -29,8 +30,16 @@ func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
 		return nil, err
 	}
 
-	page := c.Context.LinkCodePage(r)
+	page := c.Link(r)
 	return page, nil
+}
+
+func (c *Compiler) CompileCode(node ast.Node) (*opcode.CodeBlock, error) {
+	return c.compileCode(node, FlagNone)
+}
+
+func (c *Compiler) Link(block *opcode.CodeBlock) *opcode.CodePage {
+	return c.Context.LinkCodePage(block)
 }
 
 func (c *Compiler) compileCode(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
@@ -41,7 +50,6 @@ func (c *Compiler) compileCode(node ast.Node, flag uint64) (*opcode.CodeBlock, e
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
-		c.Context.Variable.EnterScope(FrameScopeFunction)
 		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
 			break CompileSwitch
 		}

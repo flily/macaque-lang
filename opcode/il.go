@@ -5,6 +5,7 @@ import "fmt"
 type IL interface {
 	GetCode() int
 	GetOpcode() Opcode
+	String() string
 
 	elemCodeBlock()
 }
@@ -78,6 +79,14 @@ func (i ilCodeOp0) GetOpcode() Opcode {
 	return Code(int(i))
 }
 
+func (i ilCodeOp0) String() string {
+	if i < ILastInst {
+		return CodeName(int(i))
+	}
+
+	return fmt.Sprintf("INVALID[%d]", i)
+}
+
 func (i ilCodeOp0) elemCodeBlock() {}
 
 type ilCodeOp1 struct {
@@ -91,6 +100,14 @@ func (i ilCodeOp1) GetCode() int {
 
 func (i ilCodeOp1) GetOpcode() Opcode {
 	return Code(i.Code, i.Operand)
+}
+
+func (i ilCodeOp1) String() string {
+	if i.Code < ILastInst {
+		return fmt.Sprintf("%s %d", CodeName(i.Code), i.Operand)
+	}
+
+	return fmt.Sprintf("INVALID[%d]", i.Code)
 }
 
 func (i ilCodeOp1) elemCodeBlock() {}
@@ -108,6 +125,10 @@ func (i ilCodeMakeFunc) GetCode() int {
 
 func (i ilCodeMakeFunc) GetOpcode() Opcode {
 	return Code(IMakeFunc, i.Function, i.Bindings)
+}
+
+func (i ilCodeMakeFunc) String() string {
+	return fmt.Sprintf("%s %d %d", CodeName(IMakeFunc), i.Function, i.Bindings)
 }
 
 func (i ilCodeMakeFunc) elemCodeBlock() {}
