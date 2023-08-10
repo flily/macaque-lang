@@ -96,9 +96,9 @@ func stack(o ...object.Object) []object.Object {
 	return o
 }
 
-func result(o ...object.Object) []object.Object {
-	return o
-}
+// func result(o ...object.Object) []object.Object {
+// 	return o
+// }
 
 func sp(v uint64) registerAssertion {
 	return registerAssertion{"sp", v}
@@ -134,6 +134,7 @@ func runVMTestOnInstance(t *testing.T, name string, vm VM, c vmTest) {
 	checkVMStackTop(t, name, vm, c.stack)
 	checkVMRegisters(t, name, vm, c.registers)
 	// checkVMResult(t, name, vm, result, c.result)
+	checkVMResult(t, name, vm, nil, nil)
 }
 
 func runVMTest(t *testing.T, cases []vmTest) {
