@@ -25,7 +25,7 @@ func NewCompiler() *Compiler {
 }
 
 func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
-	r, err := c.compileCode(node, FlagNone)
+	r, err := c.compileStatement(node, FlagNone)
 	if err != nil {
 		return nil, err
 	}
@@ -35,14 +35,14 @@ func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
 }
 
 func (c *Compiler) CompileCode(node ast.Node) (*opcode.CodeBlock, error) {
-	return c.compileCode(node, FlagNone)
+	return c.compileStatement(node, FlagNone)
 }
 
 func (c *Compiler) Link(block *opcode.CodeBlock) *opcode.CodePage {
 	return c.Context.LinkCodePage(block)
 }
 
-func (c *Compiler) compileCode(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileStatement(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
 
@@ -54,6 +54,66 @@ CompileSwitch:
 			break CompileSwitch
 		}
 
+	case *ast.LetStatement:
+		index := make([]int, n.Identifiers.Length())
+		for i, item := range n.Identifiers.Identifiers {
+			v := item.Identifier
+			j, ok := c.Context.Variable.DefineVariable(v.Value, v.Context)
+			if !ok {
+				ctx1, _ := c.Context.Variable.Reference(v.Value)
+				ctx2 := v.Context.Tokens[0]
+
+				e = NewSemanticError(ctx2.ToContext(), "variable %s redeclared", v.Value).
+					WithInfo(ctx1.Context,
+						"variable %s is already declared here", v.Value)
+
+				break CompileSwitch
+			}
+			index[i] = j
+		}
+
+		if e = r.Append(c.compileExpression(n.Expressions, flag)); e != nil {
+			break CompileSwitch
+		}
+
+		for k := len(index) - 1; k >= 0; k-- {
+			r.IL(ctx, opcode.ISStore, index[k])
+		}
+		r.SetValues(0)
+
+	case *ast.IfStatement:
+		if e = r.Append(c.compileIfExpression(n.Expression)); e != nil {
+			break CompileSwitch
+		}
+
+	case *ast.ExpressionStatement:
+		if e = r.Append(c.compileExpression(n.Expressions, flag)); e != nil {
+			break CompileSwitch
+		}
+
+	case *ast.BlockStatement:
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
+			break CompileSwitch
+		}
+
+	case *ast.ReturnStatement:
+		if e = r.Append(c.compileExpression(n.Expressions, FlagNone)); e != nil {
+			break CompileSwitch
+		}
+
+		r.IL(ctx, opcode.IReturn)
+	}
+
+	return r, e
+}
+
+func (c *Compiler) compileExpression(expr ast.Expression, flag uint64) (*opcode.CodeBlock, error) {
+	r := opcode.NewCodeBlock()
+	var e error
+
+	ctx := expr.GetContext()
+CompileSwitch:
+	switch n := expr.(type) {
 	case *ast.NullLiteral:
 		r.IL(ctx, opcode.ILoadNull).
 			SetValues(1)
@@ -83,7 +143,7 @@ CompileSwitch:
 		}
 
 		for _, expr := range n.Expressions.Expressions {
-			if e = r.Append(c.compileCode(expr.Expression, uint64(f))); e != nil {
+			if e = r.Append(c.compileExpression(expr.Expression, uint64(f))); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -94,11 +154,11 @@ CompileSwitch:
 	case *ast.HashLiteral:
 		l := len(n.Pairs)
 		for _, pair := range n.Pairs {
-			if e = r.Append(c.compileCode(pair.Key, FlagNone)); e != nil {
+			if e = r.Append(c.compileExpression(pair.Key, FlagNone)); e != nil {
 				break CompileSwitch
 			}
 
-			if e = r.Append(c.compileCode(pair.Value, FlagNone)); e != nil {
+			if e = r.Append(c.compileExpression(pair.Value, FlagNone)); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -129,7 +189,7 @@ CompileSwitch:
 		}
 
 		for _, expr := range n.Expressions {
-			if e = r.Append(c.compileCode(expr.Expression, f)); e != nil {
+			if e = r.Append(c.compileExpression(expr.Expression, f)); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -140,11 +200,11 @@ CompileSwitch:
 		}
 
 	case *ast.InfixExpression:
-		if e = r.Append(c.compileCode(n.LeftOperand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.LeftOperand, flag|FlagPackValue)); e != nil {
 			break CompileSwitch
 		}
 
-		if e = r.Append(c.compileCode(n.RightOperand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.RightOperand, flag|FlagPackValue)); e != nil {
 			break CompileSwitch
 		}
 
@@ -152,7 +212,7 @@ CompileSwitch:
 			SetValues(1)
 
 	case *ast.PrefixExpression:
-		if e = r.Append(c.compileCode(n.Operand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.Operand, flag|FlagPackValue)); e != nil {
 			break CompileSwitch
 		}
 
@@ -173,55 +233,6 @@ CompileSwitch:
 		if e = r.Append(c.compileCallExpression(n, flag)); e != nil {
 			break CompileSwitch
 		}
-
-	case *ast.LetStatement:
-		index := make([]int, n.Identifiers.Length())
-		for i, item := range n.Identifiers.Identifiers {
-			v := item.Identifier
-			j, ok := c.Context.Variable.DefineVariable(v.Value, v.Context)
-			if !ok {
-				ctx1, _ := c.Context.Variable.Reference(v.Value)
-				ctx2 := v.Context.Tokens[0]
-
-				e = NewSemanticError(ctx2.ToContext(), "variable %s redeclared", v.Value).
-					WithInfo(ctx1.Context,
-						"variable %s is already declared here", v.Value)
-
-				break CompileSwitch
-			}
-			index[i] = j
-		}
-
-		if e = r.Append(c.compileCode(n.Expressions, flag)); e != nil {
-			break CompileSwitch
-		}
-
-		for k := len(index) - 1; k >= 0; k-- {
-			r.IL(ctx, opcode.ISStore, index[k])
-		}
-		r.SetValues(0)
-
-	case *ast.IfStatement:
-		if e = r.Append(c.compileIfExpression(n.Expression)); e != nil {
-			break CompileSwitch
-		}
-
-	case *ast.ExpressionStatement:
-		if e = r.Append(c.compileCode(n.Expressions, flag)); e != nil {
-			break CompileSwitch
-		}
-
-	case *ast.BlockStatement:
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
-			break CompileSwitch
-		}
-
-	case *ast.ReturnStatement:
-		if e = r.Append(c.compileCode(n.Expressions, FlagNone)); e != nil {
-			break CompileSwitch
-		}
-
-		r.IL(ctx, opcode.IReturn)
 	}
 
 	return r, e
@@ -248,13 +259,13 @@ func (c *Compiler) compileIdentifierReference(name string, ctx *token.Context, r
 }
 
 func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, error) {
-	code, err := c.compileCode(n.Condition, FlagNone)
+	code, err := c.compileExpression(n.Condition, FlagNone)
 	if err != nil {
 		return nil, err
 	}
 
 	c.Context.Variable.EnterScope(FrameScopeBlock)
-	consequence, err := c.compileCode(n.Consequence, FlagNone)
+	consequence, err := c.compileStatement(n.Consequence, FlagNone)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +274,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	var alternative *opcode.CodeBlock
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	if n.Alternative != nil {
-		alternative, err = c.compileCode(n.Alternative, FlagNone)
+		alternative, err = c.compileStatement(n.Alternative, FlagNone)
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +301,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	var last ast.Statement
 	for i, stmt := range statements {
 		if i < len(statements)-1 {
-			if e = r.Append(c.compileCode(stmt, FlagNone)); e != nil {
+			if e = r.Append(c.compileStatement(stmt, FlagNone)); e != nil {
 				break
 			}
 		} else {
@@ -312,7 +323,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 			r.IL(lastContext, opcode.IClean)
 		}
 
-		lastResult, err := c.compileCode(last, FlagNone)
+		lastResult, err := c.compileStatement(last, FlagNone)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +378,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 	l := expr.Args.Length()
 	for i := 0; i < l; i++ {
 		a := expr.Args.Expressions[l-i-1]
-		if e := args.Append(c.compileCode(a.Expression, FlagNone|FlagPackValue)); e != nil {
+		if e := args.Append(c.compileExpression(a.Expression, FlagNone|FlagPackValue)); e != nil {
 			return nil, e
 		}
 	}
@@ -375,14 +386,14 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 
 	switch expr.Token.GetToken() {
 	case token.Nil:
-		callable, err := c.compileCode(expr.Base, flag)
+		callable, err := c.compileExpression(expr.Base, flag)
 		if err != nil {
 			return nil, err
 		}
 		result.Block(callable)
 
 	case token.DualColon:
-		callable, err := c.compileCode(expr.Base, flag)
+		callable, err := c.compileExpression(expr.Base, flag)
 		if err != nil {
 			return nil, err
 		}
@@ -405,7 +416,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.CodeBlock, error) {
 	result := opcode.NewCodeBlock()
 
-	base, err := c.compileCode(expr.Base, FlagNone|FlagPackValue)
+	base, err := c.compileExpression(expr.Base, FlagNone|FlagPackValue)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +424,7 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.Co
 	var index *opcode.CodeBlock
 
 	if expr.Operator.Token == token.LBracket {
-		index, err = c.compileCode(expr.Index, FlagNone|FlagPackValue)
+		index, err = c.compileExpression(expr.Index, FlagNone|FlagPackValue)
 		if err != nil {
 			return nil, err
 		}
