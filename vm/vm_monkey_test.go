@@ -104,7 +104,7 @@ func runMonkeyTestOn(t *testing.T, name string, vm VM, index int, c monkeyTestCa
 	page := testCompileCode(t, c.input)
 	vm.LoadCodePage(page)
 	main := page.Main().Func(nil)
-	err := vm.Run(main)
+	_, err := vm.Run(main)
 	if err != nil {
 		t.Fatalf("run error: %s", err)
 	}

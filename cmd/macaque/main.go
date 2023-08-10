@@ -60,10 +60,18 @@ func execFile(filename string) {
 	machine := vm.NewNaiveVM()
 	machine.LoadCodePage(page)
 	main := page.Main().Func(nil)
-	err = machine.Run(main)
+	result, err := machine.Run(main)
 	if err != nil {
 		fmt.Printf("runtime error.\n%s\n", err)
 		return
+	}
+
+	if len(result) > 0 {
+		fmt.Printf("##> ")
+		for _, r := range result {
+			fmt.Printf("%s ", r.Inspect())
+		}
+		fmt.Println()
 	}
 
 	top := machine.Top()

@@ -37,7 +37,7 @@ func testCompileCode(t *testing.T, code string) *opcode.CodePage {
 	return page
 }
 
-func checkVMStackTop(t *testing.T, m VM, expecteds []object.Object) {
+func checkVMStackTop(t *testing.T, name string, m VM, expecteds []object.Object) {
 	t.Helper()
 
 	if len(expecteds) == 0 {
@@ -48,14 +48,28 @@ func checkVMStackTop(t *testing.T, m VM, expecteds []object.Object) {
 		sp := m.GetSP()
 		index := int(sp) - i - 1
 		if index >= int(m.GetSP()) || index < 0 {
-			t.Fatalf("ERROR on %d: stack do not have enough elements", i)
+			t.Fatalf("[%s] ERROR on %d: stack do not have enough elements", name, i)
 		}
 
 		got := m.GetStackObject(index)
 		if got.EqualTo(expected) == false {
-			t.Fatalf("ERROR on stack %d: expect %s, got %s", i, expected, got)
+			t.Fatalf("[%s] ERROR on stack %d: expect %s, got %s", name, i, expected, got)
 		}
 	}
+}
+
+func checkVMResult(t *testing.T, name string, m VM, result []object.Object, expected []object.Object) {
+	t.Helper()
+
+	// if len(result) != len(expected) {
+	// 	t.Fatalf("[%s] ERROR: result length not matched, expect %d, got %d", name, len(expected), len(result))
+	// }
+
+	// for i, r := range result {
+	// 	if r.EqualTo(expected[i]) == false {
+	// 		t.Fatalf("[%s] ERROR on %d result: expect %s, got %s", name, i, expected[i], r)
+	// 	}
+	// }
 }
 
 type registerAssertion struct {
@@ -67,6 +81,7 @@ type vmTest struct {
 	code      string
 	stack     []object.Object
 	registers []registerAssertion
+	// result    []object.Object
 }
 
 func assertRegister(r ...registerAssertion) []registerAssertion {
@@ -81,6 +96,10 @@ func stack(o ...object.Object) []object.Object {
 	return o
 }
 
+func result(o ...object.Object) []object.Object {
+	return o
+}
+
 func sp(v uint64) registerAssertion {
 	return registerAssertion{"sp", v}
 }
@@ -89,13 +108,13 @@ func bp(v uint64) registerAssertion {
 	return registerAssertion{"bp", v}
 }
 
-func runVMRegisterCheck(t *testing.T, m VM, cases []registerAssertion) {
+func checkVMRegisters(t *testing.T, name string, m VM, cases []registerAssertion) {
 	t.Helper()
 
 	for _, c := range cases {
 		regValue := m.GetRegister(c.register)
 		if regValue != c.value {
-			t.Errorf("register %s error: expect %d, got %d", c.register, c.value, regValue)
+			t.Errorf("[%s] register %s error: expect %d, got %d", name, c.register, c.value, regValue)
 		}
 	}
 }
@@ -107,13 +126,14 @@ func runVMTestOnInstance(t *testing.T, name string, vm VM, c vmTest) {
 	main := page.Main().Func(nil)
 
 	vm.LoadCodePage(page)
-	err := vm.Run(main)
+	_, err := vm.Run(main)
 	if err != nil {
 		t.Fatalf("%s error: %s", name, err)
 	}
 
-	checkVMStackTop(t, vm, c.stack)
-	runVMRegisterCheck(t, vm, c.registers)
+	checkVMStackTop(t, name, vm, c.stack)
+	checkVMRegisters(t, name, vm, c.registers)
+	// checkVMResult(t, name, vm, result, c.result)
 }
 
 func runVMTest(t *testing.T, cases []vmTest) {

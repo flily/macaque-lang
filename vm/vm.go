@@ -34,7 +34,7 @@ type VM interface {
 	Top() object.Object
 	GetStackObject(i int) object.Object
 	GetRegister(name string) uint64
-	Run(entry *object.FunctionObject) error
+	Run(entry *object.FunctionObject, args ...object.Object) ([]object.Object, error)
 }
 
 type NaiveVMBase struct {
@@ -51,6 +51,7 @@ type NaiveVMBase struct {
 	callStack []callStackInfo
 	csi       uint64
 	Functions []*opcode.Function
+	Result    []object.Object
 
 	AX int64
 }
@@ -226,6 +227,7 @@ func (m *NaiveVMBase) GetStackObject(i int) object.Object {
 
 func (m *NaiveVMBase) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
+	m.pushCallInfo()
 	m.ip = entry.IP
 	for i := 0; i < entry.FrameSize; i++ {
 		m.stackPush(null)
@@ -245,6 +247,7 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	var e error
 	var isHalt bool
 
+	// fmt.Printf("----------------\n")
 	// fmt.Printf("OPCODE: %s\n", op)
 	// fmt.Printf("  code:\n%s\n", m.InspectCode())
 	// vs, vv := m.InspectStack()
@@ -394,35 +397,72 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 		}
 
 		fn := f.(*object.FunctionObject)
-		m.pushCallInfo()
-		m.initCallStack(fn.FrameSize)
-		m.fi = fn.Index
-		m.fp = fn.IP
-		m.ip = fn.IP
+		m.StartFunctionCall(fn)
 
 	case opcode.IClean:
 		n := m.sp - m.sb
 		m.stackPopN(n)
 
 	case opcode.IReturn:
-		n := int(m.sp - m.sb)
-		returnValues := m.stackPopNWithValue(n)
-		if !m.popCallInfo() {
+		m.FinishCall()
+		if m.csi <= 0 {
 			isHalt = true
-			break
 		}
-
-		f := m.stackPop()
-		fn := f.(*object.FunctionObject)
-		args := fn.Arguments
-		m.stackPopN(uint64(args))
-		m.stackPushN(returnValues)
 
 	case opcode.IHalt:
 		isHalt = true
 	}
 
 	return e, isHalt
+}
+
+func (m *NaiveVMBase) StartFunctionCall(fn *object.FunctionObject) {
+	m.pushCallInfo()
+	m.initCallStack(fn.FrameSize)
+	m.fi = fn.Index
+	m.fp = fn.IP
+	m.ip = fn.IP
+}
+
+func (m *NaiveVMBase) StartCall(fn *object.FunctionObject, args ...object.Object) {
+	for _, arg := range args {
+		m.stackPush(arg)
+	}
+
+	m.stackPush(fn)
+	m.StartFunctionCall(fn)
+}
+
+func (m *NaiveVMBase) FindReturnValueOnStack() ([]object.Object, int) {
+	n := int(m.sp - m.sb)
+	returnValues := make([]object.Object, n)
+	for i := 0; i < n; i++ {
+		returnValues[n-1-i] = m.Stack[m.sb+uint64(i)]
+	}
+
+	return returnValues, n
+}
+
+func (m *NaiveVMBase) FinishCall() []object.Object {
+	n := int(m.sp - m.sb)
+	returnValues := m.stackPopNWithValue(n)
+	m.Result = returnValues
+
+	m.popCallInfo()
+	f := m.stackPop() // Pop this function object
+	fo := f.(*object.FunctionObject)
+
+	m.stackPopN(uint64(fo.Arguments))
+	m.stackPushN(returnValues)
+	return returnValues
+}
+
+func (m *NaiveVMBase) GetResult() []object.Object {
+	if len(m.Result) <= 0 {
+		return []object.Object{null}
+	}
+
+	return m.Result
 }
 
 func (m *NaiveVMBase) GetAllStack() []object.Object {
@@ -491,8 +531,8 @@ func (m *NaiveVM) fetchOp() opcode.Opcode {
 	return r
 }
 
-func (m *NaiveVM) Run(entry *object.FunctionObject) error {
-	m.SetEntry(entry)
+func (m *NaiveVM) Run(entry *object.FunctionObject, args ...object.Object) ([]object.Object, error) {
+	m.StartCall(entry, args...)
 
 	codeSize := uint64(len(m.Code))
 	var e error
@@ -506,7 +546,12 @@ func (m *NaiveVM) Run(entry *object.FunctionObject) error {
 		e, isHalt = m.ExecOpcode(op)
 	}
 
-	return e
+	// if m.csi > 0 {
+	// 	m.FinishCall()
+	// }
+
+	result := m.GetResult()
+	return result, e
 }
 
 func (m *NaiveVM) loadFunctions(page *opcode.CodePage) {
@@ -642,23 +687,24 @@ func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
 	return e, isHalt
 }
 
-func (i *NaiveVMInterpreter) runEntry(index int) error {
+func (i *NaiveVMInterpreter) runEntry(index int) ([]object.Object, error) {
 	if index < 0 || index >= len(i.CodePage.Functions) {
-		return NewRuntimeError("function %d not found", index)
+		return nil, NewRuntimeError("function %d not found", index)
 	}
 
 	fn := i.CodePage.Functions[index]
 	err, _ := i.runFunction(fn)
 
-	return err
+	result, _ := i.FindReturnValueOnStack()
+	return result, err
 }
 
-func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject) error {
-	i.SetEntry(entry)
+func (i *NaiveVMInterpreter) Run(entry *object.FunctionObject, args ...object.Object) ([]object.Object, error) {
+	i.StartCall(entry, args...)
 
 	return i.Resume(entry)
 }
 
-func (i *NaiveVMInterpreter) Resume(entry *object.FunctionObject) error {
+func (i *NaiveVMInterpreter) Resume(entry *object.FunctionObject) ([]object.Object, error) {
 	return i.runEntry(int(entry.Index))
 }

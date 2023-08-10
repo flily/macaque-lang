@@ -85,10 +85,18 @@ func Repl(args *Arguments) {
 		main := page.Main()
 		main.Relink()
 
-		err = m.Resume(main.Func(nil))
+		result, err := m.Resume(main.Func(nil))
 		if err != nil {
 			fmt.Printf("runtime error.\n%s\n", err)
 			return
+		}
+
+		if len(result) > 0 {
+			fmt.Printf("##> ")
+			for _, r := range result {
+				fmt.Printf("%s ", r.Inspect())
+			}
+			fmt.Println()
 		}
 
 		top := m.Top()
