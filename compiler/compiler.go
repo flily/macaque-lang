@@ -104,6 +104,7 @@ CompileSwitch:
 		}
 
 	case *ast.ReturnStatement:
+
 		if e = r.Append(c.compileExpression(n.Expressions, FlagNone)); e != nil {
 			break CompileSwitch
 		}
@@ -308,7 +309,13 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	var last ast.Statement
 	for i, stmt := range statements {
 		if i < len(statements)-1 {
-			if e = r.Append(c.compileStatement(stmt, FlagNone)); e != nil {
+			flag := uint64(FlagNone)
+			_, isReturn := stmt.(*ast.ReturnStatement)
+			if isReturn && r.Values > 0 {
+				flag |= FlagCleanStack
+			}
+
+			if e = r.Append(c.compileStatement(stmt, flag)); e != nil {
 				break
 			}
 		} else {

@@ -57,6 +57,7 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 }
 
 func TestReturnStatementInTheMiddle(t *testing.T) {
+	// FIXED
 	tests := []vmTest{
 		{
 			text(
@@ -66,10 +67,10 @@ func TestReturnStatementInTheMiddle(t *testing.T) {
 				"	3;",
 				"};",
 				"let a, b = f();",
-				"b + 7;",
+				"a, b;",
 			),
-			stack(object.NewInteger(9)),
-			assertRegister(sp(5), bp(0)),
+			stack(object.NewInteger(2), null),
+			assertRegister(sp(6), bp(0)),
 		},
 	}
 
