@@ -98,32 +98,38 @@ TypeSwitch:
 	return ok
 }
 
+func runMonkeyTestOn(t *testing.T, name string, vm VM, index int, c monkeyTestCase) {
+	t.Helper()
+
+	page := testCompileCode(t, c.input)
+	vm.LoadCodePage(page)
+	main := page.Main().Func(nil)
+	err := vm.Run(main)
+	if err != nil {
+		t.Fatalf("run error: %s", err)
+	}
+
+	got := vm.Top()
+	result := monkeyExpectedValueCompare(t, c.expected, got)
+	if !result {
+		t.Errorf("[%s] ERROR on %d: expect %v, got %s", name, index, c.expected, got)
+		t.Errorf("  code: %s", c.input)
+	}
+
+	// there are ONLY one element on the stack, ONLY true in original monkey.
+	expectedStack := uint64(main.FrameSize + 2)
+	if vm.GetSP() != expectedStack {
+		t.Errorf("[%s] ERROR on %d stack: expect stack size %d, got %d", name, index, expectedStack, vm.GetSP())
+		t.Errorf("  code: %s", c.input)
+	}
+}
+
 func runMonkeyCompatibleTest(t *testing.T, tests []monkeyTestCase) {
 	t.Helper()
 
-	for i, tt := range tests {
-		m := NewNaiveVM()
-		page := testCompileCode(t, tt.input)
-		m.LoadCodePage(page)
-		main := page.Main().Func(nil)
-		err := m.Run(main)
-		if err != nil {
-			t.Fatalf("run error: %s", err)
-		}
-
-		got := m.Top()
-		result := monkeyExpectedValueCompare(t, tt.expected, got)
-		if !result {
-			t.Errorf("ERROR on %d: expect %v, got %s", i, tt.expected, got)
-			t.Errorf("  code: %s", tt.input)
-		}
-
-		// there are ONLY one element on the stack, ONLY true in original monkey.
-		expectedStack := uint64(main.FrameSize + 2)
-		if m.sp != expectedStack {
-			t.Errorf("ERROR on %d stack: expect stack size %d, got %d", i, expectedStack, m.sp)
-			t.Errorf("  code: %s", tt.input)
-		}
+	for i, c := range tests {
+		runMonkeyTestOn(t, "vme", NewNaiveVM(), i, c)
+		runMonkeyTestOn(t, "vmi", NewNaiveVMInterpreter(), i, c)
 	}
 }
 

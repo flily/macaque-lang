@@ -31,6 +31,7 @@ type callStackInfo struct {
 type VM interface {
 	LoadCodePage(page *opcode.CodePage)
 	GetSP() uint64
+	Top() object.Object
 	GetStackObject(i int) object.Object
 	GetRegister(name string) uint64
 	Run(entry *object.FunctionObject) error
