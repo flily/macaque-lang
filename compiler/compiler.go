@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	FlagNone      = 0x0
-	FlagPackValue = 0x1
+	FlagNone       = 0x0
+	FlagPackValue  = 0x1
+	FlagCleanStack = 0x2
 )
 
 type Compiler struct {
@@ -45,8 +46,14 @@ func (c *Compiler) Link(block *opcode.CodeBlock) *opcode.CodePage {
 func (c *Compiler) compileStatement(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
-
 	ctx := node.GetContext()
+
+	newFlag := flag
+	if newFlag&FlagCleanStack != 0 {
+		r.IL(ctx, opcode.IClean)
+		newFlag ^= FlagCleanStack
+	}
+
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
@@ -72,7 +79,7 @@ CompileSwitch:
 			index[i] = j
 		}
 
-		if e = r.Append(c.compileExpression(n.Expressions, flag)); e != nil {
+		if e = r.Append(c.compileExpression(n.Expressions, newFlag)); e != nil {
 			break CompileSwitch
 		}
 
@@ -87,7 +94,7 @@ CompileSwitch:
 		}
 
 	case *ast.ExpressionStatement:
-		if e = r.Append(c.compileExpression(n.Expressions, flag)); e != nil {
+		if e = r.Append(c.compileExpression(n.Expressions, newFlag)); e != nil {
 			break CompileSwitch
 		}
 
@@ -318,12 +325,13 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 
 	} else {
 		lastContext := last.GetContext()
+		flag := uint64(FlagNone)
 		count := r.Values
 		if count > 0 {
-			r.IL(lastContext, opcode.IClean)
+			flag |= FlagCleanStack
 		}
 
-		lastResult, err := c.compileStatement(last, FlagNone)
+		lastResult, err := c.compileStatement(last, flag)
 		if err != nil {
 			return nil, err
 		}
