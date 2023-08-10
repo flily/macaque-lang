@@ -55,3 +55,23 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 
 	runVMTest(t, tests)
 }
+
+func TestReturnStatementInTheMiddle(t *testing.T) {
+	tests := []vmTest{
+		{
+			text(
+				"let f = fn() {",
+				"	5;",
+				"	return 2;",
+				"	3;",
+				"};",
+				"let a, b = f();",
+				"b + 7;",
+			),
+			stack(object.NewInteger(9)),
+			assertRegister(sp(5), bp(0)),
+		},
+	}
+
+	runVMTest(t, tests)
+}
