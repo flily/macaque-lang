@@ -55,11 +55,11 @@ Macaque makes some improvements from Monkey:
       itself as the first parameter.
   - `return` statement can return multiple values.
   - `return` statement will act differently in following situations:
+    + Works like lua.
     + In top-level scope, it will return the value as a module for importing.
-    + In IF-statements in top-level scope, it will return the value as the result of the out most
-      IF-statement.
     + In function body, it will return the value as the result of the function, and terminate the
       execution of rest code in the function.
+  - The top-level statements are considered as the main function, and always have a return value.
 
 Missing features in Monkey, but not decided to add in Macaque yet:
   - Loop statement, like `while` and `for`, but it can be implemented by recursion.
