@@ -115,6 +115,13 @@ func checkVMRegisters(t *testing.T, name string, m VM, cases []registerAssertion
 		regValue := m.GetRegister(c.register)
 		if regValue != c.value {
 			t.Errorf("[%s] register %s error: expect %d, got %d", name, c.register, c.value, regValue)
+
+			switch c.register {
+			case "sp":
+				vs, vv := m.InspectStack()
+				t.Errorf("STACK: %s\n", vs)
+				t.Errorf("       %s\n", vv)
+			}
 		}
 	}
 }

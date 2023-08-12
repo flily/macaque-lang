@@ -14,16 +14,15 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 				"a + c;",
 			),
 			stack(object.NewInteger(4)),
-			assertRegister(sp(5), bp(0)),
+			assertRegister(sp(1), bp(0)),
 		},
 		{
 			text(
-
 				"let a, b, c = 1, 2;",
 				"b + c;",
 			),
 			stack(object.NewInteger(3)),
-			assertRegister(sp(5), bp(0)),
+			assertRegister(sp(1), bp(0)),
 		},
 		{
 			text(
@@ -31,7 +30,7 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 				"a + c;",
 			),
 			stack(object.NewInteger(6)),
-			assertRegister(sp(6), bp(0)),
+			assertRegister(sp(1), bp(0)),
 		},
 		{
 			text(
@@ -40,7 +39,7 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 				"a + d;",
 			),
 			stack(object.NewInteger(6)),
-			assertRegister(sp(7), bp(0)),
+			assertRegister(sp(1), bp(0)),
 		},
 		{
 			text(
@@ -49,7 +48,7 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 				"a + d;",
 			),
 			stack(object.NewInteger(10)),
-			assertRegister(sp(6), bp(0)),
+			assertRegister(sp(1), bp(0)),
 		},
 	}
 
@@ -70,7 +69,7 @@ func TestReturnStatementInTheMiddle(t *testing.T) {
 				"a, b;",
 			),
 			stack(object.NewInteger(2), null),
-			assertRegister(sp(6), bp(0)),
+			assertRegister(sp(2), bp(0)),
 		},
 	}
 

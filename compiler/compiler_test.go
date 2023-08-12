@@ -60,7 +60,12 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *opcode.CodePage, er
 	}
 
 	compiler := NewCompiler()
-	page, err := compiler.Compile(program)
+	block, err := compiler.CompileCodeSnippet(program)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	page := compiler.Link(block)
 	return compiler, page, err
 }
 

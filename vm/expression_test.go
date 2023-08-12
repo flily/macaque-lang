@@ -11,12 +11,12 @@ func TestExpressions(t *testing.T) {
 		{
 			`1 + 2`,
 			stack(object.NewInteger(3)),
-			assertRegister(sp(2)),
+			assertRegister(sp(1)),
 		},
 		{
 			`"hello" + " " + "world"`,
 			stack(object.NewString("hello world")),
-			assertRegister(sp(2)),
+			assertRegister(sp(1)),
 		},
 	}
 
@@ -33,7 +33,7 @@ func TestExpressionList(t *testing.T) {
 				object.NewInteger(2),
 				object.NewInteger(1),
 			),
-			assertRegister(sp(5)),
+			assertRegister(sp(4)),
 		},
 	}
 
@@ -45,17 +45,17 @@ func TestIfExpression(t *testing.T) {
 		{
 			`if (true) { 10 }`,
 			stack(object.NewInteger(10)),
-			assertRegister(sp(2)),
+			assertRegister(sp(1)),
 		},
 		{
 			`if (true) { 10 } else { 20 }`,
 			stack(object.NewInteger(10)),
-			assertRegister(sp(2)),
+			assertRegister(sp(1)),
 		},
 		{
 			`if (false) { 10 } else { 20 }`,
 			stack(object.NewInteger(20)),
-			assertRegister(sp(2)),
+			assertRegister(sp(1)),
 		},
 	}
 

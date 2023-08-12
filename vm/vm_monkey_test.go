@@ -117,7 +117,7 @@ func runMonkeyTestOn(t *testing.T, name string, vm VM, index int, c monkeyTestCa
 	}
 
 	// there are ONLY one element on the stack, ONLY true in original monkey.
-	expectedStack := uint64(main.FrameSize + 2)
+	expectedStack := uint64(1)
 	if vm.GetSP() != expectedStack {
 		t.Errorf("[%s] ERROR on %d stack: expect stack size %d, got %d", name, index, expectedStack, vm.GetSP())
 		t.Errorf("  code: %s", c.input)

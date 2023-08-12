@@ -7,9 +7,13 @@ import (
 )
 
 const (
-	FlagNone       = 0x0
-	FlagPackValue  = 0x1
-	FlagCleanStack = 0x2
+	FlagNone      = 0x0000
+	FlagPackValue = 0x0001
+
+	// Non-passable flags
+	FlagNonPassable = 0x00ff
+	FlagCleanStack  = 0x0100
+	FlagWithReturn  = 0x0200
 )
 
 type Compiler struct {
@@ -26,7 +30,7 @@ func NewCompiler() *Compiler {
 }
 
 func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
-	r, err := c.compileStatement(node, FlagNone)
+	r, err := c.CompileCode(node)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +40,10 @@ func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
 }
 
 func (c *Compiler) CompileCode(node ast.Node) (*opcode.CodeBlock, error) {
+	return c.compileStatement(node, FlagWithReturn)
+}
+
+func (c *Compiler) CompileCodeSnippet(node ast.Node) (*opcode.CodeBlock, error) {
 	return c.compileStatement(node, FlagNone)
 }
 
@@ -49,15 +57,18 @@ func (c *Compiler) compileStatement(node ast.Node, flag uint64) (*opcode.CodeBlo
 	ctx := node.GetContext()
 
 	newFlag := flag
-	if newFlag&FlagCleanStack != 0 {
+	switch {
+	case flag&FlagCleanStack != 0:
 		r.IL(ctx, opcode.IClean)
-		newFlag ^= FlagCleanStack
 	}
+
+	newFlag &= FlagNonPassable
 
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
+		withReturn := (flag & FlagWithReturn) != 0
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, withReturn)); e != nil {
 			break CompileSwitch
 		}
 
@@ -104,7 +115,6 @@ CompileSwitch:
 		}
 
 	case *ast.ReturnStatement:
-
 		if e = r.Append(c.compileExpression(n.Expressions, FlagNone)); e != nil {
 			break CompileSwitch
 		}
@@ -273,7 +283,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	}
 
 	c.Context.Variable.EnterScope(FrameScopeBlock)
-	consequence, err := c.compileStatement(n.Consequence, FlagNone)
+	consequence, err := c.compileStatement(n.Consequence, FlagCleanStack)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +292,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	var alternative *opcode.CodeBlock
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	if n.Alternative != nil {
-		alternative, err = c.compileStatement(n.Alternative, FlagNone)
+		alternative, err = c.compileStatement(n.Alternative, FlagCleanStack)
 		if err != nil {
 			return nil, err
 		}
@@ -334,7 +344,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 		lastContext := last.GetContext()
 		flag := uint64(FlagNone)
 		count := r.Values
-		if count > 0 {
+		if withReturn || count > 0 {
 			flag |= FlagCleanStack
 		}
 

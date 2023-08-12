@@ -35,6 +35,7 @@ type VM interface {
 	GetStackObject(i int) object.Object
 	GetRegister(name string) uint64
 	Run(entry *object.FunctionObject, args ...object.Object) ([]object.Object, error)
+	InspectStack() (string, string)
 }
 
 type NaiveVMBase struct {
