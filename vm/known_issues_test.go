@@ -75,3 +75,20 @@ func TestReturnStatementInTheMiddle(t *testing.T) {
 
 	runVMTest(t, tests)
 }
+
+func TestDirtyStackAssignment(t *testing.T) {
+	tests := []vmTest{
+		{
+			text(
+				"let n = 42;",
+				"let a, b, c  = 3, 5, if (n > 5) { 9; };",
+				"a, b, c;",
+			),
+			stack(object.NewInteger(9), object.NewNull(), object.NewNull()),
+			// stack(object.NewInteger(9), object.NewInteger(5), object.NewInteger(3)),
+			assertRegister(sp(3), bp(0)),
+		},
+	}
+
+	runVMTest(t, tests)
+}
