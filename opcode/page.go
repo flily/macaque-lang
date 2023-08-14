@@ -1,6 +1,9 @@
 package opcode
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/token"
 )
@@ -52,6 +55,22 @@ func (b *CodeBlock) Append(block *CodeBlock, err error) error {
 	return nil
 }
 
+func (b *CodeBlock) PrependIL(ctx *token.Context, code int, ops ...interface{}) *CodeBlock {
+	context := ILContext{
+		IL:      NewIL(code, ops...),
+		Context: ctx,
+	}
+
+	b.Codes = append([]ILContext{context}, b.Codes...)
+	return b
+}
+
+func (b *CodeBlock) Prepend(block *CodeBlock) *CodeBlock {
+	b.Codes = append(block.Codes, b.Codes...)
+	b.Values += block.Values
+	return b
+}
+
 func (b *CodeBlock) SetValues(values int) *CodeBlock {
 	b.Values = values
 	return b
@@ -59,6 +78,18 @@ func (b *CodeBlock) SetValues(values int) *CodeBlock {
 
 func (b *CodeBlock) Length() int {
 	return len(b.Codes)
+}
+
+func (b *CodeBlock) String() string {
+	lines := make([]string, len(b.Codes))
+	maxLength := len(fmt.Sprintf("%d", len(b.Codes))) + 1
+	format := fmt.Sprintf("%%%dd    %%s", maxLength)
+
+	for i, c := range b.Codes {
+		lines[i] = fmt.Sprintf(format, i, c.IL.String())
+	}
+
+	return fmt.Sprintf("CodeBlock[%d]{\n%s\n}", b.Length(), strings.Join(lines, "\n"))
 }
 
 func (b *CodeBlock) Link(postfixes ...Opcode) ([]Opcode, []*token.Context) {
