@@ -59,7 +59,7 @@ func TestCodeBlockAppendAndPrepend(t *testing.T) {
 	b3.IL(nil, ILoadInt, 44)
 	b3.PrependIL(nil, ILoad, 8)
 
-	b.Prepend(b3)
+	_ = b.Prepend(b3, nil)
 	if b.Length() != 6 {
 		t.Errorf("Expected length 6, got %d", b.Length())
 	}

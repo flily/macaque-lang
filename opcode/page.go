@@ -65,10 +65,14 @@ func (b *CodeBlock) PrependIL(ctx *token.Context, code int, ops ...interface{}) 
 	return b
 }
 
-func (b *CodeBlock) Prepend(block *CodeBlock) *CodeBlock {
+func (b *CodeBlock) Prepend(block *CodeBlock, err error) error {
+	if err != nil {
+		return err
+	}
+
 	b.Codes = append(block.Codes, b.Codes...)
 	b.Values += block.Values
-	return b
+	return nil
 }
 
 func (b *CodeBlock) SetValues(values int) *CodeBlock {
