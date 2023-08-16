@@ -21,11 +21,14 @@ var (
 
 type callStackInfo struct {
 	bp uint64
-	sp uint64
-	sb uint64
 	ip uint64
 	fi uint64
 	fp uint64
+}
+
+type scopeInfo struct {
+	sp uint64
+	sb uint64
 }
 
 type VM interface {
@@ -48,20 +51,23 @@ type NaiveVMBase struct {
 	fi uint64 // function index
 	fp uint64 // function pointer
 
-	Stack     []object.Object
-	callStack []callStackInfo
-	csi       uint64
-	Functions []*opcode.Function
-	Result    []object.Object
+	Stack      []object.Object
+	callStack  []callStackInfo
+	csi        uint64
+	scopeStack []scopeInfo
+	ssi        uint64
+	Functions  []*opcode.Function
+	Result     []object.Object
 
 	AX int64
 }
 
 func NewNaiveVMBase() *NaiveVMBase {
 	m := &NaiveVMBase{
-		Data:      make([]object.Object, DefaultDataSize),
-		Stack:     make([]object.Object, DefaultStackSize),
-		callStack: make([]callStackInfo, DefaultStackSize),
+		Data:       make([]object.Object, DefaultDataSize),
+		Stack:      make([]object.Object, DefaultStackSize),
+		callStack:  make([]callStackInfo, DefaultStackSize),
+		scopeStack: make([]scopeInfo, DefaultStackSize*4),
 	}
 
 	return m
@@ -135,10 +141,25 @@ func (m *NaiveVMBase) refData(i uint64) object.Object {
 	return m.Data[i]
 }
 
+func (m *NaiveVMBase) pushScope() {
+	m.scopeStack[m.ssi].sp = m.sp
+	m.scopeStack[m.ssi].sb = m.sb
+	m.ssi++
+}
+
+func (m *NaiveVMBase) popScope() bool {
+	if m.ssi == 0 {
+		return false
+	}
+
+	m.ssi--
+	m.sp = m.scopeStack[m.ssi].sp
+	m.sb = m.scopeStack[m.ssi].sb
+	return true
+}
+
 func (m *NaiveVMBase) pushCallInfo() {
 	m.callStack[m.csi].bp = m.bp
-	m.callStack[m.csi].sp = m.sp
-	m.callStack[m.csi].sb = m.sb
 	m.callStack[m.csi].ip = m.ip
 	m.callStack[m.csi].fi = m.fi
 	m.callStack[m.csi].fp = m.fp
@@ -152,8 +173,6 @@ func (m *NaiveVMBase) popCallInfo() bool {
 
 	m.csi--
 	m.bp = m.callStack[m.csi].bp
-	m.sp = m.callStack[m.csi].sp
-	m.sb = m.callStack[m.csi].sb
 	m.ip = m.callStack[m.csi].ip
 	m.fi = m.callStack[m.csi].fi
 	m.fp = m.callStack[m.csi].fp
@@ -229,6 +248,7 @@ func (m *NaiveVMBase) GetStackObject(i int) object.Object {
 func (m *NaiveVMBase) SetEntry(entry *object.FunctionObject) {
 	m.stackPush(entry)
 	m.pushCallInfo()
+	m.pushScope()
 	m.ip = entry.IP
 	for i := 0; i < entry.FrameSize; i++ {
 		m.stackPush(null)
@@ -419,6 +439,7 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 
 func (m *NaiveVMBase) StartFunctionCall(fn *object.FunctionObject) {
 	m.pushCallInfo()
+	m.pushScope()
 	m.initCallStack(fn.FrameSize)
 	m.fi = fn.Index
 	m.fp = fn.IP
@@ -450,6 +471,7 @@ func (m *NaiveVMBase) FinishCall() []object.Object {
 	m.Result = returnValues
 
 	m.popCallInfo()
+	m.popScope()
 	f := m.stackPop() // Pop this function object
 	fo := f.(*object.FunctionObject)
 
