@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	// Opcodes should be less than 8 characters.
 	IInvalid  = iota
 	INOP      // No operation.
 	ILoadInt  // Load an integer to the top of the stack.
@@ -25,6 +26,8 @@ const (
 	IJumpIf   // Jump to a position if TOS is false
 	IJumpFWD  // Jump forward.
 	ISDUP     // Duplicate the top of the stack.
+	IScopeIn  // Enter a new scope.
+	IScopeOut // Leave a scope.
 	ICall     // Call a function.
 	IClean    // Clean the stack.
 	IReturn   // Return from a function.
@@ -53,6 +56,8 @@ var codeNames = [...]string{
 	IJumpFWD:  "JUMFWD",
 	IJumpIf:   "JUMPIF",
 	ISDUP:     "SDUP",
+	IScopeIn:  "SCOPEIN",
+	IScopeOut: "SCOPEOUT",
 	ICall:     "CALL",
 	IClean:    "CLEAN",
 	IReturn:   "RETURN",

@@ -95,10 +95,11 @@ func (m *NaiveVMBase) stackPop() object.Object {
 }
 
 func (m *NaiveVMBase) stackPopN(n uint64) {
-	for m.sp > 0 && n > 0 {
-		n--
-		m.sp--
-		m.Stack[m.sp] = nil
+	for i := 0; i < int(n); i++ {
+		if m.sp > m.sb {
+			m.sp--
+			m.Stack[m.sp] = nil
+		}
 	}
 }
 
@@ -115,6 +116,10 @@ func (m *NaiveVMBase) stackPopNWithValue(n int) []object.Object {
 	}
 
 	return r
+}
+
+func (m *NaiveVMBase) StackScopeSize() int {
+	return int(m.sp - m.sb)
 }
 
 func (m *NaiveVMBase) incrIP(n uint64) {
