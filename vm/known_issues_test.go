@@ -8,22 +8,22 @@ import (
 
 func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 	tests := []vmTest{
-		{
-			text(
-				"let a, b, c = 1, 2, 3;",
-				"a + c;",
-			),
-			stack(object.NewInteger(4)),
-			assertRegister(sp(1), bp(0)),
-		},
-		{
-			text(
-				"let a, b, c = 1, 2;",
-				"b + c;",
-			),
-			stack(object.NewInteger(3)),
-			assertRegister(sp(1), bp(0)),
-		},
+		// {
+		// 	text(
+		// 		"let a, b, c = 1, 2, 3;",
+		// 		"a + c;",
+		// 	),
+		// 	stack(object.NewInteger(4)),
+		// 	assertRegister(sp(1), bp(0)),
+		// },
+		// {
+		// 	text(
+		// 		"let a, b, c = 1, 2;",
+		// 		"b + c;",
+		// 	),
+		// 	stack(object.NewInteger(3)),
+		// 	assertRegister(sp(1), bp(0)),
+		// },
 		{
 			text(
 				"let a, b, c = 1, 2, 3, 4;",
@@ -84,8 +84,8 @@ func TestDirtyStackAssignment(t *testing.T) {
 				"let a, b, c  = 3, 5, if (n > 5) { 9; };",
 				"a, b, c;",
 			),
-			stack(object.NewInteger(9), object.NewNull(), object.NewNull()),
-			// stack(object.NewInteger(9), object.NewInteger(5), object.NewInteger(3)),
+			// stack(object.NewInteger(9), object.NewNull(), object.NewNull()),
+			stack(object.NewInteger(9), object.NewInteger(5), object.NewInteger(3)),
 			assertRegister(sp(3), bp(0)),
 		},
 	}

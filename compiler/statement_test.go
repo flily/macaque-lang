@@ -67,6 +67,7 @@ func TestCompileFunctionsWithoutReturnValue(t *testing.T) {
 			code(
 				inst(opcode.IMakeFunc, 1, 0),
 				inst(opcode.ISStore, 1),
+				inst(opcode.IClean),
 				inst(opcode.ISLoad, 1),
 				inst(opcode.ICall, 0),
 				inst(opcode.IHalt),

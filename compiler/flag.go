@@ -9,9 +9,10 @@ const (
 	FlagPackValue = 0x0001
 
 	// Non-passable flags
-	FlagNonPassable = 0x00ff
-	FlagCleanStack  = 0x0100
-	FlagWithReturn  = 0x0200
+	FlagNonPassable  = 0x00ff
+	FlagCleanStack   = 0x0100
+	FlagWithReturn   = 0x0200
+	FlagWithoutScope = 0x0400
 )
 
 func NewFlag(flags ...uint64) CompilerFlag {

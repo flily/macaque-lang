@@ -61,6 +61,7 @@ CompileSwitch:
 			nextFlag.Set(FlagWithReturn)
 		}
 
+		nextFlag.Set(FlagWithoutScope)
 		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, nextFlag)); e != nil {
 			break CompileSwitch
 		}
@@ -90,7 +91,6 @@ CompileSwitch:
 		for k := len(index) - 1; k >= 0; k-- {
 			r.IL(ctx, opcode.ISStore, index[k])
 		}
-		r.SetValues(0)
 
 	case *ast.IfStatement:
 		if e = r.Append(c.compileIfExpression(n.Expression)); e != nil {
@@ -270,13 +270,15 @@ func (c *Compiler) compileIdentifierReference(name string, ctx *token.Context, r
 }
 
 func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, error) {
-	code, err := c.compileExpression(n.Condition, NewFlag(FlagNone))
-	if err != nil {
+	code := opcode.NewCodeBlock()
+	code.IL(n.GetContext(), opcode.IScopeIn)
+	if err := code.Append(c.compileExpression(n.Condition, NewFlag(FlagNone))); err != nil {
 		return nil, err
 	}
+	code.IL(n.Condition.GetContext(), opcode.IScopeOut, 1)
 
 	c.Context.Variable.EnterScope(FrameScopeBlock)
-	consequence, err := c.compileStatement(n.Consequence, NewFlag(FlagCleanStack))
+	consequence, err := c.compileStatement(n.Consequence, NewFlag(FlagNone))
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +287,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	var alternative *opcode.CodeBlock
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	if n.Alternative != nil {
-		alternative, err = c.compileStatement(n.Alternative, NewFlag(FlagCleanStack))
+		alternative, err = c.compileStatement(n.Alternative, NewFlag(FlagNone))
 		if err != nil {
 			return nil, err
 		}
@@ -325,6 +327,10 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 		return c.compileEmptyStatementBlock(ctx, flag)
 	}
 
+	if !flag.Has(FlagWithoutScope) {
+		r.IL(ctx, opcode.IScopeIn)
+	}
+
 	var last ast.Statement
 	for i, stmt := range statements {
 		if i < len(statements)-1 {
@@ -345,10 +351,12 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	lastContext := last.GetContext()
 	nextFlag := NewFlag()
 	count := r.Values
-	if flag.Has(FlagWithReturn) || count > 0 {
+
+	if len(statements) > 1 && count > 0 {
 		nextFlag.Set(FlagCleanStack)
 	}
 
+	_, isLastReturn := last.(*ast.ReturnStatement)
 	lastResult, err := c.compileStatement(last, nextFlag)
 	if err != nil {
 		return nil, err
@@ -358,6 +366,8 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	r.Values = lastResult.Values
 	if flag.Has(FlagWithReturn) {
 		r.IL(lastContext, opcode.IReturn)
+	} else if !flag.Has(FlagWithoutScope) && !isLastReturn {
+		r.IL(lastContext, opcode.IScopeOut, 0)
 	}
 
 	return r, e
