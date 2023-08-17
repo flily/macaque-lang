@@ -425,6 +425,12 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 		fn := f.(*object.FunctionObject)
 		m.StartFunctionCall(fn)
 
+	case opcode.IScopeIn:
+		m.pushScope()
+
+	case opcode.IScopeOut:
+		m.popScope()
+
 	case opcode.IClean:
 		n := m.sp - m.sb
 		m.stackPopN(n)
