@@ -312,9 +312,25 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	return code, nil
 }
 
+func (c *Compiler) compileEmptyStatementBlock(ctx *token.Context, withReturn bool) (*opcode.CodeBlock, error) {
+	r := opcode.NewCodeBlock()
+	r.IL(ctx, opcode.ILoadNull)
+	r.Values = 1
+
+	if withReturn {
+		r.IL(ctx, opcode.IReturn)
+	}
+
+	return r, nil
+}
+
 func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, withReturn bool) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
+
+	if len(statements) <= 0 {
+		return c.compileEmptyStatementBlock(ctx, withReturn)
+	}
 
 	var last ast.Statement
 	for i, stmt := range statements {
@@ -333,31 +349,22 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 		}
 	}
 
-	if last == nil {
-		r.IL(ctx, opcode.ILoadNull)
-		r.Values = 1
-		if withReturn {
-			r.IL(ctx, opcode.IReturn)
-		}
+	lastContext := last.GetContext()
+	flag := uint64(FlagNone)
+	count := r.Values
+	if withReturn || count > 0 {
+		flag |= FlagCleanStack
+	}
 
-	} else {
-		lastContext := last.GetContext()
-		flag := uint64(FlagNone)
-		count := r.Values
-		if withReturn || count > 0 {
-			flag |= FlagCleanStack
-		}
+	lastResult, err := c.compileStatement(last, flag)
+	if err != nil {
+		return nil, err
+	}
 
-		lastResult, err := c.compileStatement(last, flag)
-		if err != nil {
-			return nil, err
-		}
-
-		r.Block(lastResult)
-		r.Values = lastResult.Values
-		if withReturn {
-			r.IL(lastContext, opcode.IReturn)
-		}
+	r.Block(lastResult)
+	r.Values = lastResult.Values
+	if withReturn {
+		r.IL(lastContext, opcode.IReturn)
 	}
 
 	return r, e
