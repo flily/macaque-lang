@@ -57,8 +57,11 @@ func (c *Compiler) compileStatement(node ast.Node, flag CompilerFlag) (*opcode.C
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
-		withReturn := flag.Has(FlagWithReturn)
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, withReturn)); e != nil {
+		if flag.Has(FlagWithReturn) {
+			nextFlag.Set(FlagWithReturn)
+		}
+
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, nextFlag)); e != nil {
 			break CompileSwitch
 		}
 
@@ -100,7 +103,7 @@ CompileSwitch:
 		}
 
 	case *ast.BlockStatement:
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, NewFlag(FlagNone))); e != nil {
 			break CompileSwitch
 		}
 
@@ -302,24 +305,24 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	return code, nil
 }
 
-func (c *Compiler) compileEmptyStatementBlock(ctx *token.Context, withReturn bool) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileEmptyStatementBlock(ctx *token.Context, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	r.IL(ctx, opcode.ILoadNull)
 	r.Values = 1
 
-	if withReturn {
+	if flag.Has(FlagWithReturn) {
 		r.IL(ctx, opcode.IReturn)
 	}
 
 	return r, nil
 }
 
-func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, withReturn bool) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
 
 	if len(statements) <= 0 {
-		return c.compileEmptyStatementBlock(ctx, withReturn)
+		return c.compileEmptyStatementBlock(ctx, flag)
 	}
 
 	var last ast.Statement
@@ -342,7 +345,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	lastContext := last.GetContext()
 	nextFlag := NewFlag()
 	count := r.Values
-	if withReturn || count > 0 {
+	if flag.Has(FlagWithReturn) || count > 0 {
 		nextFlag.Set(FlagCleanStack)
 	}
 
@@ -353,7 +356,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 
 	r.Block(lastResult)
 	r.Values = lastResult.Values
-	if withReturn {
+	if flag.Has(FlagWithReturn) {
 		r.IL(lastContext, opcode.IReturn)
 	}
 
@@ -368,7 +371,7 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*opcode.CodeB
 		c.Context.Variable.DefineArgument(item.Identifier.Value, item.Identifier.GetContext())
 	}
 
-	r, e := c.compileStatements(f.Body.GetContext(), f.Body.Statements, true)
+	r, e := c.compileStatements(f.Body.GetContext(), f.Body.Statements, NewFlag(FlagWithReturn))
 	if e != nil {
 		return nil, e
 	}
