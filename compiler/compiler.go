@@ -6,16 +6,6 @@ import (
 	"github.com/flily/macaque-lang/token"
 )
 
-const (
-	FlagNone      = 0x0000
-	FlagPackValue = 0x0001
-
-	// Non-passable flags
-	FlagNonPassable = 0x00ff
-	FlagCleanStack  = 0x0100
-	FlagWithReturn  = 0x0200
-)
-
 type Compiler struct {
 	Context *CompilerContext
 }
@@ -40,35 +30,39 @@ func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
 }
 
 func (c *Compiler) CompileCode(node ast.Node) (*opcode.CodeBlock, error) {
-	return c.compileStatement(node, FlagWithReturn)
+	return c.compileStatement(node, NewFlag(FlagWithReturn))
 }
 
 func (c *Compiler) CompileCodeSnippet(node ast.Node) (*opcode.CodeBlock, error) {
-	return c.compileStatement(node, FlagNone)
+	return c.compileStatement(node, NewFlag(FlagNone))
 }
 
 func (c *Compiler) Link(block *opcode.CodeBlock) *opcode.CodePage {
 	return c.Context.LinkCodePage(block)
 }
 
-func (c *Compiler) compileStatement(node ast.Node, flag uint64) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileStatement(node ast.Node, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
 	ctx := node.GetContext()
 
-	newFlag := flag
 	switch {
-	case flag&FlagCleanStack != 0:
+	case flag.Has(FlagCleanStack):
 		r.IL(ctx, opcode.IClean)
 	}
 
-	newFlag &= FlagNonPassable
+	nextFlag := flag
+	nextFlag.ClearNonPassable()
 
 CompileSwitch:
 	switch n := node.(type) {
 	case *ast.Program:
-		withReturn := (flag & FlagWithReturn) != 0
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, withReturn)); e != nil {
+		if flag.Has(FlagWithReturn) {
+			nextFlag.Set(FlagWithReturn)
+		}
+
+		nextFlag.Set(FlagWithoutScope)
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, nextFlag)); e != nil {
 			break CompileSwitch
 		}
 
@@ -90,14 +84,36 @@ CompileSwitch:
 			index[i] = j
 		}
 
-		if e = r.Append(c.compileExpression(n.Expressions, newFlag)); e != nil {
+		var exprCode *opcode.CodeBlock
+		exprCode, e = c.compileExpression(n.Expressions, nextFlag)
+		if e != nil {
 			break CompileSwitch
 		}
 
-		for k := len(index) - 1; k >= 0; k-- {
-			r.IL(ctx, opcode.ISStore, index[k])
+		if exprCode.Determined {
+			_ = r.Append(exprCode, nil)
+			valCount, varCount := exprCode.Values, len(index)
+			if valCount > varCount {
+				r.IL(ctx, opcode.IPop, valCount-varCount)
+			}
+
+			for i := varCount - 1; i >= 0; i-- {
+				if i < valCount {
+					r.IL(ctx, opcode.ISStore, index[i])
+				}
+			}
+
+		} else {
+			r.IL(ctx, opcode.IScopeIn)
+			_ = r.Append(exprCode, nil)
+			r.IL(ctx, opcode.IStackRev)
+
+			for i := 0; i < len(index); i++ {
+				r.IL(ctx, opcode.ISStore, index[i])
+			}
+
+			r.IL(ctx, opcode.IScopeOut, 0)
 		}
-		r.SetValues(0)
 
 	case *ast.IfStatement:
 		if e = r.Append(c.compileIfExpression(n.Expression)); e != nil {
@@ -105,17 +121,17 @@ CompileSwitch:
 		}
 
 	case *ast.ExpressionStatement:
-		if e = r.Append(c.compileExpression(n.Expressions, newFlag)); e != nil {
+		if e = r.Append(c.compileExpression(n.Expressions, nextFlag)); e != nil {
 			break CompileSwitch
 		}
 
 	case *ast.BlockStatement:
-		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, false)); e != nil {
+		if e = r.Append(c.compileStatements(n.GetContext(), n.Statements, NewFlag(FlagNone))); e != nil {
 			break CompileSwitch
 		}
 
 	case *ast.ReturnStatement:
-		if e = r.Append(c.compileExpression(n.Expressions, FlagNone)); e != nil {
+		if e = r.Append(c.compileExpression(n.Expressions, NewFlag(FlagNone))); e != nil {
 			break CompileSwitch
 		}
 
@@ -125,7 +141,7 @@ CompileSwitch:
 	return r, e
 }
 
-func (c *Compiler) compileExpression(expr ast.Expression, flag uint64) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileExpression(expr ast.Expression, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
 
@@ -157,11 +173,11 @@ CompileSwitch:
 	case *ast.ArrayLiteral:
 		f := flag
 		if n.Length() > 1 {
-			f |= FlagPackValue
+			f.Set(FlagPackValue)
 		}
 
 		for _, expr := range n.Expressions.Expressions {
-			if e = r.Append(c.compileExpression(expr.Expression, uint64(f))); e != nil {
+			if e = r.Append(c.compileExpression(expr.Expression, f)); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -172,11 +188,11 @@ CompileSwitch:
 	case *ast.HashLiteral:
 		l := len(n.Pairs)
 		for _, pair := range n.Pairs {
-			if e = r.Append(c.compileExpression(pair.Key, FlagNone)); e != nil {
+			if e = r.Append(c.compileExpression(pair.Key, NewFlag(FlagNone))); e != nil {
 				break CompileSwitch
 			}
 
-			if e = r.Append(c.compileExpression(pair.Value, FlagNone)); e != nil {
+			if e = r.Append(c.compileExpression(pair.Value, NewFlag(FlagNone))); e != nil {
 				break CompileSwitch
 			}
 		}
@@ -203,7 +219,7 @@ CompileSwitch:
 		isList := n.Length() > 1
 		f := flag
 		if isList {
-			f |= FlagPackValue
+			f.Set(FlagPackValue)
 		}
 
 		for _, expr := range n.Expressions {
@@ -212,17 +228,17 @@ CompileSwitch:
 			}
 		}
 
-		if flag&FlagPackValue != 0 {
+		if flag.Has(FlagPackValue) {
 			r.IL(ctx, opcode.IMakeList, n.Length()).
 				SetValues(1)
 		}
 
 	case *ast.InfixExpression:
-		if e = r.Append(c.compileExpression(n.LeftOperand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.LeftOperand, flag.With(FlagPackValue))); e != nil {
 			break CompileSwitch
 		}
 
-		if e = r.Append(c.compileExpression(n.RightOperand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.RightOperand, flag.With(FlagPackValue))); e != nil {
 			break CompileSwitch
 		}
 
@@ -230,7 +246,7 @@ CompileSwitch:
 			SetValues(1)
 
 	case *ast.PrefixExpression:
-		if e = r.Append(c.compileExpression(n.Operand, flag|FlagPackValue)); e != nil {
+		if e = r.Append(c.compileExpression(n.Operand, flag.With(FlagPackValue))); e != nil {
 			break CompileSwitch
 		}
 
@@ -251,6 +267,8 @@ CompileSwitch:
 		if e = r.Append(c.compileCallExpression(n, flag)); e != nil {
 			break CompileSwitch
 		}
+
+		r.Undetermined()
 	}
 
 	return r, e
@@ -277,13 +295,16 @@ func (c *Compiler) compileIdentifierReference(name string, ctx *token.Context, r
 }
 
 func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, error) {
-	code, err := c.compileExpression(n.Condition, FlagNone)
-	if err != nil {
+	code := opcode.NewCodeBlock()
+	code.IL(n.GetContext(), opcode.IScopeIn)
+	if err := code.Append(c.compileExpression(n.Condition, NewFlag(FlagNone))); err != nil {
 		return nil, err
 	}
+	code.IL(n.Condition.GetContext(), opcode.IScopeOut, 1)
+	code.SetValues(0)
 
 	c.Context.Variable.EnterScope(FrameScopeBlock)
-	consequence, err := c.compileStatement(n.Consequence, FlagCleanStack)
+	consequence, err := c.compileStatement(n.Consequence, NewFlag(FlagNone))
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +313,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	var alternative *opcode.CodeBlock
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	if n.Alternative != nil {
-		alternative, err = c.compileStatement(n.Alternative, FlagCleanStack)
+		alternative, err = c.compileStatement(n.Alternative, NewFlag(FlagNone))
 		if err != nil {
 			return nil, err
 		}
@@ -309,23 +330,52 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	code.Block(consequence)
 	code.Block(alternative)
 
+	countCon, countAlt := consequence.Values, alternative.Values
+	if !consequence.Determined || !alternative.Determined || countCon != countAlt {
+		code.Undetermined()
+
+	} else {
+		code.SetValues(countCon)
+	}
+
 	return code, nil
 }
 
-func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, withReturn bool) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileEmptyStatementBlock(ctx *token.Context, flag CompilerFlag) (*opcode.CodeBlock, error) {
+	r := opcode.NewCodeBlock()
+	r.IL(ctx, opcode.ILoadNull)
+	r.Values = 1
+
+	if flag.Has(FlagWithReturn) {
+		r.IL(ctx, opcode.IReturn)
+	}
+
+	return r, nil
+}
+
+func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statement, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	r := opcode.NewCodeBlock()
 	var e error
+
+	if len(statements) <= 0 {
+		return c.compileEmptyStatementBlock(ctx, flag)
+	}
+
+	if !flag.Has(FlagWithoutScope) {
+		r.IL(ctx, opcode.IScopeIn)
+	}
 
 	var last ast.Statement
 	for i, stmt := range statements {
 		if i < len(statements)-1 {
-			flag := uint64(FlagNone)
+			nextFlag := NewFlag()
 			_, isReturn := stmt.(*ast.ReturnStatement)
 			if isReturn && r.Values > 0 {
-				flag |= FlagCleanStack
+				nextFlag.Set(FlagCleanStack)
+				r.CleanStack()
 			}
 
-			if e = r.Append(c.compileStatement(stmt, flag)); e != nil {
+			if e = r.Append(c.compileStatement(stmt, nextFlag)); e != nil {
 				break
 			}
 		} else {
@@ -333,31 +383,28 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 		}
 	}
 
-	if last == nil {
-		r.IL(ctx, opcode.ILoadNull)
-		r.Values = 1
-		if withReturn {
-			r.IL(ctx, opcode.IReturn)
-		}
+	lastContext := last.GetContext()
+	nextFlag := NewFlag()
+	count := r.Values
 
-	} else {
-		lastContext := last.GetContext()
-		flag := uint64(FlagNone)
-		count := r.Values
-		if withReturn || count > 0 {
-			flag |= FlagCleanStack
-		}
+	if len(statements) > 1 && count > 0 {
+		nextFlag.Set(FlagCleanStack)
+		r.CleanStack()
+	}
 
-		lastResult, err := c.compileStatement(last, flag)
-		if err != nil {
-			return nil, err
-		}
+	_, isLastReturn := last.(*ast.ReturnStatement)
+	lastResult, err := c.compileStatement(last, nextFlag)
+	if err != nil {
+		return nil, err
+	}
 
-		r.Block(lastResult)
-		r.Values = lastResult.Values
-		if withReturn {
-			r.IL(lastContext, opcode.IReturn)
-		}
+	r.Block(lastResult)
+
+	if flag.Has(FlagWithReturn) {
+		r.IL(lastContext, opcode.IReturn)
+
+	} else if !flag.Has(FlagWithoutScope) && !isLastReturn {
+		r.IL(lastContext, opcode.IScopeOut, 0)
 	}
 
 	return r, e
@@ -371,7 +418,7 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*opcode.CodeB
 		c.Context.Variable.DefineArgument(item.Identifier.Value, item.Identifier.GetContext())
 	}
 
-	r, e := c.compileStatements(f.Body.GetContext(), f.Body.Statements, true)
+	r, e := c.compileStatements(f.Body.GetContext(), f.Body.Statements, NewFlag(FlagWithReturn))
 	if e != nil {
 		return nil, e
 	}
@@ -396,14 +443,14 @@ func (c *Compiler) compileFunctionLiteral(f *ast.FunctionLiteral) (*opcode.CodeB
 	return result, nil
 }
 
-func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) (*opcode.CodeBlock, error) {
+func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag CompilerFlag) (*opcode.CodeBlock, error) {
 	result := opcode.NewCodeBlock()
 
 	args := opcode.NewCodeBlock()
 	l := expr.Args.Length()
 	for i := 0; i < l; i++ {
 		a := expr.Args.Expressions[l-i-1]
-		if e := args.Append(c.compileExpression(a.Expression, FlagNone|FlagPackValue)); e != nil {
+		if e := args.Append(c.compileExpression(a.Expression, NewFlag(FlagPackValue))); e != nil {
 			return nil, e
 		}
 	}
@@ -441,7 +488,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag uint64) 
 func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.CodeBlock, error) {
 	result := opcode.NewCodeBlock()
 
-	base, err := c.compileExpression(expr.Base, FlagNone|FlagPackValue)
+	base, err := c.compileExpression(expr.Base, NewFlag(FlagPackValue))
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +496,7 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.Co
 	var index *opcode.CodeBlock
 
 	if expr.Operator.Token == token.LBracket {
-		index, err = c.compileExpression(expr.Index, FlagNone|FlagPackValue)
+		index, err = c.compileExpression(expr.Index, NewFlag(FlagPackValue))
 		if err != nil {
 			return nil, err
 		}

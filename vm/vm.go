@@ -20,10 +20,13 @@ var (
 )
 
 type callStackInfo struct {
-	bp uint64
-	ip uint64
-	fi uint64
-	fp uint64
+	bp  uint64
+	ip  uint64
+	fi  uint64
+	fp  uint64
+	sb  uint64
+	sp  uint64
+	ssi uint64
 }
 
 type scopeInfo struct {
@@ -168,6 +171,9 @@ func (m *NaiveVMBase) pushCallInfo() {
 	m.callStack[m.csi].ip = m.ip
 	m.callStack[m.csi].fi = m.fi
 	m.callStack[m.csi].fp = m.fp
+	m.callStack[m.csi].sb = m.sb
+	m.callStack[m.csi].sp = m.sp
+	m.callStack[m.csi].ssi = m.ssi
 	m.csi++
 }
 
@@ -181,6 +187,9 @@ func (m *NaiveVMBase) popCallInfo() bool {
 	m.ip = m.callStack[m.csi].ip
 	m.fi = m.callStack[m.csi].fi
 	m.fp = m.callStack[m.csi].fp
+	m.sb = m.callStack[m.csi].sb
+	m.sp = m.callStack[m.csi].sp
+	m.ssi = m.callStack[m.csi].ssi
 	return true
 }
 
@@ -315,6 +324,14 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	case opcode.IPop:
 		m.stackPopN(uint64(op.Operand0))
 
+	case opcode.IStackRev:
+		scopeSize := m.StackScopeSize()
+		for i := 0; i < scopeSize/2; i++ {
+			j := scopeSize - i - 1
+			m.Stack[m.sb+uint64(i)], m.Stack[m.sb+uint64(j)] =
+				m.Stack[m.sb+uint64(j)], m.Stack[m.sb+uint64(i)]
+		}
+
 	case opcode.IBinOp:
 		operator := token.Token(op.Operand0)
 		right := m.stackPop()
@@ -425,6 +442,21 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 		fn := f.(*object.FunctionObject)
 		m.StartFunctionCall(fn)
 
+	case opcode.IScopeIn:
+		m.pushScope()
+		m.sb = m.sp
+
+	case opcode.IScopeOut:
+		n := int(op.Operand0)
+		if n == 0 {
+			n = m.StackScopeSize()
+		}
+
+		values := m.stackPopNWithValue(n)
+
+		m.popScope()
+		m.stackPushN(values)
+
 	case opcode.IClean:
 		n := m.sp - m.sb
 		m.stackPopN(n)
@@ -438,6 +470,12 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	case opcode.IHalt:
 		isHalt = true
 	}
+
+	// {
+	// 	vs, vv := m.InspectStack()
+	// 	fmt.Printf("STACK %s\n", vs)
+	// 	fmt.Printf("      %s\n", vv)
+	// }
 
 	return e, isHalt
 }
@@ -476,7 +514,7 @@ func (m *NaiveVMBase) FinishCall() []object.Object {
 	m.Result = returnValues
 
 	m.popCallInfo()
-	m.popScope()
+	// m.popScope()
 	f := m.stackPop() // Pop this function object
 	fo := f.(*object.FunctionObject)
 

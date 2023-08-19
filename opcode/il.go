@@ -1,6 +1,8 @@
 package opcode
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type IL interface {
 	GetCode() int
@@ -15,17 +17,17 @@ func NewIL(code int, ops ...interface{}) IL {
 	var err string
 
 	switch code {
-	case INOP, ILoadNull, IIndex, IClean, IReturn, IHalt:
+	case INOP, ILoadNull, IIndex, IClean, IReturn, IHalt, IScopeIn, IStackRev:
 		r = ilCodeOp0(code)
 		if len(ops) > 0 {
-			err = fmt.Sprintf("code %d MUST NOT have operands", code)
+			err = fmt.Sprintf("code %s(%d) MUST NOT have operands", CodeName(code), code)
 		}
 
 	case IMakeFunc:
 		var function, bindings int
 		var ok bool
 		if len(ops) != 2 {
-			err = fmt.Sprintf("code %d MUST have 2 operands", code)
+			err = fmt.Sprintf("code %s(%d) MUST have 2 operands", CodeName(code), code)
 			break
 		}
 
@@ -46,7 +48,7 @@ func NewIL(code int, ops ...interface{}) IL {
 
 	default:
 		if len(ops) != 1 {
-			err = fmt.Sprintf("code %d MUST have 1 operand", code)
+			err = fmt.Sprintf("code %s(%d) MUST have 1 operand", CodeName(code), code)
 			break
 		}
 

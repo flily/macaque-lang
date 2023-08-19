@@ -19,12 +19,15 @@ type ILContext struct {
 
 // IL of a statement of an expression.
 type CodeBlock struct {
-	Codes  []ILContext
-	Values int
+	Codes      []ILContext
+	Values     int
+	Determined bool
 }
 
 func NewCodeBlock() *CodeBlock {
-	b := &CodeBlock{}
+	b := &CodeBlock{
+		Determined: true,
+	}
 	return b
 }
 
@@ -43,6 +46,9 @@ func (b *CodeBlock) IL(ctx *token.Context, code int, ops ...interface{}) *CodeBl
 func (b *CodeBlock) Block(block *CodeBlock) *CodeBlock {
 	b.Codes = append(b.Codes, block.Codes...)
 	b.Values += block.Values
+	if !block.Determined {
+		b.Determined = false
+	}
 	return b
 }
 
@@ -77,6 +83,17 @@ func (b *CodeBlock) Prepend(block *CodeBlock, err error) error {
 
 func (b *CodeBlock) SetValues(values int) *CodeBlock {
 	b.Values = values
+	return b
+}
+
+func (b *CodeBlock) Undetermined() *CodeBlock {
+	b.Determined = false
+	return b
+}
+
+func (b *CodeBlock) CleanStack() *CodeBlock {
+	b.Values = 0
+	b.Determined = true
 	return b
 }
 

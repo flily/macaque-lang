@@ -16,6 +16,7 @@ const (
 	IPop      // Pop the top of the stack.
 	ISLoad    // Load a variable from stack frame to the top of the stack.
 	ISStore   // Store TOS to a local variable
+	IStackRev // Reverse the stack.
 	IBinOp    // Binary operation.
 	IUniOp    // Unary operation.
 	IMakeList // Make a list.
@@ -46,6 +47,7 @@ var codeNames = [...]string{
 	IPop:      "POP",
 	ISLoad:    "SLOAD",
 	ISStore:   "SSTORE",
+	IStackRev: "STACKREV",
 	IBinOp:    "BINOP",
 	IUniOp:    "UNIOP",
 	IMakeList: "MAKELIST",

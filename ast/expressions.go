@@ -298,7 +298,7 @@ func (e *IndexExpression) GetContext() *token.Context {
 	c := token.JoinContext(
 		e.Base.GetContext(),
 		e.Operator.ToContext(),
-		e.Base.GetContext(),
+		e.Index.GetContext(),
 		e.End.ToContext(),
 	)
 

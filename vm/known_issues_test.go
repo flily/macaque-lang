@@ -7,6 +7,7 @@ import (
 )
 
 func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
+	// FIXED
 	tests := []vmTest{
 		{
 			text(
@@ -19,17 +20,17 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 		{
 			text(
 				"let a, b, c = 1, 2;",
-				"b + c;",
+				"a + b, c;",
 			),
-			stack(object.NewInteger(3)),
-			assertRegister(sp(1), bp(0)),
+			stack(null, object.NewInteger(3)),
+			assertRegister(sp(2), bp(0)),
 		},
 		{
 			text(
 				"let a, b, c = 1, 2, 3, 4;",
 				"a + c;",
 			),
-			stack(object.NewInteger(6)),
+			stack(object.NewInteger(4)),
 			assertRegister(sp(1), bp(0)),
 		},
 		{
@@ -38,17 +39,26 @@ func TestParallelLetStatementWithParameterNumberNotMatched(t *testing.T) {
 				"let b, c, d = 2, 3, 4, 5;",
 				"a + d;",
 			),
-			stack(object.NewInteger(6)),
+			stack(object.NewInteger(5)),
 			assertRegister(sp(1), bp(0)),
 		},
 		{
 			text(
 				"7;",
 				"let a, b, c, d = 1, 2, 3;",
-				"a + d;",
+				"a, b, c, d;",
 			),
-			stack(object.NewInteger(10)),
-			assertRegister(sp(1), bp(0)),
+			stack(null, object.NewInteger(3), object.NewInteger(2), object.NewInteger(1)),
+			assertRegister(sp(4), bp(0)),
+		},
+		{
+			text(
+				"let f = fn() { 5, 7, 9 };",
+				"let a, b, c = f(), 3;",
+				"a, b, c;",
+			),
+			stack(object.NewInteger(9), object.NewInteger(7), object.NewInteger(5)),
+			assertRegister(sp(3), bp(0)),
 		},
 	}
 
@@ -68,7 +78,7 @@ func TestReturnStatementInTheMiddle(t *testing.T) {
 				"let a, b = f();",
 				"a, b;",
 			),
-			stack(object.NewInteger(2), null),
+			stack(null, object.NewInteger(2)),
 			assertRegister(sp(2), bp(0)),
 		},
 	}
@@ -77,6 +87,7 @@ func TestReturnStatementInTheMiddle(t *testing.T) {
 }
 
 func TestDirtyStackAssignment(t *testing.T) {
+	// FIXED
 	tests := []vmTest{
 		{
 			text(
@@ -84,8 +95,8 @@ func TestDirtyStackAssignment(t *testing.T) {
 				"let a, b, c  = 3, 5, if (n > 5) { 9; };",
 				"a, b, c;",
 			),
-			stack(object.NewInteger(9), object.NewNull(), object.NewNull()),
-			// stack(object.NewInteger(9), object.NewInteger(5), object.NewInteger(3)),
+			// stack(object.NewInteger(9), object.NewNull(), object.NewNull()),
+			stack(object.NewInteger(9), object.NewInteger(5), object.NewInteger(3)),
 			assertRegister(sp(3), bp(0)),
 		},
 	}
