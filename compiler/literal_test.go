@@ -203,7 +203,7 @@ func TestCompileFunctions(t *testing.T) {
 				//         c
 				inst(opcode.IClean),
 				inst(opcode.ISLoad, 2),    // 19
-				inst(opcode.IScopeOut),    // 20
+				inst(opcode.IScopeOut, 0), // 20
 				inst(opcode.IJumpFWD, 16), // 21
 				//    } else {
 				//         let d = a - b;
@@ -224,7 +224,7 @@ func TestCompileFunctions(t *testing.T) {
 				inst(opcode.IBinOp, int(token.Plus)), // 32
 				inst(opcode.ILoadBind, 0),            // 33
 				inst(opcode.IBinOp, int(token.Plus)), // 34
-				inst(opcode.IScopeOut),               // 35
+				inst(opcode.IScopeOut, 0),            // 35
 				// }
 				inst(opcode.IReturn), // 36
 				inst(opcode.IHalt),   // 37
@@ -259,15 +259,21 @@ func TestCompileComplexFunctions(t *testing.T) {
 				inst(opcode.IMakeFunc, 3, 1), // 3
 				inst(opcode.ISStore, 2),      // 4
 				// let newAdderInner = newAdderOuter(2)
+				inst(opcode.IScopeIn),
 				inst(opcode.ILoadInt, 2), // 5
 				inst(opcode.ISLoad, 2),   // 6
 				inst(opcode.ICall, 1),    // 7
-				inst(opcode.ISStore, 3),  // 8
+				inst(opcode.IStackRev),
+				inst(opcode.ISStore, 3), // 8
+				inst(opcode.IScopeOut),
 				// let adder = newAdderInner(3)
+				inst(opcode.IScopeIn),
 				inst(opcode.ILoadInt, 3), // 9
 				inst(opcode.ISLoad, 3),   // 10
 				inst(opcode.ICall, 1),    // 11
-				inst(opcode.ISStore, 4),  // 12
+				inst(opcode.IStackRev),
+				inst(opcode.ISStore, 4), // 12
+				inst(opcode.IScopeOut),  // 13
 				// adder(8)
 				inst(opcode.IClean),
 				inst(opcode.ILoadInt, 8), // 13

@@ -324,6 +324,14 @@ func (m *NaiveVMBase) ExecOpcode(op opcode.Opcode) (error, bool) {
 	case opcode.IPop:
 		m.stackPopN(uint64(op.Operand0))
 
+	case opcode.IStackRev:
+		scopeSize := m.StackScopeSize()
+		for i := 0; i < scopeSize/2; i++ {
+			j := scopeSize - i - 1
+			m.Stack[m.sb+uint64(i)], m.Stack[m.sb+uint64(j)] =
+				m.Stack[m.sb+uint64(j)], m.Stack[m.sb+uint64(i)]
+		}
+
 	case opcode.IBinOp:
 		operator := token.Token(op.Operand0)
 		right := m.stackPop()

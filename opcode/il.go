@@ -17,7 +17,7 @@ func NewIL(code int, ops ...interface{}) IL {
 	var err string
 
 	switch code {
-	case INOP, ILoadNull, IIndex, IClean, IReturn, IHalt, IScopeIn:
+	case INOP, ILoadNull, IIndex, IClean, IReturn, IHalt, IScopeIn, IStackRev:
 		r = ilCodeOp0(code)
 		if len(ops) > 0 {
 			err = fmt.Sprintf("code %s(%d) MUST NOT have operands", CodeName(code), code)

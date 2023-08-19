@@ -84,12 +84,35 @@ CompileSwitch:
 			index[i] = j
 		}
 
-		if e = r.Append(c.compileExpression(n.Expressions, nextFlag)); e != nil {
+		var exprCode *opcode.CodeBlock
+		exprCode, e = c.compileExpression(n.Expressions, nextFlag)
+		if e != nil {
 			break CompileSwitch
 		}
 
-		for k := len(index) - 1; k >= 0; k-- {
-			r.IL(ctx, opcode.ISStore, index[k])
+		if exprCode.Determined {
+			_ = r.Append(exprCode, nil)
+			valCount, varCount := exprCode.Values, len(index)
+			if valCount > varCount {
+				r.IL(ctx, opcode.IPop, valCount-varCount)
+			}
+
+			for i := varCount - 1; i >= 0; i-- {
+				if i < valCount {
+					r.IL(ctx, opcode.ISStore, index[i])
+				}
+			}
+
+		} else {
+			r.IL(ctx, opcode.IScopeIn)
+			_ = r.Append(exprCode, nil)
+			r.IL(ctx, opcode.IStackRev)
+
+			for i := 0; i < len(index); i++ {
+				r.IL(ctx, opcode.ISStore, index[i])
+			}
+
+			r.IL(ctx, opcode.IScopeOut, 0)
 		}
 
 	case *ast.IfStatement:
@@ -244,6 +267,8 @@ CompileSwitch:
 		if e = r.Append(c.compileCallExpression(n, flag)); e != nil {
 			break CompileSwitch
 		}
+
+		r.Undetermined()
 	}
 
 	return r, e
@@ -276,6 +301,7 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 		return nil, err
 	}
 	code.IL(n.Condition.GetContext(), opcode.IScopeOut, 1)
+	code.SetValues(0)
 
 	c.Context.Variable.EnterScope(FrameScopeBlock)
 	consequence, err := c.compileStatement(n.Consequence, NewFlag(FlagNone))
@@ -303,6 +329,14 @@ func (c *Compiler) compileIfExpression(n *ast.IfExpression) (*opcode.CodeBlock, 
 	code.IL(n.Consequence.GetContext(), opcode.IJumpIf, consequence.Length())
 	code.Block(consequence)
 	code.Block(alternative)
+
+	countCon, countAlt := consequence.Values, alternative.Values
+	if !consequence.Determined || !alternative.Determined || countCon != countAlt {
+		code.Undetermined()
+
+	} else {
+		code.SetValues(countCon)
+	}
 
 	return code, nil
 }
@@ -338,6 +372,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 			_, isReturn := stmt.(*ast.ReturnStatement)
 			if isReturn && r.Values > 0 {
 				nextFlag.Set(FlagCleanStack)
+				r.CleanStack()
 			}
 
 			if e = r.Append(c.compileStatement(stmt, nextFlag)); e != nil {
@@ -354,6 +389,7 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 
 	if len(statements) > 1 && count > 0 {
 		nextFlag.Set(FlagCleanStack)
+		r.CleanStack()
 	}
 
 	_, isLastReturn := last.(*ast.ReturnStatement)
@@ -363,9 +399,10 @@ func (c *Compiler) compileStatements(ctx *token.Context, statements []ast.Statem
 	}
 
 	r.Block(lastResult)
-	r.Values = lastResult.Values
+
 	if flag.Has(FlagWithReturn) {
 		r.IL(lastContext, opcode.IReturn)
+
 	} else if !flag.Has(FlagWithoutScope) && !isLastReturn {
 		r.IL(lastContext, opcode.IScopeOut, 0)
 	}
