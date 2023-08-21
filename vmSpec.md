@@ -105,6 +105,8 @@ represents an unsigned integer, and lower case represents a signed integer.
 | POP      |   D      | Pop D objects from the stack
 | SLOAD    |   D      | Load element of stack with Base to stack slot
 | SSTORE   |   D      | Store top of stack to local variable
+| SDUP     |   NNN    | Duplicate the top value on the stack
+| STACKREV |   NNN    | Reverse the data order of the stack, only in top scope
 | BINOP    |   W      | Perform a binary operation to the top 2 values on the stack
 | UNIOP    |   W      | Perform a unary operation to the top value on the stack
 | MAKELIST |   D      | Make an array object with the top D values on the stack
@@ -112,8 +114,10 @@ represents an unsigned integer, and lower case represents a signed integer.
 | MAKEFUNC |   DD     | Make a function object with the top D values on the stack
 | INDEX    |   NNN    | Get index item TOP from base object TOP-1
 | JUMP     |   D      | Jump to the instruction at the given address
-| JUMPFWD  |   D      | Jump forward D instructions
 | JUMPIF   |   D      | Jump forward D instructions if the top value on the stack is false
+| JUMPFWD  |   D      | Jump forward D instructions
+| SCOPEIN  |   NNN    | Enter a new scope
+| SCOPEOUT |   W      | Exit the current scope with W values on the stack, ZERO means all in scope
 | CALL     |   D      | Call the function with the top D values as arguments
 | TAILCALL |   D      | Tail call the function with the top D values as arguments
 | CLEAN    |   NNN    | Clean the stack, pop all values from the stack

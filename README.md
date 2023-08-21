@@ -36,6 +36,7 @@ Macaque makes some improvements from Monkey:
   - Add `float` type for calculation.
   - Add `import` statement, to write more complex program with multiple modules files.
     + Use `return` statement in out most scope to export module, just like lua.
+    + A implicit `return` will be added in out most scope if it is not exist.
   - Remove built-in functions, but introduct standard library instead.
   - Support regular format `[a-zA-Z_][a-zA-Z0-9_]*` for identifiers.
   - Implement more readable error and warning messages.

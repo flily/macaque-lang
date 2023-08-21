@@ -16,6 +16,7 @@ const (
 	IPop      // Pop the top of the stack.
 	ISLoad    // Load a variable from stack frame to the top of the stack.
 	ISStore   // Store TOS to a local variable
+	ISDUP     // Duplicate the top of the stack.
 	IStackRev // Reverse the stack.
 	IBinOp    // Binary operation.
 	IUniOp    // Unary operation.
@@ -26,7 +27,6 @@ const (
 	IJump     // Jump to a position.
 	IJumpIf   // Jump to a position if TOS is false
 	IJumpFWD  // Jump forward.
-	ISDUP     // Duplicate the top of the stack.
 	IScopeIn  // Enter a new scope.
 	IScopeOut // Leave a scope.
 	ICall     // Call a function.
