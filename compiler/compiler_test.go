@@ -60,7 +60,7 @@ func testCompileCode(t *testing.T, code string) (*Compiler, *opcode.CodePage, er
 	}
 
 	compiler := NewCompiler()
-	block, err := compiler.CompileCodeSnippet(program)
+	block, err := compiler.CompileASTSnippet(program)
 	if err != nil {
 		return nil, nil, err
 	}

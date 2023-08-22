@@ -5,35 +5,20 @@ import (
 	"testing"
 
 	"github.com/flily/macaque-lang/compiler"
-	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/opcode"
-	"github.com/flily/macaque-lang/parser"
 )
 
 func testCompileCode(t *testing.T, code string) *opcode.CodePage {
 	t.Helper()
 
-	scanner := lex.NewRecursiveScanner("testcase")
-	scanner.SetContent([]byte(code))
-	parser := parser.NewLLParser(scanner)
-	err := parser.ReadTokens()
-	if err != nil {
-		t.Fatalf("parser error: %s", err)
-	}
-
-	program, err := parser.Parse()
-	if err != nil {
-		t.Fatalf("parser error:\n%s", err)
-	}
-
-	compiler := compiler.NewCompiler()
-	block, err := compiler.CompileCode(program)
+	c := compiler.NewCompiler()
+	block, err := c.CompileCode("testcase", []byte(code))
 	if err != nil {
 		t.Fatalf("compiler error:\n%s", err)
 	}
 
-	page := compiler.Link(block)
+	page := c.Link(block)
 	return page
 }
 

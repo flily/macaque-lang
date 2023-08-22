@@ -6,36 +6,22 @@ import (
 	"os"
 
 	"github.com/flily/macaque-lang/compiler"
-	"github.com/flily/macaque-lang/lex"
-	"github.com/flily/macaque-lang/parser"
 	"github.com/flily/macaque-lang/vm"
 )
 
 func Repl(args *Arguments) {
 	m := vm.NewNaiveVMInterpreter()
-	compiler := compiler.NewCompiler()
+	var cc *compiler.Compiler
 
 	if len(args.Files) > 0 {
 		filename := args.Files[0]
-		scanner := lex.NewRecursiveScanner(filename)
-		parser := parser.NewLLParser(scanner)
-		if err := parser.ReadTokens(); err != nil {
-			fmt.Printf("parse file %s error.\n%s\n", filename, err)
-			return
-		}
-
-		program, err := parser.Parse()
-		if err != nil {
-			fmt.Printf("parse file %s error.\n%s\n", filename, err)
-			return
-		}
-
-		page, err := compiler.Compile(program)
+		c, page, err := compiler.CompileFile(filename)
 		if err != nil {
 			fmt.Printf("compile file %s error.\n%s\n", filename, err)
 			return
 		}
 
+		cc = c
 		m.LoadCodePage(page)
 	}
 
@@ -48,33 +34,17 @@ func Repl(args *Arguments) {
 			return
 		}
 
-		scanner := lex.NewRecursiveScanner("stdin")
-		scanner.SetContent([]byte(input))
-
-		parser := parser.NewLLParser(scanner)
-		err = parser.ReadTokens()
-		if err != nil {
-			fmt.Printf("parse input error.\n%s\n", err)
-			return
-		}
-
-		line, err := parser.Parse()
-		if err != nil {
-			fmt.Printf("parse input error.\n%s\n", err)
-			return
-		}
-
-		code, err := compiler.CompileCode(line)
+		code, err := cc.CompileCode("stdin", input)
 		if err != nil {
 			fmt.Printf("compile input error.\n%s\n", err)
 			return
 		}
 
 		if m.CodePage != nil {
-			m.MergeCodeBlock(code, compiler.Context)
+			m.MergeCodeBlock(code, cc.Context)
 
 		} else {
-			page := compiler.Link(code)
+			page := cc.Link(code)
 
 			m.LoadCodePage(page)
 			main := page.Main().Func(nil)

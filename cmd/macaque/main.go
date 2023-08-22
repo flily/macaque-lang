@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/flily/macaque-lang/compiler"
-	"github.com/flily/macaque-lang/lex"
-	"github.com/flily/macaque-lang/parser"
 	"github.com/flily/macaque-lang/vm"
 )
 
@@ -33,25 +31,7 @@ func readFile(filename string) []byte {
 }
 
 func execFile(filename string) {
-	content := readFile(filename)
-
-	scanner := lex.NewRecursiveScanner(filename)
-	scanner.SetContent(content)
-	parser := parser.NewLLParser(scanner)
-	err := parser.ReadTokens()
-	if err != nil {
-		fmt.Printf("parse file %s error.\n%s\n", filename, err)
-		return
-	}
-
-	program, err := parser.Parse()
-	if err != nil {
-		fmt.Printf("parse file %s error.\n%s\n", filename, err)
-		return
-	}
-
-	compiler := compiler.NewCompiler()
-	page, err := compiler.Compile(program)
+	_, page, err := compiler.CompileFile(filename)
 	if err != nil {
 		fmt.Printf("compile file %s error.\n%s\n", filename, err)
 		return

@@ -1,8 +1,13 @@
 package compiler
 
 import (
+	"io"
+	"os"
+
 	"github.com/flily/macaque-lang/ast"
+	"github.com/flily/macaque-lang/lex"
 	"github.com/flily/macaque-lang/opcode"
+	"github.com/flily/macaque-lang/parser"
 	"github.com/flily/macaque-lang/token"
 )
 
@@ -19,21 +24,43 @@ func NewCompiler() *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(node ast.Node) (*opcode.CodePage, error) {
-	r, err := c.CompileCode(node)
+func (c *Compiler) CompileFile(filename string) (*opcode.CodeBlock, error) {
+	fd, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	page := c.Link(r)
-	return page, nil
+	content, err := io.ReadAll(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.CompileCode(filename, content)
 }
 
-func (c *Compiler) CompileCode(node ast.Node) (*opcode.CodeBlock, error) {
+func (c *Compiler) CompileCode(filename string, code []byte) (*opcode.CodeBlock, error) {
+	scanner := lex.NewRecursiveScanner(filename)
+	scanner.SetContent(code)
+
+	parser := parser.NewLLParser(scanner)
+	err := parser.ReadTokens()
+	if err != nil {
+		return nil, err
+	}
+
+	module, err := parser.Parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return c.CompileAST(module)
+}
+
+func (c *Compiler) CompileAST(node ast.Node) (*opcode.CodeBlock, error) {
 	return c.compileStatement(node, NewFlag(FlagWithReturn))
 }
 
-func (c *Compiler) CompileCodeSnippet(node ast.Node) (*opcode.CodeBlock, error) {
+func (c *Compiler) CompileASTSnippet(node ast.Node) (*opcode.CodeBlock, error) {
 	return c.compileStatement(node, NewFlag(FlagNone))
 }
 
@@ -513,4 +540,14 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.Co
 	result.IL(expr.Index.GetContext(), opcode.IIndex)
 
 	return result, nil
+}
+
+func CompileFile(filename string) (*Compiler, *opcode.CodePage, error) {
+	c := NewCompiler()
+	block, err := c.CompileFile(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return c, c.Link(block), nil
 }
