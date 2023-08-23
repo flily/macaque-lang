@@ -76,10 +76,6 @@ func NewNaiveVMBase() *NaiveVMBase {
 	return m
 }
 
-func (m *NaiveVMBase) execOne() {
-	m.ip++
-}
-
 func (m *NaiveVMBase) stackPush(o object.Object) {
 	m.Stack[m.sp] = o
 	m.sp++
@@ -593,7 +589,7 @@ func NewNaiveVM() *NaiveVM {
 
 func (m *NaiveVM) fetchOp() opcode.Opcode {
 	r := m.Code[m.ip]
-	m.execOne()
+	m.incrIP(1)
 	return r
 }
 
@@ -716,7 +712,7 @@ func (i *NaiveVMInterpreter) runFunction(f *opcode.Function) (error, bool) {
 
 	for i.ip-i.fp < uint64(length) && e == nil && !isHalt {
 		j := int(i.ip - i.fp)
-		i.execOne()
+		i.incrIP(1)
 
 		code := f.Opcodes[j]
 		// info := f.DebugInfo[j]
