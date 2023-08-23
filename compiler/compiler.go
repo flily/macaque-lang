@@ -16,12 +16,21 @@ type Compiler struct {
 }
 
 func NewCompiler() *Compiler {
+	return NewCompilerWithContext(NewCompilerContext())
+}
+
+func NewCompilerWithContext(ctx *CompilerContext) *Compiler {
 	c := &Compiler{
-		Context: NewCompilerContext(),
+		Context: ctx,
 	}
 
 	c.Context.Variable.EnterScope(FrameScopeFunction)
 	return c
+}
+
+func (c *Compiler) ResetContext() {
+	c.Context = NewCompilerContext()
+	c.Context.Variable.EnterScope(FrameScopeFunction)
 }
 
 func (c *Compiler) CompileFile(filename string) (*opcode.CodeBlock, error) {
@@ -64,8 +73,14 @@ func (c *Compiler) CompileASTSnippet(node ast.Node) (*opcode.CodeBlock, error) {
 	return c.compileStatement(node, NewFlag(FlagNone))
 }
 
+func (c *Compiler) MakeModule(block *opcode.CodeBlock) *opcode.Module {
+	return c.Context.LinkModule(block)
+}
+
 func (c *Compiler) Link(block *opcode.CodeBlock) *opcode.CodePage {
-	return c.Context.LinkCodePage(block)
+	module := c.MakeModule(block)
+
+	return opcode.BuildCodePage([]*opcode.Module{module})
 }
 
 func (c *Compiler) compileStatement(node ast.Node, flag CompilerFlag) (*opcode.CodeBlock, error) {
@@ -194,7 +209,7 @@ CompileSwitch:
 
 	case *ast.StringLiteral:
 		i := c.Context.Literal.ReferenceString(n.Value)
-		r.IL(ctx, opcode.ILoad, int(i)).
+		r.IL(ctx, opcode.ILoad, i).
 			SetValues(1)
 
 	case *ast.ArrayLiteral:
@@ -305,8 +320,8 @@ func (c *Compiler) compileIdentifierReference(name string, ctx *token.Context, r
 	ref, kind := c.Context.Variable.Reference(name)
 	n := 1
 	switch kind {
-	case VariableKindGlobal, VariableKindModule:
-		r.IL(ctx, opcode.ILoad, ref.Offset)
+	// case VariableKindGlobal, VariableKindModule:
+	// 	r.IL(ctx, opcode.ILoad, ref.Offset)
 
 	case VariableKindBinding:
 		r.IL(ctx, opcode.ILoadBind, ref.Offset)
@@ -498,7 +513,7 @@ func (c *Compiler) compileCallExpression(expr *ast.CallExpression, flag Compiler
 		}
 
 		memberIndex := c.Context.Literal.ReferenceString(expr.Member.Value)
-		callable.IL(expr.Member.GetContext(), opcode.ILoad, int(memberIndex))
+		callable.IL(expr.Member.GetContext(), opcode.ILoad, memberIndex)
 		callable.IL(expr.Base.GetContext(), opcode.ISDUP)
 		callable.IL(expr.Member.GetContext(), opcode.IIndex)
 		result.Block(callable)
@@ -531,7 +546,7 @@ func (c *Compiler) compileIndexExpression(expr *ast.IndexExpression) (*opcode.Co
 		key := expr.Index.(*ast.Identifier)
 		i := c.Context.Literal.ReferenceString(key.Value)
 		index = opcode.NewCodeBlock()
-		index.IL(expr.Index.GetContext(), opcode.ILoad, int(i))
+		index.IL(expr.Index.GetContext(), opcode.ILoad, i)
 		index.Values = 1
 	}
 

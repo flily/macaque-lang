@@ -88,10 +88,10 @@ func checkInstructions(t *testing.T, text string, page *opcode.CodePage, compile
 	}
 }
 
-func checkData(t *testing.T, text string, compiler *Compiler, expecteds []object.Object) {
+func checkData(t *testing.T, text string, page *opcode.CodePage, expecteds []object.Object) {
 	t.Helper()
 
-	data := compiler.Context.Literal.Values
+	data := page.Data
 	if len(data) != len(expecteds) {
 		t.Errorf("wrong answer in code: %s", text)
 		t.Errorf("wrong data length. want=%d, got=%d", len(expecteds), len(data))
@@ -137,8 +137,9 @@ func runCompilerTestCases(t *testing.T, cases []testCompilerCase) {
 			t.Fatalf("compiler error:\n%s", err)
 		}
 
+		page.LinkModules()
 		checkInstructions(t, code, page, compiler, c.codes)
-		checkData(t, code, compiler, c.data)
+		checkData(t, code, page, c.data)
 	}
 }
 

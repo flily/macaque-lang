@@ -679,8 +679,8 @@ func (i *NaiveVMInterpreter) MergeCodeBlock(block *opcode.CodeBlock, ctx *compil
 	}
 
 	for j := len(page.Data); j < len(ctx.Literal.Values); j++ {
-		page.Data = append(page.Data, ctx.Literal.Values[j])
-		i.Data = append(i.Data, ctx.Literal.Values[j])
+		page.Data = append(page.Data, ctx.Literal.Values[j].Data)
+		i.Data = append(i.Data, ctx.Literal.Values[j].Data)
 	}
 
 	newFrameSize := ctx.Variable.CurrentFrameSize()

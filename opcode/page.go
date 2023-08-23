@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/flily/macaque-lang/ast"
 	"github.com/flily/macaque-lang/object"
 	"github.com/flily/macaque-lang/token"
 )
@@ -15,6 +16,20 @@ type CodeBlockItem interface {
 type ILContext struct {
 	IL      IL
 	Context *token.Context
+}
+
+type DataContainer struct {
+	Data  object.Object
+	Index uint64
+}
+
+func NewDataContainer(data object.Object, index uint64) *DataContainer {
+	c := &DataContainer{
+		Data:  data,
+		Index: index,
+	}
+
+	return c
 }
 
 // IL of a statement of an expression.
@@ -188,7 +203,19 @@ type Module struct {
 	Type      int
 	Index     int
 	File      *token.FileInfo
+	Root      ast.Node
 	Functions []*Function
+	Data      []*DataContainer
+}
+
+func NewModule(filename string, root ast.Node) *Module {
+	m := &Module{
+		File:      token.NewFileInfo(filename),
+		Root:      root,
+		Functions: make([]*Function, 0),
+	}
+
+	return m
 }
 
 func (m *Module) Link() []Opcode {
@@ -215,6 +242,18 @@ type CodePage struct {
 	ModuleNameMap map[string]*Module
 	Functions     []*Function
 	Data          []object.Object
+	dataIndex     map[interface{}]uint64
+}
+
+func BuildCodePage(modules []*Module) *CodePage {
+	moduleList := make([]*Module, len(modules))
+	copy(moduleList, modules)
+	page := &CodePage{
+		NativeModules: moduleList,
+		dataIndex:     make(map[interface{}]uint64),
+	}
+
+	return page
 }
 
 func NewCodePage() *CodePage {
@@ -225,6 +264,42 @@ func NewCodePage() *CodePage {
 
 func (p *CodePage) Main() *Function {
 	return p.Functions[0]
+}
+
+func (p *CodePage) UpsertData(data object.Object) uint64 {
+	index, ok := p.dataIndex[data]
+	if ok {
+		return index
+	}
+
+	index = uint64(len(p.Data))
+	p.Data = append(p.Data, data)
+	p.dataIndex[data] = index
+
+	return index
+}
+
+func (p *CodePage) LinkModules() {
+	functionCounts := 0
+	dataCounts := 0
+
+	for _, m := range p.NativeModules {
+		functionCounts += len(m.Functions)
+		dataCounts += len(m.Data)
+	}
+
+	p.Data = make([]object.Object, 0, dataCounts)
+	for _, m := range p.NativeModules {
+		for _, data := range m.Data {
+			index := p.UpsertData(data.Data)
+			data.Index = index
+		}
+	}
+
+	p.Functions = make([]*Function, 0, functionCounts)
+	for _, m := range p.NativeModules {
+		p.Functions = append(p.Functions, m.Functions...)
+	}
 }
 
 func (p *CodePage) LinkFunctions() {

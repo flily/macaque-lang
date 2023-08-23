@@ -280,40 +280,41 @@ func (c *VariableContext) CurrentFrameSize() int {
 }
 
 type LiteralContext struct {
-	index  map[interface{}]uint64
-	Values []object.Object
-	counts int
+	index  map[interface{}]*opcode.DataContainer
+	Values []*opcode.DataContainer
 }
 
 func NewLiteralContext() *LiteralContext {
 	c := &LiteralContext{
-		index:  make(map[interface{}]uint64),
-		Values: make([]object.Object, 0),
+		index:  make(map[interface{}]*opcode.DataContainer),
+		Values: make([]*opcode.DataContainer, 0),
 	}
 
 	return c
 }
 
-func (c *LiteralContext) Add(v interface{}, o object.Object) uint64 {
-	n := c.counts
-	c.index[v] = uint64(n)
-	c.Values = append(c.Values, o)
-	c.counts = n + 1
-	return uint64(n)
+func (c *LiteralContext) Add(v interface{}, o object.Object) *opcode.DataContainer {
+	index := len(c.Values)
+
+	container := opcode.NewDataContainer(o, uint64(index))
+	c.Values = append(c.Values, container)
+	c.index[v] = container
+
+	return container
 }
 
-func (c *LiteralContext) Lookup(literal interface{}) (uint64, bool) {
-	n, ok := c.index[literal]
+func (c *LiteralContext) Lookup(literal interface{}) (*opcode.DataContainer, bool) {
+	container, ok := c.index[literal]
 	if ok {
-		return uint64(n), true
+		return container, true
 	}
 
-	return 0, false
+	return nil, false
 }
 
-func (c *LiteralContext) ReferenceString(s string) uint64 {
-	if n, ok := c.Lookup(s); ok {
-		return n
+func (c *LiteralContext) ReferenceString(s string) *opcode.DataContainer {
+	if container, ok := c.Lookup(s); ok {
+		return container
 	}
 
 	o := object.NewString(s)
@@ -326,7 +327,33 @@ type CompilerContext struct {
 	Functions []*opcode.Function
 }
 
-func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *opcode.CodePage {
+// func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *opcode.CodePage {
+// 	links := make([]*opcode.Function, len(c.Functions))
+
+// 	mainInfo := &opcode.Function{
+// 		ModuleIndex: 0,
+// 		IP:          0,
+// 		FrameSize:   c.Variable.CurrentFrameSize(),
+// 		Codes:       main,
+// 	}
+
+// 	links[0] = mainInfo
+// 	if len(c.Functions) > 1 {
+// 		copy(links[1:], c.Functions[1:])
+// 	}
+
+// 	data := make([]object.Object, len(c.Literal.Values))
+// 	copy(data, c.Literal.Values)
+
+// 	page := &opcode.CodePage{
+// 		Functions: links,
+// 		Data:      data,
+// 	}
+
+// 	return page
+// }
+
+func (c *CompilerContext) LinkModule(main *opcode.CodeBlock) *opcode.Module {
 	links := make([]*opcode.Function, len(c.Functions))
 
 	mainInfo := &opcode.Function{
@@ -341,15 +368,15 @@ func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *opcode.CodePage 
 		copy(links[1:], c.Functions[1:])
 	}
 
-	data := make([]object.Object, len(c.Literal.Values))
+	data := make([]*opcode.DataContainer, len(c.Literal.Values))
 	copy(data, c.Literal.Values)
 
-	page := &opcode.CodePage{
+	module := &opcode.Module{
 		Functions: links,
 		Data:      data,
 	}
 
-	return page
+	return module
 }
 
 func (c *CompilerContext) AddFunction(f *opcode.Function) int {

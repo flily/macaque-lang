@@ -19,6 +19,7 @@ func testCompileCode(t *testing.T, code string) *opcode.CodePage {
 	}
 
 	page := c.Link(block)
+	page.LinkModules()
 	return page
 }
 

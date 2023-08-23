@@ -46,6 +46,35 @@ func NewIL(code int, ops ...interface{}) IL {
 			Bindings: bindings,
 		}
 
+	case ILoad:
+		if len(ops) != 1 {
+			err = fmt.Sprintf("code %s(%d) MUST have 1 operand", CodeName(code), code)
+			break
+		}
+
+		operand := ops[0]
+		switch o := operand.(type) {
+		case int:
+			r = ilCodeOp1{
+				Code:    code,
+				Operand: o,
+			}
+
+		case uint64:
+			r = ilCodeOp1{
+				Code:    code,
+				Operand: int(o),
+			}
+
+		case *DataContainer:
+			r = &ilCodeLoad{
+				Data: o,
+			}
+
+		default:
+			err = fmt.Sprintf("operand MUST be int or *DataContainer, got %T", ops[0])
+		}
+
 	default:
 		if len(ops) != 1 {
 			err = fmt.Sprintf("code %s(%d) MUST have 1 operand", CodeName(code), code)
@@ -134,3 +163,21 @@ func (i ilCodeMakeFunc) String() string {
 }
 
 func (i ilCodeMakeFunc) elemCodeBlock() {}
+
+type ilCodeLoad struct {
+	Data *DataContainer
+}
+
+func (i *ilCodeLoad) GetCode() int {
+	return ILoad
+}
+
+func (i *ilCodeLoad) GetOpcode() Opcode {
+	return Code(ILoad, int(i.Data.Index))
+}
+
+func (i *ilCodeLoad) String() string {
+	return fmt.Sprintf("%s %d", CodeName(ILoad), i.Data.Index)
+}
+
+func (i *ilCodeLoad) elemCodeBlock() {}
