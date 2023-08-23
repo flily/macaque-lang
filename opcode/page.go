@@ -262,6 +262,10 @@ func NewCodePage() *CodePage {
 	return p
 }
 
+func (p *CodePage) MainModule() *Module {
+	return p.NativeModules[0]
+}
+
 func (p *CodePage) Main() *Function {
 	return p.Functions[0]
 }
@@ -279,37 +283,18 @@ func (p *CodePage) UpsertData(data object.Object) uint64 {
 	return index
 }
 
-func (p *CodePage) LinkModules() {
-	functionCounts := 0
-	dataCounts := 0
-
-	for _, m := range p.NativeModules {
-		functionCounts += len(m.Functions)
-		dataCounts += len(m.Data)
+func (p *CodePage) LinkModule(m *Module) {
+	for _, data := range m.Data {
+		index := p.UpsertData(data.Data)
+		data.Index = index
 	}
 
-	p.Data = make([]object.Object, 0, dataCounts)
-	for _, m := range p.NativeModules {
-		for _, data := range m.Data {
-			index := p.UpsertData(data.Data)
-			data.Index = index
-		}
-	}
-
-	p.Functions = make([]*Function, 0, functionCounts)
-	for _, m := range p.NativeModules {
-		p.Functions = append(p.Functions, m.Functions...)
-	}
+	p.Functions = append(p.Functions, m.Functions...)
 }
 
-func (p *CodePage) LinkFunctions() {
-	p.Functions = make([]*Function, 1)
-
+func (p *CodePage) LinkModules() {
 	for _, m := range p.NativeModules {
-		for _, f := range m.Functions {
-			f.GlobalIndex = uint64(len(p.Functions))
-			p.Functions = append(p.Functions, f)
-		}
+		p.LinkModule(m)
 	}
 }
 
