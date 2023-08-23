@@ -6,12 +6,21 @@ import (
 	"github.com/flily/macaque-lang/token"
 )
 
+type FunctionKind int
+
+const (
+	FunctionKindNative  FunctionKind = iota
+	FunctionKindStatic  FunctionKind = 1
+	FunctionKindDynamic FunctionKind = 2
+)
+
 type FunctionObject struct {
 	Index     uint64
 	FrameSize int
 	Arguments int
 	IP        uint64
 	Bounds    []Object
+	Kind      FunctionKind
 }
 
 func NewFunction(frameSize int, args int, ip uint64, bounds []Object) *FunctionObject {
