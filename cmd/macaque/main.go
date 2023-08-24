@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/flily/macaque-lang/compiler"
 	"github.com/flily/macaque-lang/vm"
@@ -14,20 +12,6 @@ type Arguments struct {
 	CompileMode     bool
 	InteractiveMode bool
 	Files           []string
-}
-
-func readFile(filename string) []byte {
-	fd, err := os.Open(filename)
-	if err != nil {
-		panic(err)
-	}
-
-	content, err := io.ReadAll(fd)
-	if err != nil {
-		panic(err)
-	}
-
-	return content
 }
 
 func execFile(filename string) {
