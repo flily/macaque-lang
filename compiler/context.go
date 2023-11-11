@@ -327,32 +327,6 @@ type CompilerContext struct {
 	Functions []*opcode.Function
 }
 
-// func (c *CompilerContext) LinkCodePage(main *opcode.CodeBlock) *opcode.CodePage {
-// 	links := make([]*opcode.Function, len(c.Functions))
-
-// 	mainInfo := &opcode.Function{
-// 		ModuleIndex: 0,
-// 		IP:          0,
-// 		FrameSize:   c.Variable.CurrentFrameSize(),
-// 		Codes:       main,
-// 	}
-
-// 	links[0] = mainInfo
-// 	if len(c.Functions) > 1 {
-// 		copy(links[1:], c.Functions[1:])
-// 	}
-
-// 	data := make([]object.Object, len(c.Literal.Values))
-// 	copy(data, c.Literal.Values)
-
-// 	page := &opcode.CodePage{
-// 		Functions: links,
-// 		Data:      data,
-// 	}
-
-// 	return page
-// }
-
 func (c *CompilerContext) LinkModule(main *opcode.CodeBlock) *opcode.Module {
 	links := make([]*opcode.Function, len(c.Functions))
 
