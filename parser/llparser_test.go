@@ -791,6 +791,42 @@ func TestParseIfExpression(t *testing.T) {
 	runParserTestCase(t, tests)
 }
 
+func TestParseImportStatement(t *testing.T) {
+	tests := []parserTestCase{
+		{
+			`import "hello";`,
+			program(
+				impt(`"hello"`),
+			),
+		},
+	}
+
+	runParserTestCase(t, tests)
+}
+
+func TestParseImportStatementError(t *testing.T) {
+	tests := []parserErrorTestCase{
+		{
+			[]string{
+				`import 42;`,
+				"       ^^",
+				"       invalid import target, must be a string literal",
+				"  at testcase:1:8",
+			},
+		},
+		{
+			[]string{
+				`import "hello" + "world";`,
+				"               ^",
+				"               expect token SEMICOLON(;) IN import statement, but got PLUS(+)",
+				"  at testcase:1:16",
+			},
+		},
+	}
+
+	runParserErrorTestCase(t, tests)
+}
+
 func TestOperatorPrecedence(t *testing.T) {
 	tests := []struct {
 		input    string

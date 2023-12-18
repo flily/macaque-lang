@@ -32,6 +32,7 @@ const (
 	RuleLetStatement        = "let statement"
 	RuleExpressionStatement = "expression statement"
 	RuleReturnStatement     = "return statement"
+	RuleImportStatement     = "import statement"
 	RuleBlockStatement      = "block statement"
 	RuleFunctionLiteral     = "function literal"
 	RuleIdentifierList      = "identifier list"
@@ -209,6 +210,9 @@ func (p *LLParser) parseStatement(context string) (ast.Statement, error) {
 	case token.Return:
 		stmt, err = p.parseReturnStatement()
 
+	case token.Import:
+		stmt, err = p.parseImportStatement()
+
 	case token.EOF:
 		stmt, err = nil, nil
 
@@ -300,6 +304,35 @@ func (p *LLParser) parseReturnStatement() (*ast.ReturnStatement, error) {
 		Return:      sReturn,
 		Expressions: exprList,
 		Semicolon:   sSemicolon,
+	}
+
+	return stmt, nil
+}
+
+// import-stmt => "import" expression ";"
+func (p *LLParser) parseImportStatement() (*ast.ImportStatement, error) {
+	var sImport, sSemicolon *token.TokenContext
+	sImport, _ = p.skipToken(token.Import, RuleImportStatement)
+
+	target, err := p.parseLiteral()
+	if err != nil {
+		return nil, err
+	}
+
+	stringTarget, ok := target.(*ast.StringLiteral)
+	if !ok {
+		err := NewSyntaxError(target.GetContext(), "invalid import target, must be a string literal")
+		return nil, err
+	}
+
+	if sSemicolon, err = p.skipTokenAndComment(token.Semicolon, RuleImportStatement); err != nil {
+		return nil, err
+	}
+
+	stmt := &ast.ImportStatement{
+		Import:    sImport,
+		Target:    stringTarget,
+		Semicolon: sSemicolon,
 	}
 
 	return stmt, nil

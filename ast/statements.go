@@ -216,19 +216,24 @@ func (s *ExpressionStatement) EqualTo(node Node) bool {
 type ImportStatement struct {
 	StatementBase
 
-	Import *token.TokenContext
-	Target *token.TokenContext
+	Import    *token.TokenContext
+	Target    *StringLiteral
+	Semicolon *token.TokenContext
 }
 
 func (s *ImportStatement) statementNode()     {}
 func (s *ImportStatement) lineStatementNode() {}
 
 func (s *ImportStatement) CanonicalCode() string {
-	return "import;"
+	return fmt.Sprintf("import %s;", s.Target.CanonicalCode())
 }
 
 func (s *ImportStatement) GetContext() *token.Context {
-	c := token.NewContext(s.Import, s.Target)
+	c := token.JoinContext(
+		s.Import.ToContext(),
+		s.Target.GetContext(),
+		s.Semicolon.ToContext(),
+	)
 
 	return c
 }
@@ -238,7 +243,7 @@ func (s *ImportStatement) EqualTo(node Node) bool {
 	switch n := node.(type) {
 	case *ImportStatement:
 		if s.Target != nil && n.Target != nil {
-			result = s.Target.Content == n.Target.Content
+			result = s.Target.EqualTo(n.Target)
 		}
 	}
 

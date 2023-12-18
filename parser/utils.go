@@ -96,6 +96,17 @@ func ret(expressions ...ast.Expression) *ast.ReturnStatement {
 	return stmt
 }
 
+func impt(source string) *ast.ImportStatement {
+	stmt := &ast.ImportStatement{
+		Target: &ast.StringLiteral{
+			Content: source,
+			Value:   ConvertString(source),
+		},
+	}
+
+	return stmt
+}
+
 func id(name string) *ast.Identifier {
 	id := &ast.Identifier{
 		Value: name,
